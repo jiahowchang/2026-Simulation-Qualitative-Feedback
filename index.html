@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>擬真訓練質性回饋</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f4f8;
+      color: #1a202c;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.5rem;
+      margin-bottom: 4px;
+      color: #2b6cb0;
+    }
+    .subtitle {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #718096;
+      margin-bottom: 20px;
+    }
+
+    /* QR Code 區域 */
+    .qr-section {
+      text-align: center;
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .qr-section img { border-radius: 8px; }
+    .qr-url {
+      font-size: 0.8rem;
+      color: #4a5568;
+      margin-top: 8px;
+      word-break: break-all;
+    }
+
+    /* 表單 */
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+    }
+    input[type="text"], select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid #cbd5e0;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: #3182ce;
+    }
+    .field { margin-bottom: 16px; }
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    /* 輸入模式切換 */
+    .mode-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 10px;
+      border: 2px solid #cbd5e0;
+      border-radius: 8px;
+      background: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .mode-btn.active {
+      border-color: #3182ce;
+      background: #ebf8ff;
+      color: #2b6cb0;
+    }
+
+    /* 錄音區 */
+    .voice-area { text-align: center; }
+    .record-btn {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: none;
+      background: #e53e3e;
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(229,62,62,0.4);
+    }
+    .record-btn.recording {
+      background: #c53030;
+      animation: pulse 1.2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(229,62,62,0.5); }
+      50% { box-shadow: 0 0 0 14px rgba(229,62,62,0); }
+    }
+    .record-status {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      color: #718096;
+      min-height: 20px;
+    }
+    .transcript-box {
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: #f7fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      min-height: 60px;
+      text-align: left;
+      font-size: 0.95rem;
+      color: #2d3748;
+      white-space: pre-wrap;
+    }
+
+    /* 送出按鈕 */
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      background: #3182ce;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .submit-btn:hover { background: #2b6cb0; }
+    .submit-btn:disabled {
+      background: #a0aec0;
+      cursor: not-allowed;
+    }
+
+    /* 訊息 */
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      z-index: 999;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+    .toast.success { background: #c6f6d5; color: #22543d; }
+    .toast.error { background: #fed7d7; color: #822727; }
+
+    /* 歷史紀錄 */
+    .history-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #2b6cb0;
+    }
+    .history-item {
+      background: #fff;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    }
+    .history-meta {
+      font-size: 0.8rem;
+      color: #718096;
+      margin-bottom: 6px;
+    }
+    .history-meta span {
+      background: #edf2f7;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-right: 6px;
+    }
+    .history-content {
+      font-size: 0.92rem;
+      color: #2d3748;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>擬真訓練質性回饋</h1>
+    <p class="subtitle">2026 Simulation Qualitative Feedback</p>
+
+    <!-- QR Code -->
+    <div class="qr-section">
+      <div id="qrcode"></div>
+      <p class="qr-url" id="pageUrl"></p>
+    </div>
+
+    <!-- 表單 -->
+    <div class="card">
+      <div class="field">
+        <label for="name">姓名</label>
+        <input type="text" id="name" placeholder="請輸入您的姓名">
+      </div>
+      <div class="field">
+        <label for="position">ACLS 站位</label>
+        <select id="position">
+          <option value="">-- 請選擇站位 --</option>
+          <option value="Airway">Airway</option>
+          <option value="Circulation">Circulation</option>
+          <option value="Leader">Leader</option>
+          <option value="Support">Support</option>
+          <option value="Observer">Observer</option>
+        </select>
+      </div>
+
+      <!-- 輸入模式 -->
+      <label>回饋方式</label>
+      <div class="mode-toggle">
+        <button class="mode-btn active" data-mode="text" onclick="setMode('text')">文字輸入</button>
+        <button class="mode-btn" data-mode="voice" onclick="setMode('voice')">語音紀錄</button>
+      </div>
+
+      <!-- 文字輸入區 -->
+      <div id="textArea">
+        <textarea id="feedbackText" placeholder="請輸入您的回饋內容..."></textarea>
+      </div>
+
+      <!-- 語音輸入區 -->
+      <div id="voiceArea" class="voice-area" style="display:none;">
+        <button class="record-btn" id="recordBtn" onclick="toggleRecording()">開始錄音</button>
+        <p class="record-status" id="recordStatus">點擊按鈕開始語音輸入</p>
+        <div class="transcript-box" id="transcript"></div>
+      </div>
+
+      <div style="margin-top: 16px;">
+        <button class="submit-btn" id="submitBtn" onclick="submitFeedback()">送出回饋</button>
+      </div>
+    </div>
+
+    <!-- 歷史紀錄 -->
+    <div id="historySection" style="display:none;">
+      <p class="history-title">今日回饋紀錄</p>
+      <div id="historyList"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- QR Code Library -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+  <script>
+    // ===== Supabase 設定 =====
+    const SUPABASE_URL = 'https://fgufsfvrfkvixqpirtol.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZndWZzZnZyZmt2aXhxcGlydG9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMjMxNzMsImV4cCI6MjA5MTg5OTE3M30.2gLvN-UzKyNsB_RqbR2bauOzLU4LNzI4s9JZym5gcp4';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // ===== QR Code =====
+    const pageUrl = window.location.href;
+    document.getElementById('pageUrl').textContent = pageUrl;
+    new QRCode(document.getElementById('qrcode'), {
+      text: pageUrl,
+      width: 160,
+      height: 160,
+      colorDark: '#2b6cb0',
+      colorLight: '#ffffff',
+    });
+
+    // ===== 模式切換 =====
+    let currentMode = 'text';
+
+    function setMode(mode) {
+      currentMode = mode;
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+      });
+      document.getElementById('textArea').style.display = mode === 'text' ? 'block' : 'none';
+      document.getElementById('voiceArea').style.display = mode === 'voice' ? 'block' : 'none';
+      // 停止錄音如果切換模式
+      if (mode === 'text' && isRecording) {
+        stopRecording();
+      }
+    }
+
+    // ===== 語音辨識 =====
+    let recognition = null;
+    let isRecording = false;
+    let finalTranscript = '';
+
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'zh-TW';
+
+      recognition.onresult = (event) => {
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          } else {
+            interim += event.results[i][0].transcript;
+          }
+        }
+        document.getElementById('transcript').textContent = finalTranscript + interim;
+      };
+
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        if (event.error === 'no-speech') {
+          document.getElementById('recordStatus').textContent = '未偵測到語音，請再試一次';
+        } else {
+          document.getElementById('recordStatus').textContent = '語音辨識錯誤：' + event.error;
+        }
+        stopRecordingUI();
+      };
+
+      recognition.onend = () => {
+        if (isRecording) {
+          // 自動重啟以保持持續錄音
+          recognition.start();
+        }
+      };
+    }
+
+    function toggleRecording() {
+      if (!recognition) {
+        showToast('您的瀏覽器不支援語音辨識，請使用 Chrome 瀏覽器', 'error');
+        return;
+      }
+      if (isRecording) {
+        stopRecording();
+      } else {
+        startRecording();
+      }
+    }
+
+    function startRecording() {
+      finalTranscript = '';
+      document.getElementById('transcript').textContent = '';
+      recognition.start();
+      isRecording = true;
+      document.getElementById('recordBtn').textContent = '停止錄音';
+      document.getElementById('recordBtn').classList.add('recording');
+      document.getElementById('recordStatus').textContent = '錄音中...';
+    }
+
+    function stopRecording() {
+      isRecording = false;
+      recognition.stop();
+      stopRecordingUI();
+    }
+
+    function stopRecordingUI() {
+      isRecording = false;
+      document.getElementById('recordBtn').textContent = '開始錄音';
+      document.getElementById('recordBtn').classList.remove('recording');
+      document.getElementById('recordStatus').textContent = '錄音完成，可再次點擊重新錄音';
+    }
+
+    // ===== 送出回饋 =====
+    async function submitFeedback() {
+      const name = document.getElementById('name').value.trim();
+      const position = document.getElementById('position').value;
+      const content = currentMode === 'text'
+        ? document.getElementById('feedbackText').value.trim()
+        : (document.getElementById('transcript').textContent || '').trim();
+
+      // 驗證
+      if (!name) { showToast('請輸入您的姓名', 'error'); return; }
+      if (!position) { showToast('請選擇 ACLS 站位', 'error'); return; }
+      if (!content) { showToast('請輸入或錄製回饋內容', 'error'); return; }
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = '送出中...';
+
+      const { error } = await supabase.from('feedback').insert({
+        name: name,
+        acls_position: position,
+        input_type: currentMode,
+        feedback_content: content,
+      });
+
+      btn.disabled = false;
+      btn.textContent = '送出回饋';
+
+      if (error) {
+        console.error(error);
+        showToast('送出失敗，請再試一次', 'error');
+        return;
+      }
+
+      showToast('回饋已成功送出！', 'success');
+      // 清空回饋內容（保留姓名和站位方便連續輸入）
+      document.getElementById('feedbackText').value = '';
+      document.getElementById('transcript').textContent = '';
+      finalTranscript = '';
+      loadHistory();
+    }
+
+    // ===== 歷史紀錄 =====
+    async function loadHistory() {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const { data, error } = await supabase
+        .from('feedback')
+        .select('*')
+        .gte('created_at', today.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (error || !data || data.length === 0) {
+        document.getElementById('historySection').style.display = 'none';
+        return;
+      }
+
+      document.getElementById('historySection').style.display = 'block';
+      const list = document.getElementById('historyList');
+      list.innerHTML = data.map(item => {
+        const time = new Date(item.created_at).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+        const typeLabel = item.input_type === 'voice' ? '語音' : '文字';
+        return `
+          <div class="history-item">
+            <div class="history-meta">
+              <span>${item.name}</span>
+              <span>${item.acls_position}</span>
+              <span>${typeLabel}</span>
+              <span>${time}</span>
+            </div>
+            <div class="history-content">${escapeHtml(item.feedback_content)}</div>
+          </div>`;
+      }).join('');
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ===== Toast =====
+    function showToast(msg, type) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.className = 'toast show ' + type;
+      setTimeout(() => { toast.className = 'toast'; }, 2500);
+    }
+
+    // 載入歷史
+    loadHistory();
+  </script>
+</body>
+</html>
