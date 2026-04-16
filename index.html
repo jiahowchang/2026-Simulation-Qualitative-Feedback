@@ -232,6 +232,10 @@
     <!-- 表單 -->
     <div class="card">
       <div class="field">
+        <label for="sessionDate">日期</label>
+        <input type="date" id="sessionDate">
+      </div>
+      <div class="field">
         <label for="name">姓名</label>
         <input type="text" id="name" placeholder="請輸入您的姓名">
       </div>
@@ -436,6 +440,7 @@
 
     // ===== 送出回饋 =====
     async function submitFeedback() {
+      const sessionDate = document.getElementById('sessionDate').value;
       const name = document.getElementById('name').value.trim();
       const position = document.getElementById('position').value;
       const content = currentMode === 'text'
@@ -443,6 +448,7 @@
         : (document.getElementById('transcript').textContent || '').trim();
 
       // 驗證
+      if (!sessionDate) { showToast('請選擇日期', 'error'); return; }
       if (!name) { showToast('請輸入您的姓名', 'error'); return; }
       if (!position) { showToast('請選擇 ACLS 站位', 'error'); return; }
       if (!content) { showToast('請輸入或錄製回饋內容', 'error'); return; }
@@ -452,6 +458,7 @@
       btn.textContent = '送出中...';
 
       const { error } = await supabase.from('feedback').insert({
+        session_date: sessionDate,
         name: name,
         acls_position: position,
         input_type: currentMode,
@@ -523,6 +530,9 @@
       toast.className = 'toast show ' + type;
       setTimeout(() => { toast.className = 'toast'; }, 2500);
     }
+
+    // 日期預設為今天
+    document.getElementById('sessionDate').value = new Date().toISOString().slice(0, 10);
 
     // 載入歷史
     loadHistory();
