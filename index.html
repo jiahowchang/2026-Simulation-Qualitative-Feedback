@@ -301,12 +301,12 @@
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     // ===== QR Code =====
-    const pageUrl = window.location.href;
-    document.getElementById('pageUrl').textContent = pageUrl;
+    const siteUrl = 'https://jiahowchang.github.io/2026-Simulation-Qualitative-Feedback/';
+    document.getElementById('pageUrl').textContent = siteUrl;
     new QRCode(document.getElementById('qrcode'), {
-      text: pageUrl,
-      width: 160,
-      height: 160,
+      text: siteUrl,
+      width: 180,
+      height: 180,
       colorDark: '#2b6cb0',
       colorLight: '#ffffff',
     });
