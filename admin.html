@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理後台 — 擬真訓練質性回饋</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f4f8;
+      color: #1a202c;
+      min-height: 100vh;
+    }
+
+    /* 登入畫面 */
+    .login-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .login-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 36px 32px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      width: 320px;
+      text-align: center;
+    }
+    .login-card h2 { color: #2b6cb0; margin-bottom: 6px; }
+    .login-card p  { font-size: 0.85rem; color: #718096; margin-bottom: 24px; }
+    .login-card input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid #cbd5e0;
+      border-radius: 8px;
+      font-size: 1rem;
+      margin-bottom: 12px;
+      outline: none;
+    }
+    .login-card input:focus { border-color: #3182ce; }
+    .login-card button {
+      width: 100%;
+      padding: 11px;
+      background: #3182ce;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .login-error {
+      color: #c53030;
+      font-size: 0.85rem;
+      margin-top: 8px;
+      display: none;
+    }
+
+    /* 主後台 */
+    .admin-wrap { display: none; padding: 24px 20px; max-width: 1100px; margin: 0 auto; }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .top-bar h1 { font-size: 1.4rem; color: #2b6cb0; }
+    .top-bar-right { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* 統計卡片 */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .stat-num { font-size: 2rem; font-weight: 800; color: #2b6cb0; }
+    .stat-label { font-size: 0.8rem; color: #718096; margin-top: 4px; }
+
+    /* 篩選列 */
+    .filter-bar {
+      background: #fff;
+      border-radius: 10px;
+      padding: 14px 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      margin-bottom: 16px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    .filter-bar label { font-size: 0.8rem; font-weight: 600; color: #4a5568; display: block; margin-bottom: 4px; }
+    .filter-bar input, .filter-bar select {
+      padding: 7px 10px;
+      border: 1.5px solid #cbd5e0;
+      border-radius: 7px;
+      font-size: 0.9rem;
+      outline: none;
+      background: #fff;
+    }
+    .filter-bar input:focus, .filter-bar select:focus { border-color: #3182ce; }
+    .filter-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 7px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-primary { background: #3182ce; color: #fff; }
+    .btn-secondary { background: #edf2f7; color: #4a5568; }
+    .btn-success { background: #38a169; color: #fff; }
+    .btn-danger  { background: #e53e3e; color: #fff; font-size: 0.85rem; padding: 6px 14px; }
+
+    /* 表格 */
+    .table-wrap {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      overflow: auto;
+    }
+    table { width: 100%; border-collapse: collapse; min-width: 700px; }
+    th {
+      background: #ebf8ff;
+      color: #2b6cb0;
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 11px 14px;
+      text-align: left;
+      border-bottom: 2px solid #bee3f8;
+      white-space: nowrap;
+    }
+    td {
+      padding: 11px 14px;
+      font-size: 0.88rem;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f7fafc; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    .badge-voice { background: #e9d8fd; color: #553c9a; }
+    .badge-text  { background: #c6f6d5; color: #22543d; }
+    .feedback-cell { max-width: 320px; white-space: pre-wrap; word-break: break-word; }
+
+    .empty-msg { text-align: center; color: #a0aec0; padding: 48px 0; font-size: 1rem; }
+    .loading-msg { text-align: center; color: #718096; padding: 48px 0; }
+
+    /* Toast */
+    .toast {
+      position: fixed; top: 20px; left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 22px; border-radius: 8px;
+      font-weight: 600; font-size: 0.9rem;
+      z-index: 999; opacity: 0; transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+    .toast.success { background: #c6f6d5; color: #22543d; }
+    .toast.error   { background: #fed7d7; color: #822727; }
+  </style>
+</head>
+<body>
+
+<!-- 登入畫面 -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <h2>管理後台</h2>
+    <p>擬真訓練質性回饋系統</p>
+    <input type="password" id="pwInput" placeholder="請輸入管理密碼" onkeydown="if(event.key==='Enter') doLogin()">
+    <button onclick="doLogin()">登入</button>
+    <p class="login-error" id="loginError">密碼錯誤，請再試一次</p>
+  </div>
+</div>
+
+<!-- 主後台 -->
+<div class="admin-wrap" id="adminWrap">
+  <div class="top-bar">
+    <h1>📋 回饋資料後台</h1>
+    <div class="top-bar-right">
+      <button class="filter-btn btn-success" onclick="exportCSV()">匯出 CSV</button>
+      <button class="filter-btn btn-secondary" onclick="doLogout()">登出</button>
+    </div>
+  </div>
+
+  <!-- 統計 -->
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-num" id="statTotal">-</div><div class="stat-label">總回饋數</div></div>
+    <div class="stat-card"><div class="stat-num" id="statToday">-</div><div class="stat-label">今日回饋</div></div>
+    <div class="stat-card"><div class="stat-num" id="statVoice">-</div><div class="stat-label">語音輸入</div></div>
+    <div class="stat-card"><div class="stat-num" id="statText">-</div><div class="stat-label">手動輸入</div></div>
+  </div>
+
+  <!-- 篩選 -->
+  <div class="filter-bar">
+    <div>
+      <label>開始日期</label>
+      <input type="date" id="filterFrom">
+    </div>
+    <div>
+      <label>結束日期</label>
+      <input type="date" id="filterTo">
+    </div>
+    <div>
+      <label>A-C-L-S 站位</label>
+      <select id="filterPosition">
+        <option value="">全部</option>
+        <option>Airway</option>
+        <option>Circulation</option>
+        <option>Leader</option>
+        <option>Support</option>
+        <option>Observer</option>
+      </select>
+    </div>
+    <div>
+      <label>輸入方式</label>
+      <select id="filterType">
+        <option value="">全部</option>
+        <option value="voice">語音</option>
+        <option value="text">手動</option>
+      </select>
+    </div>
+    <div>
+      <label>搜尋暱稱</label>
+      <input type="text" id="filterName" placeholder="輸入暱稱">
+    </div>
+    <div style="display:flex; gap:8px; align-items:flex-end;">
+      <button class="filter-btn btn-primary" onclick="applyFilter()">篩選</button>
+      <button class="filter-btn btn-secondary" onclick="clearFilter()">重置</button>
+    </div>
+  </div>
+
+  <!-- 資料表格 -->
+  <div class="table-wrap">
+    <div class="loading-msg" id="loadingMsg">載入中…</div>
+    <table id="dataTable" style="display:none;">
+      <thead>
+        <tr>
+          <th>訓練日期</th>
+          <th>送出時間</th>
+          <th>暱稱</th>
+          <th>A-C-L-S 站位</th>
+          <th>方式</th>
+          <th>回饋內容</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+    <div class="empty-msg" id="emptyMsg" style="display:none;">目前沒有回饋資料</div>
+  </div>
+
+  <div style="margin-top:10px; font-size:0.82rem; color:#a0aec0;" id="rowCount"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" async
+  onload="onSupabaseLoaded()"></script>
+<script>
+  // ===== 密碼（可自行修改）=====
+  var ADMIN_PASSWORD = 'acls2026';
+
+  var _sb = null;
+  var allData = [];
+
+  function onSupabaseLoaded() {
+    try {
+      _sb = window.supabase.createClient(
+        'https://fgufsfvrfkvixqpirtol.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZndWZzZnZyZmt2aXhxcGlydG9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMjMxNzMsImV4cCI6MjA5MTg5OTE3M30.2gLvN-UzKyNsB_RqbR2bauOzLU4LNzI4s9JZym5gcp4'
+      );
+      if (sessionStorage.getItem('adminAuth') === 'ok') loadData();
+    } catch(e) { console.error('Supabase init failed:', e); }
+  }
+
+  // ===== 登入 =====
+  function doLogin() {
+    var pw = document.getElementById('pwInput').value;
+    if (pw === ADMIN_PASSWORD) {
+      sessionStorage.setItem('adminAuth', 'ok');
+      document.getElementById('loginWrap').style.display = 'none';
+      document.getElementById('adminWrap').style.display = 'block';
+      if (_sb) loadData();
+    } else {
+      document.getElementById('loginError').style.display = 'block';
+      document.getElementById('pwInput').value = '';
+    }
+  }
+
+  function doLogout() {
+    sessionStorage.removeItem('adminAuth');
+    location.reload();
+  }
+
+  // 自動還原登入狀態
+  window.addEventListener('DOMContentLoaded', function() {
+    if (sessionStorage.getItem('adminAuth') === 'ok') {
+      document.getElementById('loginWrap').style.display = 'none';
+      document.getElementById('adminWrap').style.display = 'block';
+    }
+    // 預設篩選：今天
+    var today = new Date().toISOString().slice(0, 10);
+    document.getElementById('filterTo').value = today;
+  });
+
+  // ===== 載入資料 =====
+  async function loadData() {
+    document.getElementById('loadingMsg').style.display = 'block';
+    document.getElementById('dataTable').style.display = 'none';
+    document.getElementById('emptyMsg').style.display = 'none';
+
+    try {
+      var result = await _sb.from('feedback').select('*')
+        .order('created_at', { ascending: false })
+        .limit(500);
+      if (result.error) throw result.error;
+      allData = result.data || [];
+      updateStats(allData);
+      applyFilter();
+    } catch(e) {
+      console.error('loadData error:', e);
+      showToast('載入失敗：' + e.message, 'error');
+      document.getElementById('loadingMsg').style.display = 'none';
+    }
+  }
+
+  // ===== 統計 =====
+  function updateStats(data) {
+    var today = new Date().toISOString().slice(0, 10);
+    document.getElementById('statTotal').textContent = data.length;
+    document.getElementById('statToday').textContent = data.filter(function(r) {
+      return r.created_at && r.created_at.slice(0,10) === today;
+    }).length;
+    document.getElementById('statVoice').textContent = data.filter(function(r) { return r.input_type === 'voice'; }).length;
+    document.getElementById('statText').textContent  = data.filter(function(r) { return r.input_type === 'text'; }).length;
+  }
+
+  // ===== 篩選 =====
+  function applyFilter() {
+    var from     = document.getElementById('filterFrom').value;
+    var to       = document.getElementById('filterTo').value;
+    var position = document.getElementById('filterPosition').value;
+    var type     = document.getElementById('filterType').value;
+    var name     = document.getElementById('filterName').value.trim().toLowerCase();
+
+    var filtered = allData.filter(function(r) {
+      var date = (r.session_date || r.created_at || '').slice(0, 10);
+      if (from && date < from) return false;
+      if (to   && date > to)   return false;
+      if (position && r.acls_position !== position) return false;
+      if (type     && r.input_type    !== type)     return false;
+      if (name     && !(r.name || '').toLowerCase().includes(name)) return false;
+      return true;
+    });
+
+    renderTable(filtered);
+  }
+
+  function clearFilter() {
+    document.getElementById('filterFrom').value = '';
+    document.getElementById('filterTo').value = new Date().toISOString().slice(0,10);
+    document.getElementById('filterPosition').value = '';
+    document.getElementById('filterType').value = '';
+    document.getElementById('filterName').value = '';
+    applyFilter();
+  }
+
+  // ===== 渲染表格 =====
+  function renderTable(data) {
+    document.getElementById('loadingMsg').style.display = 'none';
+
+    if (data.length === 0) {
+      document.getElementById('dataTable').style.display = 'none';
+      document.getElementById('emptyMsg').style.display = 'block';
+      document.getElementById('rowCount').textContent = '';
+      return;
+    }
+
+    document.getElementById('emptyMsg').style.display = 'none';
+    document.getElementById('dataTable').style.display = 'table';
+    document.getElementById('rowCount').textContent = '共 ' + data.length + ' 筆';
+
+    document.getElementById('tableBody').innerHTML = data.map(function(r) {
+      var sessionDate = r.session_date || '-';
+      var createdAt   = r.created_at
+        ? new Date(r.created_at).toLocaleString('zh-TW', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })
+        : '-';
+      var typeBadge = r.input_type === 'voice'
+        ? '<span class="badge badge-voice">語音</span>'
+        : '<span class="badge badge-text">手動</span>';
+      return '<tr>'
+        + '<td>' + esc(sessionDate) + '</td>'
+        + '<td style="white-space:nowrap">' + createdAt + '</td>'
+        + '<td>' + esc(r.name || '-') + '</td>'
+        + '<td>' + esc(r.acls_position || '-') + '</td>'
+        + '<td>' + typeBadge + '</td>'
+        + '<td class="feedback-cell">' + esc(r.feedback_content || '') + '</td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  function esc(t) {
+    var d = document.createElement('div'); d.textContent = String(t); return d.innerHTML;
+  }
+
+  // ===== 匯出 CSV =====
+  function exportCSV() {
+    if (allData.length === 0) { showToast('沒有資料可匯出', 'error'); return; }
+
+    var from     = document.getElementById('filterFrom').value;
+    var to       = document.getElementById('filterTo').value;
+    var position = document.getElementById('filterPosition').value;
+    var type     = document.getElementById('filterType').value;
+    var name     = document.getElementById('filterName').value.trim().toLowerCase();
+
+    var data = allData.filter(function(r) {
+      var date = (r.session_date || r.created_at || '').slice(0, 10);
+      if (from && date < from) return false;
+      if (to   && date > to)   return false;
+      if (position && r.acls_position !== position) return false;
+      if (type     && r.input_type    !== type)     return false;
+      if (name     && !(r.name || '').toLowerCase().includes(name)) return false;
+      return true;
+    });
+
+    var rows = [['訓練日期', '送出時間', '暱稱', 'A-C-L-S站位', '輸入方式', '回饋內容']];
+    data.forEach(function(r) {
+      rows.push([
+        r.session_date || '',
+        r.created_at ? new Date(r.created_at).toLocaleString('zh-TW') : '',
+        r.name || '',
+        r.acls_position || '',
+        r.input_type === 'voice' ? '語音' : '手動',
+        (r.feedback_content || '').replace(/\n/g, '｜'),
+      ]);
+    });
+
+    var csv = '\uFEFF' + rows.map(function(row) {
+      return row.map(function(cell) {
+        return '"' + String(cell).replace(/"/g, '""') + '"';
+      }).join(',');
+    }).join('\r\n');
+
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'feedback_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('CSV 已匯出', 'success');
+  }
+
+  // ===== Toast =====
+  function showToast(msg, type) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + (type || 'success');
+    setTimeout(function() { t.className = 'toast'; }, 3000);
+  }
+</script>
+</body>
+</html>
