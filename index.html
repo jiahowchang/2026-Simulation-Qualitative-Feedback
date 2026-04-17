@@ -177,7 +177,7 @@
       cursor: not-allowed;
     }
 
-    /* 訊息 */
+    /* 錯誤 Toast */
     .toast {
       position: fixed;
       top: 20px;
@@ -191,10 +191,43 @@
       opacity: 0;
       transition: opacity 0.3s;
       pointer-events: none;
+      white-space: nowrap;
     }
     .toast.show { opacity: 1; }
-    .toast.success { background: #c6f6d5; color: #22543d; }
     .toast.error { background: #fed7d7; color: #822727; }
+
+    /* 感謝全螢幕 overlay */
+    .thank-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #2b6cb0, #3182ce);
+      z-index: 1000;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 32px;
+    }
+    .thank-overlay.show { display: flex; }
+    .thank-icon { font-size: 4rem; margin-bottom: 24px; }
+    .thank-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+    .thank-btn {
+      padding: 12px 32px;
+      background: #fff;
+      color: #2b6cb0;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
 
     /* 歷史紀錄 */
     .history-title {
@@ -236,7 +269,7 @@
         <p class="subtitle">2026 Simulation Qualitative Feedback</p>
       </div>
       <div class="qr-corner">
-        <div id="qrcode"></div>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://jiahowchang.github.io/2026-Simulation-Qualitative-Feedback/" width="100" height="100" alt="QR Code">
         <p class="qr-label">掃描進入</p>
       </div>
     </div>
@@ -296,8 +329,12 @@
 
   <div class="toast" id="toast"></div>
 
-  <!-- QR Code Library -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <!-- 感謝 Overlay -->
+  <div class="thank-overlay" id="thankOverlay">
+    <div class="thank-icon">🙏</div>
+    <div class="thank-title">謝謝您的寶貴回饋<br>期待擬真訓練帶給您更多成長</div>
+    <button class="thank-btn" onclick="closeThankOverlay()">繼續填寫</button>
+  </div>
 
   <!-- Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -308,17 +345,6 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZndWZzZnZyZmt2aXhxcGlydG9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMjMxNzMsImV4cCI6MjA5MTg5OTE3M30.2gLvN-UzKyNsB_RqbR2bauOzLU4LNzI4s9JZym5gcp4';
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // ===== QR Code =====
-    const siteUrl = 'https://jiahowchang.github.io/2026-Simulation-Qualitative-Feedback/';
-    document.getElementById('pageUrl').textContent = siteUrl;
-    new QRCode(document.getElementById('qrcode'), {
-      text: siteUrl,
-      width: 100,
-      height: 100,
-      colorDark: '#2b6cb0',
-      colorLight: '#ffffff',
-    });
-
     // ===== 模式切換 =====
     let currentMode = 'text';
 
@@ -327,11 +353,13 @@
       document.querySelectorAll('.mode-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.mode === mode);
       });
-      document.getElementById('textArea').style.display = mode === 'text' ? 'block' : 'none';
       document.getElementById('voiceArea').style.display = mode === 'voice' ? 'block' : 'none';
-      // 停止錄音如果切換模式
       if (mode === 'text' && isRecording) {
         stopRecording();
+      }
+      // 切到語音模式時自動啟動辨識
+      if (mode === 'voice' && !isRecording) {
+        toggleRecording();
       }
     }
 
@@ -452,11 +480,14 @@
         return;
       }
 
-      showToast('謝謝您的寶貴回饋，期待擬真訓練帶給您更多成長', 'success');
-      // 清空回饋內容（保留姓名和站位方便連續輸入）
       document.getElementById('feedbackText').value = '';
       committedText = '';
       loadHistory();
+      document.getElementById('thankOverlay').classList.add('show');
+    }
+
+    function closeThankOverlay() {
+      document.getElementById('thankOverlay').classList.remove('show');
     }
 
     // ===== 歷史紀錄 =====
