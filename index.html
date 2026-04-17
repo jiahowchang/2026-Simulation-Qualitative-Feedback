@@ -303,10 +303,24 @@
         <button class="mode-btn" data-mode="voice" onclick="setMode('voice')">語音輸入</button>
       </div>
 
-      <!-- 語音錄音按鈕（語音模式才顯示）-->
-      <div id="voiceArea" class="voice-area" style="display:none; margin-bottom:12px;">
-        <button class="record-btn" id="recordBtn" onclick="toggleRecording()">開始錄音</button>
-        <p class="record-status" id="recordStatus">點擊麥克風按鈕開始語音輸入</p>
+      <!-- 語音模式區塊 -->
+      <div id="voiceArea" style="display:none; margin-bottom:14px; text-align:center;">
+        <!-- 支援語音辨識的裝置 -->
+        <div id="srSupported">
+          <button class="record-btn" id="recordBtn" onclick="toggleRecording()">
+            <span id="recordBtnLabel">點此<br>錄音</span>
+          </button>
+          <p class="record-status" id="recordStatus">按下按鈕開始說話</p>
+        </div>
+        <!-- 不支援語音辨識時的提示 -->
+        <div id="srFallback" style="display:none; background:#fff7ed; border:1.5px solid #fbd38d; border-radius:8px; padding:14px; text-align:left;">
+          <p style="font-weight:700; color:#c05621; margin-bottom:6px;">⚠️ 您的裝置不支援語音辨識</p>
+          <p style="font-size:0.9rem; color:#744210; line-height:1.6;">
+            請點選下方「回饋內容」輸入框，<br>
+            再按鍵盤上的 🎤 麥克風圖示，<br>
+            即可用語音輸入文字。
+          </p>
+        </div>
       </div>
 
       <!-- 回饋內容（文字 & 語音共用）-->
@@ -347,6 +361,7 @@
 
     // ===== 模式切換 =====
     let currentMode = 'text';
+    const hasSR = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
     function setMode(mode) {
       currentMode = mode;
@@ -357,9 +372,14 @@
       if (mode === 'text' && isRecording) {
         stopRecording();
       }
-      // 切到語音模式時自動啟動辨識
-      if (mode === 'voice' && !isRecording) {
-        toggleRecording();
+      if (mode === 'voice') {
+        // 顯示對應 UI
+        document.getElementById('srSupported').style.display = hasSR ? 'block' : 'none';
+        document.getElementById('srFallback').style.display = hasSR ? 'none' : 'block';
+        if (!hasSR) {
+          // 自動 focus textarea 讓用戶可以用鍵盤麥克風
+          setTimeout(() => document.getElementById('feedbackText').focus(), 300);
+        }
       }
     }
 
@@ -393,13 +413,21 @@
       };
 
       r.onerror = (event) => {
+        console.error('SR error:', event.error);
         if (event.error === 'not-allowed') {
-          showToast('請在瀏覽器允許麥克風權限', 'error');
-          document.getElementById('recordStatus').textContent = '麥克風權限被拒絕';
+          document.getElementById('recordStatus').textContent = '❌ 麥克風權限被拒絕，請至瀏覽器設定允許';
+          showToast('請允許麥克風權限', 'error');
+          stopRecordingUI();
+        } else if (event.error === 'service-not-allowed') {
+          document.getElementById('recordStatus').textContent = '❌ 裝置不支援語音辨識';
+          document.getElementById('srSupported').style.display = 'none';
+          document.getElementById('srFallback').style.display = 'block';
+          setTimeout(() => document.getElementById('feedbackText').focus(), 300);
+          stopRecordingUI();
         } else if (event.error !== 'no-speech') {
-          document.getElementById('recordStatus').textContent = '辨識錯誤：' + event.error;
+          document.getElementById('recordStatus').textContent = '辨識錯誤：' + event.error + '，請重試';
+          stopRecordingUI();
         }
-        stopRecordingUI();
       };
 
       r.onend = () => {
@@ -417,20 +445,20 @@
         return;
       }
 
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) {
-        showToast('您的瀏覽器不支援語音辨識，請使用 Chrome', 'error');
-        return;
-      }
-
       // 每次重新建立，避免狀態殘留
       recognition = buildRecognition();
-      committedText = document.getElementById('feedbackText').value; // 保留已有文字
+      committedText = document.getElementById('feedbackText').value;
       isRecording = true;
-      document.getElementById('recordBtn').textContent = '停止錄音';
+      document.getElementById('recordBtnLabel').innerHTML = '停止<br>錄音';
       document.getElementById('recordBtn').classList.add('recording');
-      document.getElementById('recordStatus').textContent = '啟動中…';
-      recognition.start();
+      document.getElementById('recordStatus').textContent = '啟動中，請稍候…';
+      try {
+        recognition.start();
+      } catch(e) {
+        console.error('recognition.start() failed:', e);
+        showToast('語音啟動失敗，請重試', 'error');
+        stopRecordingUI();
+      }
     }
 
     function stopRecording() {
@@ -441,7 +469,7 @@
 
     function stopRecordingUI() {
       isRecording = false;
-      document.getElementById('recordBtn').textContent = '開始錄音';
+      document.getElementById('recordBtnLabel').innerHTML = '點此<br>錄音';
       document.getElementById('recordBtn').classList.remove('recording');
       document.getElementById('recordStatus').textContent = '錄音結束，可繼續編輯內容';
     }
