@@ -350,120 +350,109 @@
     <button class="thank-btn" onclick="closeThankOverlay()">繼續填寫</button>
   </div>
 
-  <!-- Supabase JS -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-
   <script>
-    // ===== Supabase 設定 =====
-    const SUPABASE_URL = 'https://fgufsfvrfkvixqpirtol.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZndWZzZnZyZmt2aXhxcGlydG9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMjMxNzMsImV4cCI6MjA5MTg5OTE3M30.2gLvN-UzKyNsB_RqbR2bauOzLU4LNzI4s9JZym5gcp4';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // ===== UI 函數（不依賴任何外部函式庫）=====
 
-    // ===== 模式切換 =====
     let currentMode = 'text';
-    const hasSR = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
-
-    function setMode(mode) {
-      currentMode = mode;
-      document.querySelectorAll('.mode-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.mode === mode);
-      });
-      document.getElementById('voiceArea').style.display = mode === 'voice' ? 'block' : 'none';
-      if (mode === 'text' && isRecording) {
-        stopRecording();
-      }
-      if (mode === 'voice') {
-        // 顯示對應 UI
-        document.getElementById('srSupported').style.display = hasSR ? 'block' : 'none';
-        document.getElementById('srFallback').style.display = hasSR ? 'none' : 'block';
-        if (!hasSR) {
-          // 自動 focus textarea 讓用戶可以用鍵盤麥克風
-          setTimeout(() => document.getElementById('feedbackText').focus(), 300);
-        }
-      }
-    }
-
-    // ===== 語音辨識 =====
     let isRecording = false;
     let recognition = null;
-    let committedText = '';   // 已確認的文字（isFinal）
+    let committedText = '';
 
-    function buildRecognition() {
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) return null;
-      const r = new SR();
-      r.continuous = true;
-      r.interimResults = true;
-      r.lang = 'zh-TW';
-
-      r.onstart = () => {
-        document.getElementById('recordStatus').textContent = '錄音中… 請開始說話';
-      };
-
-      r.onresult = (event) => {
-        let interim = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          if (event.results[i].isFinal) {
-            committedText += event.results[i][0].transcript;
-          } else {
-            interim += event.results[i][0].transcript;
-          }
-        }
-        document.getElementById('feedbackText').value = committedText + interim;
-      };
-
-      r.onerror = (event) => {
-        console.error('SR error:', event.error);
-        if (event.error === 'not-allowed') {
-          document.getElementById('recordStatus').textContent = '❌ 麥克風權限被拒絕，請至瀏覽器設定允許';
-          showToast('請允許麥克風權限', 'error');
-          stopRecordingUI();
-        } else if (event.error === 'service-not-allowed') {
-          document.getElementById('recordStatus').textContent = '❌ 裝置不支援語音辨識';
-          document.getElementById('srSupported').style.display = 'none';
-          document.getElementById('srFallback').style.display = 'block';
-          setTimeout(() => document.getElementById('feedbackText').focus(), 300);
-          stopRecordingUI();
-        } else if (event.error !== 'no-speech') {
-          document.getElementById('recordStatus').textContent = '辨識錯誤：' + event.error + '，請重試';
-          stopRecordingUI();
-        }
-      };
-
-      r.onend = () => {
-        // 若仍在錄音狀態則自動重啟（continuous 模式有時會自動停止）
-        if (isRecording) {
-          try { r.start(); } catch(e) {}
-        }
-      };
-      return r;
+    // 模式切換
+    function setMode(mode) {
+      try {
+        currentMode = mode;
+        document.querySelectorAll('.mode-btn').forEach(function(btn) {
+          btn.classList.toggle('active', btn.dataset.mode === mode);
+        });
+        document.getElementById('voiceArea').style.display = mode === 'voice' ? 'block' : 'none';
+        if (mode === 'text' && isRecording) stopRecording();
+        if (mode === 'voice') checkVoiceSupport();
+      } catch(e) { console.error('setMode error:', e); }
     }
 
-    function toggleRecording() {
-      if (isRecording) {
-        stopRecording();
-        return;
+    function checkVoiceSupport() {
+      var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      var supported = document.getElementById('srSupported');
+      var fallback  = document.getElementById('srFallback');
+      if (SR) {
+        supported.style.display = 'block';
+        fallback.style.display  = 'none';
+      } else {
+        supported.style.display = 'none';
+        fallback.style.display  = 'block';
+        setTimeout(function() { document.getElementById('feedbackText').focus(); }, 300);
       }
+    }
 
-      // 每次重新建立，避免狀態殘留
-      recognition = buildRecognition();
-      committedText = document.getElementById('feedbackText').value;
-      isRecording = true;
-      document.getElementById('recordBtnLabel').innerHTML = '停止<br>錄音';
-      document.getElementById('recordBtn').classList.add('recording');
-      document.getElementById('recordStatus').textContent = '啟動中，請稍候…';
+    // 語音辨識
+    function toggleRecording() {
       try {
+        if (isRecording) { stopRecording(); return; }
+
+        var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) {
+          showToast('此裝置不支援語音辨識', 'error');
+          return;
+        }
+
+        recognition = new SR();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'zh-TW';
+
+        recognition.onstart = function() {
+          document.getElementById('recordStatus').textContent = '🎙 錄音中，請開始說話…';
+        };
+
+        recognition.onresult = function(event) {
+          var interim = '';
+          for (var i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal) {
+              committedText += event.results[i][0].transcript;
+            } else {
+              interim += event.results[i][0].transcript;
+            }
+          }
+          document.getElementById('feedbackText').value = committedText + interim;
+        };
+
+        recognition.onerror = function(event) {
+          console.error('SR error:', event.error);
+          if (event.error === 'not-allowed') {
+            document.getElementById('recordStatus').textContent = '❌ 請允許麥克風權限後重試';
+          } else if (event.error === 'service-not-allowed') {
+            document.getElementById('srSupported').style.display = 'none';
+            document.getElementById('srFallback').style.display = 'block';
+          } else if (event.error !== 'no-speech') {
+            document.getElementById('recordStatus').textContent = '錯誤：' + event.error;
+          }
+          stopRecordingUI();
+        };
+
+        recognition.onend = function() {
+          if (isRecording) {
+            try { recognition.start(); } catch(e) {}
+          }
+        };
+
+        committedText = document.getElementById('feedbackText').value;
+        isRecording = true;
+        document.getElementById('recordBtnLabel').innerHTML = '停止<br>錄音';
+        document.getElementById('recordBtn').classList.add('recording');
+        document.getElementById('recordStatus').textContent = '啟動中…';
         recognition.start();
+
       } catch(e) {
-        console.error('recognition.start() failed:', e);
-        showToast('語音啟動失敗，請重試', 'error');
+        console.error('toggleRecording error:', e);
+        showToast('語音啟動失敗：' + e.message, 'error');
         stopRecordingUI();
       }
     }
 
     function stopRecording() {
       isRecording = false;
-      if (recognition) { try { recognition.stop(); } catch(e) {} }
+      if (recognition) { try { recognition.stop(); } catch(e) {} recognition = null; }
       stopRecordingUI();
     }
 
@@ -474,104 +463,108 @@
       document.getElementById('recordStatus').textContent = '錄音結束，可繼續編輯內容';
     }
 
-    // ===== 送出回饋 =====
+    // 送出回饋
     async function submitFeedback() {
-      const sessionDate = document.getElementById('sessionDate').value;
-      const name = document.getElementById('name').value.trim();
-      const position = document.getElementById('position').value;
-      const content = document.getElementById('feedbackText').value.trim();
+      var sessionDate = document.getElementById('sessionDate').value;
+      var name        = document.getElementById('name').value.trim();
+      var position    = document.getElementById('position').value;
+      var content     = document.getElementById('feedbackText').value.trim();
 
-      // 驗證
-      if (!sessionDate) { showToast('請選擇日期', 'error'); return; }
-      if (!name) { showToast('請輸入您的暱稱', 'error'); return; }
-      if (!position) { showToast('請選擇 ACLS 站位', 'error'); return; }
-      if (!content) { showToast('請輸入或錄製回饋內容', 'error'); return; }
+      if (!sessionDate) { showToast('請選擇訓練日期', 'error'); return; }
+      if (!name)        { showToast('請輸入暱稱', 'error'); return; }
+      if (!position)    { showToast('請選擇 A-C-L-S 站位', 'error'); return; }
+      if (!content)     { showToast('請輸入回饋內容', 'error'); return; }
 
-      const btn = document.getElementById('submitBtn');
+      var btn = document.getElementById('submitBtn');
       btn.disabled = true;
-      btn.textContent = '送出中...';
+      btn.textContent = '送出中…';
 
-      const { error } = await supabase.from('feedback').insert({
-        session_date: sessionDate,
-        name: name,
-        acls_position: position,
-        input_type: currentMode,
-        feedback_content: content,
-      });
+      try {
+        var sb = getSupabase();
+        if (!sb) throw new Error('資料庫連線失敗');
+        var result = await sb.from('feedback').insert({
+          session_date:     sessionDate,
+          name:             name,
+          acls_position:    position,
+          input_type:       currentMode,
+          feedback_content: content,
+        });
+        if (result.error) throw result.error;
+
+        document.getElementById('feedbackText').value = '';
+        committedText = '';
+        document.getElementById('thankOverlay').classList.add('show');
+        loadHistory();
+      } catch(e) {
+        console.error('submit error:', e);
+        showToast('送出失敗，請再試一次', 'error');
+      }
 
       btn.disabled = false;
       btn.textContent = '送出回饋';
-
-      if (error) {
-        console.error(error);
-        showToast('送出失敗，請再試一次', 'error');
-        return;
-      }
-
-      document.getElementById('feedbackText').value = '';
-      committedText = '';
-      loadHistory();
-      document.getElementById('thankOverlay').classList.add('show');
     }
 
     function closeThankOverlay() {
       document.getElementById('thankOverlay').classList.remove('show');
     }
 
-    // ===== 歷史紀錄 =====
-    async function loadHistory() {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const { data, error } = await supabase
-        .from('feedback')
-        .select('*')
-        .gte('created_at', today.toISOString())
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      if (error || !data || data.length === 0) {
-        document.getElementById('historySection').style.display = 'none';
-        return;
-      }
-
-      document.getElementById('historySection').style.display = 'block';
-      const list = document.getElementById('historyList');
-      list.innerHTML = data.map(item => {
-        const time = new Date(item.created_at).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
-        const typeLabel = item.input_type === 'voice' ? '語音' : '文字';
-        return `
-          <div class="history-item">
-            <div class="history-meta">
-              <span>${item.name}</span>
-              <span>${item.acls_position}</span>
-              <span>${typeLabel}</span>
-              <span>${time}</span>
-            </div>
-            <div class="history-content">${escapeHtml(item.feedback_content)}</div>
-          </div>`;
-      }).join('');
-    }
-
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }
-
-    // ===== Toast =====
+    // Toast
     function showToast(msg, type) {
-      const toast = document.getElementById('toast');
+      var toast = document.getElementById('toast');
       toast.textContent = msg;
-      toast.className = 'toast show ' + type;
-      setTimeout(() => { toast.className = 'toast'; }, 2500);
+      toast.className = 'toast show ' + (type || 'error');
+      setTimeout(function() { toast.className = 'toast'; }, 3000);
     }
 
-    // 日期預設為今天
-    document.getElementById('sessionDate').value = new Date().toISOString().slice(0, 10);
+    // 歷史紀錄
+    async function loadHistory() {
+      try {
+        var sb = getSupabase();
+        if (!sb) return;
+        var today = new Date(); today.setHours(0,0,0,0);
+        var result = await sb.from('feedback').select('*')
+          .gte('created_at', today.toISOString())
+          .order('created_at', { ascending: false }).limit(20);
+        if (result.error || !result.data || result.data.length === 0) {
+          document.getElementById('historySection').style.display = 'none';
+          return;
+        }
+        document.getElementById('historySection').style.display = 'block';
+        document.getElementById('historyList').innerHTML = result.data.map(function(item) {
+          var time = new Date(item.created_at).toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit' });
+          return '<div class="history-item"><div class="history-meta">'
+            + '<span>' + escHtml(item.name) + '</span>'
+            + '<span>' + escHtml(item.acls_position) + '</span>'
+            + '<span>' + (item.input_type === 'voice' ? '語音' : '文字') + '</span>'
+            + '<span>' + time + '</span></div>'
+            + '<div class="history-content">' + escHtml(item.feedback_content) + '</div></div>';
+        }).join('');
+      } catch(e) { console.error('loadHistory error:', e); }
+    }
 
-    // 載入歷史
-    loadHistory();
+    function escHtml(t) {
+      var d = document.createElement('div'); d.textContent = t; return d.innerHTML;
+    }
+
+    // ===== Supabase（延遲初始化，避免 CDN 失敗崩潰整頁）=====
+    var _supabase = null;
+    function getSupabase() {
+      if (_supabase) return _supabase;
+      try {
+        _supabase = window.supabase.createClient(
+          'https://fgufsfvrfkvixqpirtol.supabase.co',
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZndWZzZnZyZmt2aXhxcGlydG9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMjMxNzMsImV4cCI6MjA5MTg5OTE3M30.2gLvN-UzKyNsB_RqbR2bauOzLU4LNzI4s9JZym5gcp4'
+        );
+      } catch(e) { console.error('Supabase init failed:', e); return null; }
+      return _supabase;
+    }
+
+    // 初始化
+    document.getElementById('sessionDate').value = new Date().toISOString().slice(0, 10);
+    window.addEventListener('load', function() { loadHistory(); });
   </script>
+
+  <!-- Supabase（非同步載入，不阻塞頁面）-->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" async></script>
 </body>
 </html>
