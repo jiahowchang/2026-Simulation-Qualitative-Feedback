@@ -30,21 +30,31 @@
       margin-bottom: 20px;
     }
 
-    /* QR Code 區域 */
-    .qr-section {
-      text-align: center;
-      background: #fff;
-      border-radius: 12px;
-      padding: 16px;
+    /* Header with QR */
+    .header-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
       margin-bottom: 20px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
-    .qr-section img { border-radius: 8px; }
-    .qr-url {
-      font-size: 0.8rem;
-      color: #4a5568;
-      margin-top: 8px;
-      word-break: break-all;
+    .header-titles { flex: 1; text-align: center; }
+    .qr-corner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #fff;
+      border-radius: 10px;
+      padding: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-left: 12px;
+      flex-shrink: 0;
+    }
+    .qr-corner canvas, .qr-corner img { border-radius: 4px; }
+    .qr-label {
+      font-size: 0.65rem;
+      color: #718096;
+      margin-top: 4px;
+      text-align: center;
     }
 
     /* 表單 */
@@ -220,27 +230,29 @@
 </head>
 <body>
   <div class="container">
-    <h1>擬真訓練質性回饋</h1>
-    <p class="subtitle">2026 Simulation Qualitative Feedback</p>
-
-    <!-- QR Code -->
-    <div class="qr-section">
-      <div id="qrcode"></div>
-      <p class="qr-url" id="pageUrl"></p>
+    <div class="header-row">
+      <div class="header-titles">
+        <h1>擬真訓練質性回饋</h1>
+        <p class="subtitle">2026 Simulation Qualitative Feedback</p>
+      </div>
+      <div class="qr-corner">
+        <div id="qrcode"></div>
+        <p class="qr-label">掃描進入</p>
+      </div>
     </div>
 
     <!-- 表單 -->
     <div class="card">
       <div class="field">
-        <label for="sessionDate">日期</label>
+        <label for="sessionDate">訓練日期</label>
         <input type="date" id="sessionDate">
       </div>
       <div class="field">
-        <label for="name">姓名</label>
-        <input type="text" id="name" placeholder="請輸入您的姓名">
+        <label for="name">暱稱</label>
+        <input type="text" id="name" placeholder="請輸入您的暱稱">
       </div>
       <div class="field">
-        <label for="position">ACLS 站位</label>
+        <label for="position">A-C-L-S 站位</label>
         <select id="position">
           <option value="">-- 請選擇站位 --</option>
           <option value="Airway">Airway</option>
@@ -254,24 +266,20 @@
       <!-- 輸入模式 -->
       <label>回饋方式</label>
       <div class="mode-toggle">
-        <button class="mode-btn active" data-mode="text" onclick="setMode('text')">文字輸入</button>
-        <button class="mode-btn" data-mode="voice" onclick="setMode('voice')">語音紀錄</button>
+        <button class="mode-btn active" data-mode="text" onclick="setMode('text')">手動輸入</button>
+        <button class="mode-btn" data-mode="voice" onclick="setMode('voice')">語音輸入</button>
       </div>
 
-      <!-- 文字輸入區 -->
-      <div id="textArea">
-        <textarea id="feedbackText" placeholder="請輸入您的回饋內容..."></textarea>
-      </div>
-
-      <!-- 語音輸入區 -->
-      <div id="voiceArea" class="voice-area" style="display:none;">
+      <!-- 語音錄音按鈕（語音模式才顯示）-->
+      <div id="voiceArea" class="voice-area" style="display:none; margin-bottom:12px;">
         <button class="record-btn" id="recordBtn" onclick="toggleRecording()">開始錄音</button>
-        <p class="record-status" id="recordStatus">點擊按鈕開始語音輸入</p>
-        <div id="audioPlayback" style="margin-top:10px; display:none;">
-          <audio id="audioPlayer" controls style="width:100%;"></audio>
-        </div>
-        <p style="margin-top:12px; font-size:0.85rem; color:#718096; text-align:left;">語音辨識文字（可手動編輯）：</p>
-        <textarea id="transcript" placeholder="語音辨識結果將顯示在此，您也可以手動編輯或補充..." style="width:100%; min-height:80px; margin-top:4px; padding:10px 12px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:0.95rem; resize:vertical;"></textarea>
+        <p class="record-status" id="recordStatus">點擊麥克風按鈕開始語音輸入</p>
+      </div>
+
+      <!-- 回饋內容（文字 & 語音共用）-->
+      <label for="feedbackText">回饋內容</label>
+      <div style="margin-top:6px;">
+        <textarea id="feedbackText" placeholder="請輸入您的回饋內容..."></textarea>
       </div>
 
       <div style="margin-top: 16px;">
@@ -305,8 +313,8 @@
     document.getElementById('pageUrl').textContent = siteUrl;
     new QRCode(document.getElementById('qrcode'), {
       text: siteUrl,
-      width: 180,
-      height: 180,
+      width: 100,
+      height: 100,
       colorDark: '#2b6cb0',
       colorLight: '#ffffff',
     });
@@ -327,127 +335,87 @@
       }
     }
 
-    // ===== 語音錄製（MediaRecorder + Speech Recognition）=====
+    // ===== 語音辨識 =====
     let isRecording = false;
-    let mediaRecorder = null;
-    let audioChunks = [];
-    let micStream = null;
     let recognition = null;
-    let finalTranscript = '';
+    let committedText = '';   // 已確認的文字（isFinal）
 
-    // 初始化語音辨識（選用，不影響錄音功能）
-    function initSpeechRecognition() {
-      if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-        console.log('Speech Recognition not supported');
-        return;
-      }
-      try {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = 'zh-TW';
+    function buildRecognition() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) return null;
+      const r = new SR();
+      r.continuous = true;
+      r.interimResults = true;
+      r.lang = 'zh-TW';
 
-        recognition.onresult = (event) => {
-          let interim = '';
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            if (event.results[i].isFinal) {
-              finalTranscript += event.results[i][0].transcript;
-            } else {
-              interim += event.results[i][0].transcript;
-            }
+      r.onstart = () => {
+        document.getElementById('recordStatus').textContent = '錄音中… 請開始說話';
+      };
+
+      r.onresult = (event) => {
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            committedText += event.results[i][0].transcript;
+          } else {
+            interim += event.results[i][0].transcript;
           }
-          document.getElementById('transcript').value = finalTranscript + interim;
-        };
+        }
+        document.getElementById('feedbackText').value = committedText + interim;
+      };
 
-        recognition.onerror = (event) => {
-          console.warn('Speech recognition error:', event.error);
-        };
+      r.onerror = (event) => {
+        if (event.error === 'not-allowed') {
+          showToast('請在瀏覽器允許麥克風權限', 'error');
+          document.getElementById('recordStatus').textContent = '麥克風權限被拒絕';
+        } else if (event.error !== 'no-speech') {
+          document.getElementById('recordStatus').textContent = '辨識錯誤：' + event.error;
+        }
+        stopRecordingUI();
+      };
 
-        recognition.onend = () => {
-          if (isRecording) {
-            try { recognition.start(); } catch(e) {}
-          }
-        };
-      } catch(e) {
-        console.warn('Failed to init Speech Recognition:', e);
-        recognition = null;
-      }
+      r.onend = () => {
+        // 若仍在錄音狀態則自動重啟（continuous 模式有時會自動停止）
+        if (isRecording) {
+          try { r.start(); } catch(e) {}
+        }
+      };
+      return r;
     }
 
-    async function toggleRecording() {
+    function toggleRecording() {
       if (isRecording) {
         stopRecording();
         return;
       }
 
-      // 請求麥克風權限並開始錄音
-      document.getElementById('recordStatus').textContent = '正在請求麥克風權限...';
-      try {
-        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      } catch (err) {
-        console.error('Mic error:', err);
-        document.getElementById('recordStatus').textContent = '麥克風權限被拒絕';
-        showToast('請允許麥克風權限才能錄音', 'error');
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) {
+        showToast('您的瀏覽器不支援語音辨識，請使用 Chrome', 'error');
         return;
       }
 
-      // 開始 MediaRecorder 錄音
-      audioChunks = [];
-      try {
-        mediaRecorder = new MediaRecorder(micStream);
-      } catch(e) {
-        mediaRecorder = new MediaRecorder(micStream, { mimeType: 'audio/webm' });
-      }
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunks.push(e.data);
-      };
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
-        const url = URL.createObjectURL(blob);
-        const player = document.getElementById('audioPlayer');
-        player.src = url;
-        document.getElementById('audioPlayback').style.display = 'block';
-      };
-      mediaRecorder.start();
-
-      // 同時啟動語音辨識（如果支援）
-      finalTranscript = '';
-      document.getElementById('transcript').value = '';
-      if (!recognition) initSpeechRecognition();
-      if (recognition) {
-        try { recognition.start(); } catch(e) { console.warn('SR start error:', e); }
-      }
-
+      // 每次重新建立，避免狀態殘留
+      recognition = buildRecognition();
+      committedText = document.getElementById('feedbackText').value; // 保留已有文字
       isRecording = true;
       document.getElementById('recordBtn').textContent = '停止錄音';
       document.getElementById('recordBtn').classList.add('recording');
-      document.getElementById('recordStatus').textContent = '錄音中... 請開始說話';
-      document.getElementById('audioPlayback').style.display = 'none';
+      document.getElementById('recordStatus').textContent = '啟動中…';
+      recognition.start();
     }
 
     function stopRecording() {
       isRecording = false;
+      if (recognition) { try { recognition.stop(); } catch(e) {} }
+      stopRecordingUI();
+    }
 
-      // 停止 MediaRecorder
-      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-        mediaRecorder.stop();
-      }
-
-      // 停止麥克風串流
-      if (micStream) {
-        micStream.getTracks().forEach(track => track.stop());
-        micStream = null;
-      }
-
-      // 停止語音辨識
-      if (recognition) {
-        try { recognition.stop(); } catch(e) {}
-      }
-
+    function stopRecordingUI() {
+      isRecording = false;
       document.getElementById('recordBtn').textContent = '開始錄音';
       document.getElementById('recordBtn').classList.remove('recording');
-      document.getElementById('recordStatus').textContent = '錄音完成！可播放確認，也可編輯下方文字';
+      document.getElementById('recordStatus').textContent = '錄音結束，可繼續編輯內容';
     }
 
     // ===== 送出回饋 =====
@@ -455,13 +423,11 @@
       const sessionDate = document.getElementById('sessionDate').value;
       const name = document.getElementById('name').value.trim();
       const position = document.getElementById('position').value;
-      const content = currentMode === 'text'
-        ? document.getElementById('feedbackText').value.trim()
-        : (document.getElementById('transcript').value || '').trim();
+      const content = document.getElementById('feedbackText').value.trim();
 
       // 驗證
       if (!sessionDate) { showToast('請選擇日期', 'error'); return; }
-      if (!name) { showToast('請輸入您的姓名', 'error'); return; }
+      if (!name) { showToast('請輸入您的暱稱', 'error'); return; }
       if (!position) { showToast('請選擇 ACLS 站位', 'error'); return; }
       if (!content) { showToast('請輸入或錄製回饋內容', 'error'); return; }
 
@@ -486,11 +452,10 @@
         return;
       }
 
-      showToast('回饋已成功送出！', 'success');
+      showToast('謝謝您的寶貴回饋，期待擬真訓練帶給您更多成長', 'success');
       // 清空回饋內容（保留姓名和站位方便連續輸入）
       document.getElementById('feedbackText').value = '';
-      document.getElementById('transcript').value = '';
-      finalTranscript = '';
+      committedText = '';
       loadHistory();
     }
 
