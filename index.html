@@ -484,18 +484,17 @@
       btn.textContent = '送出中…';
 
       try {
-        await fetch(GAS_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          body: JSON.stringify({
-            session_date:     sessionDate,
-            name:             name,
-            acls_position:    position,
-            input_type:       currentMode,
-            feedback_content: content
-          })
+        var params = new URLSearchParams({
+          session_date:     sessionDate,
+          name:             name,
+          acls_position:    position,
+          input_type:       currentMode,
+          feedback_content: content
         });
-        // no-cors 模式下無法讀取回應，但資料已送出
+        await fetch(GAS_URL + '?' + params.toString(), {
+          method: 'GET',
+          mode: 'no-cors'
+        });
         document.getElementById('feedbackText').value = '';
         committedText = '';
         document.getElementById('thankOverlay').classList.add('show');
