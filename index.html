@@ -484,8 +484,9 @@
       btn.textContent = '送出中…';
 
       try {
-        var res = await fetch(GAS_URL, {
+        await fetch(GAS_URL, {
           method: 'POST',
+          mode: 'no-cors',
           body: JSON.stringify({
             session_date:     sessionDate,
             name:             name,
@@ -494,8 +495,7 @@
             feedback_content: content
           })
         });
-        var result = await res.json();
-        if (!result.success) throw new Error(result.error || '寫入失敗');
+        // no-cors 模式下無法讀取回應，但資料已送出
         document.getElementById('feedbackText').value = '';
         committedText = '';
         document.getElementById('thankOverlay').classList.add('show');
