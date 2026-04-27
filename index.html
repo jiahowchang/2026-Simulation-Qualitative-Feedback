@@ -464,42 +464,8 @@
       document.getElementById('recordStatus').textContent = '錄音結束，可繼續編輯內容';
     }
 
-    // ===== Supabase REST API（純 fetch，不依賴任何 CDN）=====
-    var SB_URL = 'https://fgufsfvrfkvixqpirtol.supabase.co';
-    var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZndWZzZnZyZmt2aXhxcGlydG9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMjMxNzMsImV4cCI6MjA5MTg5OTE3M30.2gLvN-UzKyNsB_RqbR2bauOzLU4LNzI4s9JZym5gcp4';
-
-    function sbHeaders() {
-      return {
-        'Content-Type': 'application/json',
-        'apikey': SB_KEY,
-        'Authorization': 'Bearer ' + SB_KEY,
-        'Prefer': 'return=minimal'
-      };
-    }
-
-    async function sbInsert(table, data) {
-      var res = await fetch(SB_URL + '/rest/v1/' + table, {
-        method: 'POST',
-        headers: sbHeaders(),
-        body: JSON.stringify(data)
-      });
-      if (!res.ok) {
-        var err = await res.text();
-        throw new Error(err);
-      }
-    }
-
-    async function sbSelect(table, query) {
-      var res = await fetch(SB_URL + '/rest/v1/' + table + '?' + query, {
-        method: 'GET',
-        headers: {
-          'apikey': SB_KEY,
-          'Authorization': 'Bearer ' + SB_KEY
-        }
-      });
-      if (!res.ok) throw new Error('查詢失敗');
-      return await res.json();
-    }
+    // ===== Google Apps Script Web App =====
+    var GAS_URL = 'https://script.google.com/macros/s/AKfycbyTxsGTy3-l_8H71iHbI-dEZlBNI3iR47EEafRXiQ2m_SGBio6ymykoMcC5YrigZJkP/exec';
 
     // 送出回饋
     async function submitFeedback() {
@@ -518,17 +484,21 @@
       btn.textContent = '送出中…';
 
       try {
-        await sbInsert('feedback', {
-          session_date:     sessionDate,
-          name:             name,
-          acls_position:    position,
-          input_type:       currentMode,
-          feedback_content: content
+        var res = await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            session_date:     sessionDate,
+            name:             name,
+            acls_position:    position,
+            input_type:       currentMode,
+            feedback_content: content
+          })
         });
+        var result = await res.json();
+        if (!result.success) throw new Error(result.error || '寫入失敗');
         document.getElementById('feedbackText').value = '';
         committedText = '';
         document.getElementById('thankOverlay').classList.add('show');
-        loadHistory();
       } catch(e) {
         console.error('submit error:', e);
         showToast('送出失敗，請再試一次', 'error');
@@ -550,37 +520,8 @@
       setTimeout(function() { toast.className = 'toast'; }, 3000);
     }
 
-    // 歷史紀錄
-    async function loadHistory() {
-      try {
-        var today = new Date(); today.setHours(0,0,0,0);
-        var query = 'select=*&created_at=gte.' + today.toISOString()
-          + '&order=created_at.desc&limit=20';
-        var data = await sbSelect('feedback', query);
-        if (!data || data.length === 0) {
-          document.getElementById('historySection').style.display = 'none';
-          return;
-        }
-        document.getElementById('historySection').style.display = 'block';
-        document.getElementById('historyList').innerHTML = data.map(function(item) {
-          var time = new Date(item.created_at).toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit' });
-          return '<div class="history-item"><div class="history-meta">'
-            + '<span>' + escHtml(item.name) + '</span>'
-            + '<span>' + escHtml(item.acls_position) + '</span>'
-            + '<span>' + (item.input_type === 'voice' ? '語音' : '文字') + '</span>'
-            + '<span>' + time + '</span></div>'
-            + '<div class="history-content">' + escHtml(item.feedback_content) + '</div></div>';
-        }).join('');
-      } catch(e) { console.error('loadHistory error:', e); }
-    }
-
-    function escHtml(t) {
-      var d = document.createElement('div'); d.textContent = t; return d.innerHTML;
-    }
-
     // 初始化
     document.getElementById('sessionDate').value = new Date().toISOString().slice(0, 10);
-    window.addEventListener('load', function() { loadHistory(); });
   </script>
 </body>
 </html>
