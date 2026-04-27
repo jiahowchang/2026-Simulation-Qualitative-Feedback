@@ -464,6 +464,43 @@
       document.getElementById('recordStatus').textContent = '錄音結束，可繼續編輯內容';
     }
 
+    // ===== Supabase REST API（純 fetch，不依賴任何 CDN）=====
+    var SB_URL = 'https://fgufsfvrfkvixqpirtol.supabase.co';
+    var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZndWZzZnZyZmt2aXhxcGlydG9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMjMxNzMsImV4cCI6MjA5MTg5OTE3M30.2gLvN-UzKyNsB_RqbR2bauOzLU4LNzI4s9JZym5gcp4';
+
+    function sbHeaders() {
+      return {
+        'Content-Type': 'application/json',
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + SB_KEY,
+        'Prefer': 'return=minimal'
+      };
+    }
+
+    async function sbInsert(table, data) {
+      var res = await fetch(SB_URL + '/rest/v1/' + table, {
+        method: 'POST',
+        headers: sbHeaders(),
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) {
+        var err = await res.text();
+        throw new Error(err);
+      }
+    }
+
+    async function sbSelect(table, query) {
+      var res = await fetch(SB_URL + '/rest/v1/' + table + '?' + query, {
+        method: 'GET',
+        headers: {
+          'apikey': SB_KEY,
+          'Authorization': 'Bearer ' + SB_KEY
+        }
+      });
+      if (!res.ok) throw new Error('查詢失敗');
+      return await res.json();
+    }
+
     // 送出回饋
     async function submitFeedback() {
       var sessionDate = document.getElementById('sessionDate').value;
@@ -481,17 +518,13 @@
       btn.textContent = '送出中…';
 
       try {
-        var sb = getSupabase();
-        if (!sb) throw new Error('資料庫連線失敗');
-        var result = await sb.from('feedback').insert({
+        await sbInsert('feedback', {
           session_date:     sessionDate,
           name:             name,
           acls_position:    position,
           input_type:       currentMode,
-          feedback_content: content,
+          feedback_content: content
         });
-        if (result.error) throw result.error;
-
         document.getElementById('feedbackText').value = '';
         committedText = '';
         document.getElementById('thankOverlay').classList.add('show');
@@ -520,18 +553,16 @@
     // 歷史紀錄
     async function loadHistory() {
       try {
-        var sb = getSupabase();
-        if (!sb) return;
         var today = new Date(); today.setHours(0,0,0,0);
-        var result = await sb.from('feedback').select('*')
-          .gte('created_at', today.toISOString())
-          .order('created_at', { ascending: false }).limit(20);
-        if (result.error || !result.data || result.data.length === 0) {
+        var query = 'select=*&created_at=gte.' + today.toISOString()
+          + '&order=created_at.desc&limit=20';
+        var data = await sbSelect('feedback', query);
+        if (!data || data.length === 0) {
           document.getElementById('historySection').style.display = 'none';
           return;
         }
         document.getElementById('historySection').style.display = 'block';
-        document.getElementById('historyList').innerHTML = result.data.map(function(item) {
+        document.getElementById('historyList').innerHTML = data.map(function(item) {
           var time = new Date(item.created_at).toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit' });
           return '<div class="history-item"><div class="history-meta">'
             + '<span>' + escHtml(item.name) + '</span>'
@@ -547,25 +578,9 @@
       var d = document.createElement('div'); d.textContent = t; return d.innerHTML;
     }
 
-    // ===== Supabase（延遲初始化，避免 CDN 失敗崩潰整頁）=====
-    var _supabase = null;
-    function getSupabase() {
-      if (_supabase) return _supabase;
-      try {
-        _supabase = window.supabase.createClient(
-          'https://fgufsfvrfkvixqpirtol.supabase.co',
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZndWZzZnZyZmt2aXhxcGlydG9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMjMxNzMsImV4cCI6MjA5MTg5OTE3M30.2gLvN-UzKyNsB_RqbR2bauOzLU4LNzI4s9JZym5gcp4'
-        );
-      } catch(e) { console.error('Supabase init failed:', e); return null; }
-      return _supabase;
-    }
-
     // 初始化
     document.getElementById('sessionDate').value = new Date().toISOString().slice(0, 10);
     window.addEventListener('load', function() { loadHistory(); });
   </script>
-
-  <!-- Supabase（非同步載入，不阻塞頁面）-->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" async></script>
 </body>
 </html>
