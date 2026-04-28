@@ -616,7 +616,13 @@
   // ── 重設 ──
   function resetForm() {
     document.getElementById('thankOverlay').classList.remove('show');
-    document.getElementById('sessionDate').value = new Date().toISOString().slice(0,10);
+    (function() {
+    var now = new Date();
+    var y = now.getFullYear();
+    var m = String(now.getMonth() + 1).padStart(2, '0');
+    var d = String(now.getDate()).padStart(2, '0');
+    document.getElementById('sessionDate').value = y + '-' + m + '-' + d;
+  })();
     ['campus','group','position'].forEach(function(id) { document.getElementById(id).value = ''; });
     document.getElementById('name').value = '';
     document.getElementById('feedbackText').value = '';
@@ -638,7 +644,13 @@
     setTimeout(function() { t.className = 'toast'; }, 3000);
   }
 
-  document.getElementById('sessionDate').value = new Date().toISOString().slice(0,10);
+  (function() {
+    var now = new Date();
+    var y = now.getFullYear();
+    var m = String(now.getMonth() + 1).padStart(2, '0');
+    var d = String(now.getDate()).padStart(2, '0');
+    document.getElementById('sessionDate').value = y + '-' + m + '-' + d;
+  })();
 </script>
 </body>
 </html>
