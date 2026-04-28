@@ -15,7 +15,7 @@
     .container {
       max-width: 520px;
       margin: 0 auto;
-      padding: 24px 16px 40px;
+      padding: 24px 16px 48px;
     }
 
     /* Header */
@@ -26,342 +26,196 @@
       margin-bottom: 20px;
     }
     .header-titles { flex: 1; text-align: center; }
-    h1 {
-      text-align: center;
-      font-size: 1.5rem;
-      margin-bottom: 4px;
-      color: #2b6cb0;
-    }
-    .subtitle {
-      text-align: center;
-      font-size: 0.9rem;
-      color: #718096;
-    }
+    h1 { text-align: center; font-size: 1.5rem; margin-bottom: 4px; color: #2b6cb0; }
+    .subtitle { text-align: center; font-size: 0.9rem; color: #718096; }
     .qr-corner {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      background: #fff;
-      border-radius: 10px;
-      padding: 8px;
+      display: flex; flex-direction: column; align-items: center;
+      background: #fff; border-radius: 10px; padding: 8px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      margin-left: 12px;
-      flex-shrink: 0;
+      margin-left: 12px; flex-shrink: 0;
     }
     .qr-corner img { border-radius: 4px; }
-    .qr-label {
-      font-size: 0.65rem;
-      color: #718096;
-      margin-top: 4px;
-      text-align: center;
-    }
+    .qr-label { font-size: 0.65rem; color: #718096; margin-top: 4px; text-align: center; }
 
     /* 步驟進度條 */
-    .steps {
-      display: flex;
-      align-items: center;
-      margin-bottom: 20px;
-      padding: 0 4px;
-    }
-    .step {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      flex: 1;
-    }
+    .steps { display: flex; align-items: center; margin-bottom: 20px; padding: 0 4px; }
+    .step { display: flex; flex-direction: column; align-items: center; flex: 1; }
     .step-circle {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      background: #e2e8f0;
-      color: #a0aec0;
-      font-weight: 700;
-      font-size: 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #e2e8f0; color: #a0aec0;
+      font-weight: 700; font-size: 1rem;
+      display: flex; align-items: center; justify-content: center;
       transition: all 0.3s;
     }
-    .step-circle.active {
-      background: #3182ce;
-      color: #fff;
-      box-shadow: 0 0 0 4px #bee3f8;
-    }
-    .step-circle.done {
-      background: #38a169;
-      color: #fff;
-    }
-    .step-label {
-      font-size: 0.72rem;
-      color: #a0aec0;
-      margin-top: 5px;
-      font-weight: 600;
-      text-align: center;
-      transition: color 0.3s;
-    }
+    .step-circle.active { background: #3182ce; color: #fff; box-shadow: 0 0 0 4px #bee3f8; }
+    .step-circle.done   { background: #38a169; color: #fff; }
+    .step-label { font-size: 0.72rem; color: #a0aec0; margin-top: 5px; font-weight: 600; text-align: center; transition: color 0.3s; }
     .step-label.active { color: #2b6cb0; }
     .step-label.done   { color: #276749; }
     .step-line {
-      flex: 1;
-      height: 3px;
-      background: #e2e8f0;
-      margin: 0 6px;
-      margin-bottom: 20px;
-      border-radius: 2px;
-      transition: background 0.3s;
+      flex: 1; height: 3px; background: #e2e8f0;
+      margin: 0 6px; margin-bottom: 20px;
+      border-radius: 2px; transition: background 0.3s;
     }
     .step-line.done { background: #38a169; }
 
-    /* 表單卡片 */
+    /* 卡片 */
     .card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      margin-bottom: 16px;
+      background: #fff; border-radius: 12px; padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 16px;
     }
     .card-title {
-      font-size: 1rem;
-      font-weight: 700;
-      color: #2b6cb0;
-      margin-bottom: 16px;
-      padding-bottom: 10px;
+      font-size: 1rem; font-weight: 700; color: #2b6cb0;
+      margin-bottom: 16px; padding-bottom: 10px;
       border-bottom: 1.5px solid #ebf8ff;
     }
-    label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 6px;
-      font-size: 0.95rem;
+
+    /* 區段小標 */
+    .section-label {
+      font-size: 0.8rem; font-weight: 700; color: #fff;
+      background: #3182ce; border-radius: 6px;
+      padding: 4px 10px; display: inline-block;
+      margin-bottom: 14px; margin-top: 4px;
     }
+    .section-divider {
+      border: none; border-top: 1px dashed #e2e8f0;
+      margin: 20px 0;
+    }
+
+    /* 基本欄位 */
+    label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.95rem; }
     input[type="text"], input[type="date"], select, textarea {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1.5px solid #cbd5e0;
-      border-radius: 8px;
-      font-size: 1rem;
-      transition: border-color 0.2s;
-      outline: none;
-      background: #fff;
+      width: 100%; padding: 10px 12px;
+      border: 1.5px solid #cbd5e0; border-radius: 8px;
+      font-size: 1rem; transition: border-color 0.2s; outline: none; background: #fff;
     }
     input:focus, select:focus, textarea:focus { border-color: #3182ce; }
     .field { margin-bottom: 16px; }
     textarea { min-height: 120px; resize: vertical; }
 
-    /* 輸入模式切換 */
-    .mode-toggle {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
+    /* 模式切換 */
+    .mode-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
     .mode-btn {
-      flex: 1;
-      padding: 10px;
-      border: 2px solid #cbd5e0;
-      border-radius: 8px;
-      background: #fff;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-align: center;
+      flex: 1; padding: 10px;
+      border: 2px solid #cbd5e0; border-radius: 8px;
+      background: #fff; font-size: 0.95rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; text-align: center;
     }
-    .mode-btn.active {
-      border-color: #3182ce;
-      background: #ebf8ff;
-      color: #2b6cb0;
-    }
+    .mode-btn.active { border-color: #3182ce; background: #ebf8ff; color: #2b6cb0; }
 
-    /* 錄音區 */
+    /* 錄音 */
     .record-btn {
-      width: 80px; height: 80px;
-      border-radius: 50%;
-      border: none;
-      background: #e53e3e;
-      color: #fff;
-      font-size: 0.85rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 8px rgba(229,62,62,0.4);
+      width: 80px; height: 80px; border-radius: 50%; border: none;
+      background: #e53e3e; color: #fff;
+      font-size: 0.85rem; font-weight: 700; cursor: pointer;
+      transition: all 0.2s; display: inline-flex; align-items: center;
+      justify-content: center; box-shadow: 0 2px 8px rgba(229,62,62,0.4);
     }
-    .record-btn.recording {
-      background: #c53030;
-      animation: pulse 1.2s infinite;
-    }
+    .record-btn.recording { background: #c53030; animation: pulse 1.2s infinite; }
     @keyframes pulse {
       0%, 100% { box-shadow: 0 0 0 0 rgba(229,62,62,0.5); }
       50%       { box-shadow: 0 0 0 14px rgba(229,62,62,0); }
     }
-    .record-status {
-      margin-top: 10px;
-      font-size: 0.85rem;
-      color: #718096;
-      min-height: 20px;
-    }
+    .record-status { margin-top: 10px; font-size: 0.85rem; color: #718096; min-height: 20px; }
 
-    /* ── 卡片式選項（第2步用）── */
-    .option-grid {
-      display: grid;
-      gap: 10px;
-      margin-top: 8px;
-    }
+    /* 卡片式選項（職類、年資） */
+    .option-grid { display: grid; gap: 10px; margin-top: 8px; }
     .option-grid.cols-2 { grid-template-columns: 1fr 1fr; }
     .option-grid.cols-1 { grid-template-columns: 1fr; }
-
     .opt-card {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      display: flex; align-items: center; gap: 12px;
       padding: 13px 14px;
-      border: 2px solid #e2e8f0;
-      border-radius: 10px;
-      cursor: pointer;
-      background: #fff;
-      transition: all 0.18s;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
+      border: 2px solid #e2e8f0; border-radius: 10px;
+      cursor: pointer; background: #fff; transition: all 0.18s;
+      user-select: none; -webkit-tap-highlight-color: transparent;
     }
     .opt-card:active { transform: scale(0.97); }
-    .opt-card.selected {
-      border-color: #3182ce;
-      background: #ebf8ff;
-    }
+    .opt-card.selected { border-color: #3182ce; background: #ebf8ff; }
     .opt-radio {
-      width: 20px; height: 20px;
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 2px solid #cbd5e0; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.18s;
+    }
+    .opt-card.selected .opt-radio { border-color: #3182ce; background: #3182ce; }
+    .opt-radio::after {
+      content: ''; width: 8px; height: 8px;
+      border-radius: 50%; background: #fff; display: none;
+    }
+    .opt-card.selected .opt-radio::after { display: block; }
+    .opt-text { font-size: 0.95rem; font-weight: 600; color: #2d3748; line-height: 1.4; }
+    .opt-card.selected .opt-text { color: #2b6cb0; }
+
+    /* 其他文字輸入 */
+    .other-input { display: none; margin-top: 10px; }
+    .other-input.show { display: block; }
+    .other-input input {
+      width: 100%; padding: 10px 12px;
+      border: 1.5px solid #3182ce; border-radius: 8px;
+      font-size: 1rem; outline: none; background: #ebf8ff;
+    }
+
+    /* ── Likert 1-5 量表 ── */
+    .likert-wrap { margin-top: 8px; }
+    .likert-end-labels {
+      display: flex; justify-content: space-between;
+      font-size: 0.72rem; color: #718096; margin-bottom: 6px;
+      font-weight: 600;
+    }
+    .likert-buttons { display: flex; gap: 8px; }
+    .lk-btn {
+      flex: 1;
+      aspect-ratio: 1 / 1;
+      border: 2px solid #e2e8f0;
       border-radius: 50%;
-      border: 2px solid #cbd5e0;
-      flex-shrink: 0;
+      background: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #718096;
+      cursor: pointer;
+      transition: all 0.18s;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.18s;
+      -webkit-tap-highlight-color: transparent;
     }
-    .opt-card.selected .opt-radio {
-      border-color: #3182ce;
-      background: #3182ce;
-    }
-    .opt-radio::after {
-      content: '';
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: #fff;
-      display: none;
-    }
-    .opt-card.selected .opt-radio::after { display: block; }
-    .opt-text {
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: #2d3748;
-      line-height: 1.4;
-    }
-    .opt-card.selected .opt-text { color: #2b6cb0; }
+    .lk-btn:active { transform: scale(0.9); }
+    .lk-btn.selected { border-color: #3182ce; background: #3182ce; color: #fff; }
 
-    /* 其他 文字輸入 */
-    .other-input {
-      display: none;
-      margin-top: 10px;
-    }
-    .other-input.show { display: block; }
-    .other-input input {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1.5px solid #3182ce;
-      border-radius: 8px;
-      font-size: 1rem;
-      outline: none;
-      background: #ebf8ff;
-    }
-
-    /* 按鈕 */
-    .btn-row {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
-    }
-    .btn {
-      flex: 1;
-      padding: 14px;
-      border: none;
-      border-radius: 8px;
-      font-size: 1.05rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
+    /* 按鈕列 */
+    .btn-row { display: flex; gap: 10px; margin-top: 20px; }
+    .btn { flex: 1; padding: 14px; border: none; border-radius: 8px; font-size: 1.05rem; font-weight: 700; cursor: pointer; transition: background 0.2s; }
     .btn-primary { background: #3182ce; color: #fff; }
     .btn-primary:hover { background: #2b6cb0; }
     .btn-primary:disabled { background: #a0aec0; cursor: not-allowed; }
-    .btn-secondary {
-      background: #edf2f7;
-      color: #4a5568;
-      flex: 0 0 auto;
-      padding: 14px 20px;
-      font-size: 0.95rem;
-    }
+    .btn-secondary { background: #edf2f7; color: #4a5568; flex: 0 0 auto; padding: 14px 20px; font-size: 0.95rem; }
     .btn-secondary:hover { background: #e2e8f0; }
 
     /* Toast */
     .toast {
-      position: fixed;
-      top: 20px; left: 50%;
-      transform: translateX(-50%);
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 0.95rem;
-      z-index: 999;
-      opacity: 0;
-      transition: opacity 0.3s;
-      pointer-events: none;
-      white-space: nowrap;
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      padding: 12px 24px; border-radius: 8px;
+      font-weight: 600; font-size: 0.95rem;
+      z-index: 999; opacity: 0; transition: opacity 0.3s;
+      pointer-events: none; white-space: nowrap;
     }
     .toast.show { opacity: 1; }
     .toast.error { background: #fed7d7; color: #822727; }
 
     /* 感謝 Overlay */
     .thank-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
+      display: none; position: fixed; inset: 0;
       background: linear-gradient(135deg, #2b6cb0, #3182ce);
-      z-index: 1000;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 32px;
+      z-index: 1000; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; padding: 32px;
     }
     .thank-overlay.show { display: flex; }
     .thank-icon { font-size: 4rem; margin-bottom: 24px; }
-    .thank-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #fff;
-      line-height: 1.6;
-      margin-bottom: 32px;
-    }
-    .thank-btn {
-      padding: 14px 40px;
-      background: #fff;
-      color: #2b6cb0;
-      border: none;
-      border-radius: 10px;
-      font-size: 1.05rem;
-      font-weight: 700;
-      cursor: pointer;
-    }
+    .thank-title { font-size: 1.5rem; font-weight: 700; color: #fff; line-height: 1.6; margin-bottom: 32px; }
+    .thank-btn { padding: 14px 40px; background: #fff; color: #2b6cb0; border: none; border-radius: 10px; font-size: 1.05rem; font-weight: 700; cursor: pointer; }
 
-    /* 頁面切換動畫 */
-    .form-page {
-      transition: opacity 0.25s, transform 0.25s;
-    }
-    .form-page.hidden {
-      display: none;
-    }
+    .form-page.hidden { display: none; }
   </style>
 </head>
 <body>
@@ -443,7 +297,6 @@
         <button class="mode-btn" data-mode="voice" onclick="setMode('voice')">語音輸入</button>
       </div>
 
-      <!-- 語音模式 -->
       <div id="voiceArea" style="display:none; margin-bottom:14px; text-align:center;">
         <div id="srSupported">
           <button class="record-btn" id="recordBtn" onclick="toggleRecording()">
@@ -472,51 +325,43 @@
     </div>
   </div>
 
-  <!-- ══ 第 2 頁：基本資料（急診TRM前測）══ -->
+  <!-- ══ 第 2 頁：TRM 調查 ══ -->
   <div id="page2" class="form-page hidden">
     <div class="card">
       <div class="card-title">📋 TRM 調查</div>
-      <p style="font-size:0.85rem; color:#718096; margin-bottom:18px;">以下資料用於課程成效分析，請誠實作答。</p>
 
-      <!-- 職類 -->
+      <!-- ── A. 基本資料 ── -->
+      <div class="section-label">基本資料</div>
+
       <div class="field">
         <label>職類 <span style="color:#e53e3e;">*</span></label>
         <div class="option-grid cols-2" id="jobGrid">
           <div class="opt-card" onclick="selectOpt('job','護理PGY',this)">
-            <div class="opt-radio"></div>
-            <div class="opt-text">護理 PGY</div>
+            <div class="opt-radio"></div><div class="opt-text">護理 PGY</div>
           </div>
           <div class="opt-card" onclick="selectOpt('job','護理師',this)">
-            <div class="opt-radio"></div>
-            <div class="opt-text">護理師</div>
+            <div class="opt-radio"></div><div class="opt-text">護理師</div>
           </div>
           <div class="opt-card" onclick="selectOpt('job','專科護理師',this)">
-            <div class="opt-radio"></div>
-            <div class="opt-text">專科護理師</div>
+            <div class="opt-radio"></div><div class="opt-text">專科護理師</div>
           </div>
           <div class="opt-card" onclick="selectOpt('job','醫學生',this)">
-            <div class="opt-radio"></div>
-            <div class="opt-text">醫學生</div>
+            <div class="opt-radio"></div><div class="opt-text">醫學生</div>
           </div>
           <div class="opt-card" onclick="selectOpt('job','PGY1醫師',this)">
-            <div class="opt-radio"></div>
-            <div class="opt-text">PGY1 醫師</div>
+            <div class="opt-radio"></div><div class="opt-text">PGY1 醫師</div>
           </div>
           <div class="opt-card" onclick="selectOpt('job','PGY2醫師',this)">
-            <div class="opt-radio"></div>
-            <div class="opt-text">PGY2 醫師</div>
+            <div class="opt-radio"></div><div class="opt-text">PGY2 醫師</div>
           </div>
           <div class="opt-card" onclick="selectOpt('job','住院醫師',this)">
-            <div class="opt-radio"></div>
-            <div class="opt-text">住院醫師</div>
+            <div class="opt-radio"></div><div class="opt-text">住院醫師</div>
           </div>
           <div class="opt-card" onclick="selectOpt('job','主治醫師',this)">
-            <div class="opt-radio"></div>
-            <div class="opt-text">主治醫師</div>
+            <div class="opt-radio"></div><div class="opt-text">主治醫師</div>
           </div>
-          <div class="opt-card" style="grid-column: 1/-1;" onclick="selectOpt('job','其他',this)">
-            <div class="opt-radio"></div>
-            <div class="opt-text">其他</div>
+          <div class="opt-card" style="grid-column:1/-1;" onclick="selectOpt('job','其他',this)">
+            <div class="opt-radio"></div><div class="opt-text">其他</div>
           </div>
         </div>
         <div class="other-input" id="jobOtherWrap">
@@ -524,21 +369,144 @@
         </div>
       </div>
 
-      <!-- 臨床工作年資 -->
       <div class="field">
         <label>臨床工作年資 <span style="color:#e53e3e;">*</span></label>
         <div class="option-grid cols-1" id="expGrid">
           <div class="opt-card" onclick="selectOpt('exp','未滿5年',this)">
-            <div class="opt-radio"></div>
-            <div class="opt-text">未滿 5 年</div>
+            <div class="opt-radio"></div><div class="opt-text">未滿 5 年</div>
           </div>
           <div class="opt-card" onclick="selectOpt('exp','5-10年',this)">
-            <div class="opt-radio"></div>
-            <div class="opt-text">5 – 10 年</div>
+            <div class="opt-radio"></div><div class="opt-text">5 – 10 年</div>
           </div>
           <div class="opt-card" onclick="selectOpt('exp','10年以上',this)">
-            <div class="opt-radio"></div>
-            <div class="opt-text">10 年以上</div>
+            <div class="opt-radio"></div><div class="opt-text">10 年以上</div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="section-divider">
+
+      <!-- ── B. TRM 課程參與認知 ── -->
+      <div class="section-label">TRM 課程參與認知</div>
+
+      <div class="field">
+        <label>參與 TRM 課程的經驗（包含院內院外）<span style="color:#e53e3e;"> *</span></label>
+        <div class="option-grid cols-1" id="trmExpGrid">
+          <div class="opt-card" onclick="selectOpt('trmExp','第一次參加',this)">
+            <div class="opt-radio"></div><div class="opt-text">第一次參加</div>
+          </div>
+          <div class="opt-card" onclick="selectOpt('trmExp','參加過1~3次',this)">
+            <div class="opt-radio"></div><div class="opt-text">參加過 1 ~ 3 次</div>
+          </div>
+          <div class="opt-card" onclick="selectOpt('trmExp','參加過4~10次',this)">
+            <div class="opt-radio"></div><div class="opt-text">參加過 4 ~ 10 次</div>
+          </div>
+          <div class="opt-card" onclick="selectOpt('trmExp','參加超過10次',this)">
+            <div class="opt-radio"></div><div class="opt-text">參加超過 10 次</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>我曾經聽過 TRM（團隊資源管理）這名詞？<span style="color:#e53e3e;"> *</span></label>
+        <div class="likert-wrap">
+          <div class="likert-end-labels"><span>非常不同意</span><span>非常同意</span></div>
+          <div class="likert-buttons" id="lk_trm_heard">
+            <button class="lk-btn" onclick="selectLikert('trm_heard',1,this)">1</button>
+            <button class="lk-btn" onclick="selectLikert('trm_heard',2,this)">2</button>
+            <button class="lk-btn" onclick="selectLikert('trm_heard',3,this)">3</button>
+            <button class="lk-btn" onclick="selectLikert('trm_heard',4,this)">4</button>
+            <button class="lk-btn" onclick="selectLikert('trm_heard',5,this)">5</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>是否瞭解 TRM 的核心內容？<span style="color:#e53e3e;"> *</span></label>
+        <div class="likert-wrap">
+          <div class="likert-end-labels"><span>非常不瞭解</span><span>非常瞭解</span></div>
+          <div class="likert-buttons" id="lk_trm_understand">
+            <button class="lk-btn" onclick="selectLikert('trm_understand',1,this)">1</button>
+            <button class="lk-btn" onclick="selectLikert('trm_understand',2,this)">2</button>
+            <button class="lk-btn" onclick="selectLikert('trm_understand',3,this)">3</button>
+            <button class="lk-btn" onclick="selectLikert('trm_understand',4,this)">4</button>
+            <button class="lk-btn" onclick="selectLikert('trm_understand',5,this)">5</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>學習 TRM，讓我在處理危急病患時更有信心<span style="color:#e53e3e;"> *</span></label>
+        <div class="likert-wrap">
+          <div class="likert-end-labels"><span>非常不同意</span><span>非常同意</span></div>
+          <div class="likert-buttons" id="lk_trm_confidence">
+            <button class="lk-btn" onclick="selectLikert('trm_confidence',1,this)">1</button>
+            <button class="lk-btn" onclick="selectLikert('trm_confidence',2,this)">2</button>
+            <button class="lk-btn" onclick="selectLikert('trm_confidence',3,this)">3</button>
+            <button class="lk-btn" onclick="selectLikert('trm_confidence',4,this)">4</button>
+            <button class="lk-btn" onclick="selectLikert('trm_confidence',5,this)">5</button>
+          </div>
+        </div>
+      </div>
+
+      <hr class="section-divider">
+
+      <!-- ── C. TRM 非技術性技能 ── -->
+      <div class="section-label">TRM 非技術性技能（Non-technical skill）</div>
+      <p style="font-size:0.8rem; color:#718096; margin-bottom:14px;">請依您目前的想法圈選，1＝非常不同意，5＝非常同意</p>
+
+      <div class="field">
+        <label>1. 詢問患者及家屬對治療情況的回饋是重要的<span style="color:#e53e3e;"> *</span></label>
+        <div class="likert-wrap">
+          <div class="likert-end-labels"><span>非常不同意</span><span>非常同意</span></div>
+          <div class="likert-buttons" id="lk_nts1">
+            <button class="lk-btn" onclick="selectLikert('nts1',1,this)">1</button>
+            <button class="lk-btn" onclick="selectLikert('nts1',2,this)">2</button>
+            <button class="lk-btn" onclick="selectLikert('nts1',3,this)">3</button>
+            <button class="lk-btn" onclick="selectLikert('nts1',4,this)">4</button>
+            <button class="lk-btn" onclick="selectLikert('nts1',5,this)">5</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>2. 患者本身是醫療照護的重要組成部分<span style="color:#e53e3e;"> *</span></label>
+        <div class="likert-wrap">
+          <div class="likert-end-labels"><span>非常不同意</span><span>非常同意</span></div>
+          <div class="likert-buttons" id="lk_nts2">
+            <button class="lk-btn" onclick="selectLikert('nts2',1,this)">1</button>
+            <button class="lk-btn" onclick="selectLikert('nts2',2,this)">2</button>
+            <button class="lk-btn" onclick="selectLikert('nts2',3,this)">3</button>
+            <button class="lk-btn" onclick="selectLikert('nts2',4,this)">4</button>
+            <button class="lk-btn" onclick="selectLikert('nts2',5,this)">5</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>3. 行政管理影響著一線醫療團隊的成功與否<span style="color:#e53e3e;"> *</span></label>
+        <div class="likert-wrap">
+          <div class="likert-end-labels"><span>非常不同意</span><span>非常同意</span></div>
+          <div class="likert-buttons" id="lk_nts3">
+            <button class="lk-btn" onclick="selectLikert('nts3',1,this)">1</button>
+            <button class="lk-btn" onclick="selectLikert('nts3',2,this)">2</button>
+            <button class="lk-btn" onclick="selectLikert('nts3',3,this)">3</button>
+            <button class="lk-btn" onclick="selectLikert('nts3',4,this)">4</button>
+            <button class="lk-btn" onclick="selectLikert('nts3',5,this)">5</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>4. 團隊的使命高於團隊成員各自的目標<span style="color:#e53e3e;"> *</span></label>
+        <div class="likert-wrap">
+          <div class="likert-end-labels"><span>非常不同意</span><span>非常同意</span></div>
+          <div class="likert-buttons" id="lk_nts4">
+            <button class="lk-btn" onclick="selectLikert('nts4',1,this)">1</button>
+            <button class="lk-btn" onclick="selectLikert('nts4',2,this)">2</button>
+            <button class="lk-btn" onclick="selectLikert('nts4',3,this)">3</button>
+            <button class="lk-btn" onclick="selectLikert('nts4',4,this)">4</button>
+            <button class="lk-btn" onclick="selectLikert('nts4',5,this)">5</button>
           </div>
         </div>
       </div>
@@ -554,7 +522,6 @@
 
 <div class="toast" id="toast"></div>
 
-<!-- 感謝 Overlay -->
 <div class="thank-overlay" id="thankOverlay">
   <div class="thank-icon">🙏</div>
   <div class="thank-title">謝謝您的寶貴回饋<br>期待擬真訓練帶給您更多成長</div>
@@ -563,18 +530,25 @@
 
 <script>
   // ── 狀態 ──
-  var currentMode   = 'text';
-  var isRecording   = false;
-  var recognition   = null;
+  var currentMode  = 'text';
+  var isRecording  = false;
+  var recognition  = null;
   var committedText = '';
-  var selectedJob   = '';
-  var selectedExp   = '';
+
+  var selectedJob    = '';
+  var selectedExp    = '';
+  var selectedTrmExp = '';
+
+  var likertValues = {
+    trm_heard: 0, trm_understand: 0, trm_confidence: 0,
+    nts1: 0, nts2: 0, nts3: 0, nts4: 0
+  };
 
   // ── 模式切換 ──
   function setMode(mode) {
     currentMode = mode;
-    document.querySelectorAll('.mode-btn').forEach(function(btn) {
-      btn.classList.toggle('active', btn.dataset.mode === mode);
+    document.querySelectorAll('.mode-btn').forEach(function(b) {
+      b.classList.toggle('active', b.dataset.mode === mode);
     });
     document.getElementById('voiceArea').style.display = mode === 'voice' ? 'block' : 'none';
     if (mode === 'text' && isRecording) stopRecording();
@@ -597,12 +571,8 @@
     if (!SR) { showToast('此裝置不支援語音辨識', 'error'); return; }
     try {
       recognition = new SR();
-      recognition.continuous     = true;
-      recognition.interimResults = true;
-      recognition.lang           = 'zh-TW';
-      recognition.onstart  = function() {
-        document.getElementById('recordStatus').textContent = '🎙 錄音中，請開始說話…';
-      };
+      recognition.continuous = true; recognition.interimResults = true; recognition.lang = 'zh-TW';
+      recognition.onstart  = function() { document.getElementById('recordStatus').textContent = '🎙 錄音中，請開始說話…'; };
       recognition.onresult = function(e) {
         var interim = '';
         for (var i = e.resultIndex; i < e.results.length; i++) {
@@ -612,29 +582,19 @@
         document.getElementById('feedbackText').value = committedText + interim;
       };
       recognition.onerror  = function(e) {
-        if (e.error === 'not-allowed') {
-          document.getElementById('recordStatus').textContent = '❌ 請允許麥克風權限後重試';
-        } else if (e.error === 'service-not-allowed') {
-          document.getElementById('srSupported').style.display = 'none';
-          document.getElementById('srFallback').style.display  = 'block';
-        } else if (e.error !== 'no-speech') {
-          document.getElementById('recordStatus').textContent = '錯誤：' + e.error;
-        }
+        if (e.error === 'not-allowed')         document.getElementById('recordStatus').textContent = '❌ 請允許麥克風權限後重試';
+        else if (e.error === 'service-not-allowed') { document.getElementById('srSupported').style.display='none'; document.getElementById('srFallback').style.display='block'; }
+        else if (e.error !== 'no-speech')      document.getElementById('recordStatus').textContent = '錯誤：' + e.error;
         stopRecordingUI();
       };
-      recognition.onend    = function() {
-        if (isRecording) { try { recognition.start(); } catch(ex) {} }
-      };
+      recognition.onend    = function() { if (isRecording) { try { recognition.start(); } catch(ex) {} } };
       committedText = document.getElementById('feedbackText').value;
-      isRecording   = true;
+      isRecording = true;
       document.getElementById('recordBtnLabel').innerHTML = '停止<br>錄音';
       document.getElementById('recordBtn').classList.add('recording');
       document.getElementById('recordStatus').textContent = '啟動中…';
       recognition.start();
-    } catch(e) {
-      showToast('語音啟動失敗：' + e.message, 'error');
-      stopRecordingUI();
-    }
+    } catch(e) { showToast('語音啟動失敗：' + e.message, 'error'); stopRecordingUI(); }
   }
   function stopRecording() {
     isRecording = false;
@@ -650,8 +610,8 @@
 
   // ── 卡片選項 ──
   function selectOpt(group, value, el) {
-    var gridId = group === 'job' ? 'jobGrid' : 'expGrid';
-    document.querySelectorAll('#' + gridId + ' .opt-card').forEach(function(c) {
+    var gridMap = { job: 'jobGrid', exp: 'expGrid', trmExp: 'trmExpGrid' };
+    document.querySelectorAll('#' + gridMap[group] + ' .opt-card').forEach(function(c) {
       c.classList.remove('selected');
     });
     el.classList.add('selected');
@@ -660,28 +620,33 @@
       var wrap = document.getElementById('jobOtherWrap');
       wrap.classList.toggle('show', value === '其他');
       if (value === '其他') document.getElementById('jobOther').focus();
-    } else {
+    } else if (group === 'exp') {
       selectedExp = value;
+    } else if (group === 'trmExp') {
+      selectedTrmExp = value;
     }
+  }
+
+  // ── Likert 選擇 ──
+  function selectLikert(key, val, el) {
+    likertValues[key] = val;
+    var row = el.parentNode;
+    row.querySelectorAll('.lk-btn').forEach(function(b) { b.classList.remove('selected'); });
+    el.classList.add('selected');
   }
 
   // ── 步驟導航 ──
   function goToPage2() {
-    // 驗證第1頁
     if (!document.getElementById('sessionDate').value) { showToast('請選擇訓練日期', 'error'); return; }
     if (!document.getElementById('campus').value)      { showToast('請選擇院區', 'error'); return; }
     if (!document.getElementById('group').value)       { showToast('請選擇組別', 'error'); return; }
     if (!document.getElementById('name').value.trim()) { showToast('請輸入暱稱', 'error'); return; }
     if (!document.getElementById('position').value)    { showToast('請選擇 A-C-L-S 站位', 'error'); return; }
     if (!document.getElementById('feedbackText').value.trim()) { showToast('請輸入回饋內容', 'error'); return; }
-
     if (isRecording) stopRecording();
-
     document.getElementById('page1').classList.add('hidden');
     document.getElementById('page2').classList.remove('hidden');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    // 更新進度條
     document.getElementById('circle1').className = 'step-circle done';
     document.getElementById('label1').className  = 'step-label done';
     document.getElementById('line1').className   = 'step-line done';
@@ -693,7 +658,6 @@
     document.getElementById('page2').classList.add('hidden');
     document.getElementById('page1').classList.remove('hidden');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-
     document.getElementById('circle1').className = 'step-circle active';
     document.getElementById('label1').className  = 'step-label active';
     document.getElementById('line1').className   = 'step-line';
@@ -706,15 +670,20 @@
 
   async function submitFeedback() {
     // 驗證第2頁
-    if (!selectedJob) { showToast('請選擇職類', 'error'); return; }
-    if (selectedJob === '其他' && !document.getElementById('jobOther').value.trim()) {
-      showToast('請填寫職類（其他）', 'error'); return;
-    }
-    if (!selectedExp) { showToast('請選擇臨床工作年資', 'error'); return; }
+    if (!selectedJob)    { showToast('請選擇職類', 'error'); return; }
+    if (selectedJob === '其他' && !document.getElementById('jobOther').value.trim()) { showToast('請填寫職類（其他）', 'error'); return; }
+    if (!selectedExp)    { showToast('請選擇臨床工作年資', 'error'); return; }
+    if (!selectedTrmExp) { showToast('請選擇 TRM 課程經驗', 'error'); return; }
+    if (!likertValues.trm_heard)      { showToast('請回答「聽過TRM」題目', 'error'); return; }
+    if (!likertValues.trm_understand) { showToast('請回答「瞭解TRM核心內容」題目', 'error'); return; }
+    if (!likertValues.trm_confidence) { showToast('請回答「處理危急病患信心」題目', 'error'); return; }
+    if (!likertValues.nts1) { showToast('請回答第1題非技術性技能', 'error'); return; }
+    if (!likertValues.nts2) { showToast('請回答第2題非技術性技能', 'error'); return; }
+    if (!likertValues.nts3) { showToast('請回答第3題非技術性技能', 'error'); return; }
+    if (!likertValues.nts4) { showToast('請回答第4題非技術性技能', 'error'); return; }
 
     var btn = document.getElementById('submitBtn');
-    btn.disabled    = true;
-    btn.textContent = '送出中…';
+    btn.disabled = true; btn.textContent = '送出中…';
 
     var jobValue = selectedJob === '其他'
       ? ('其他：' + document.getElementById('jobOther').value.trim())
@@ -730,37 +699,40 @@
         input_type:       currentMode,
         feedback_content: document.getElementById('feedbackText').value.trim(),
         job_category:     jobValue,
-        work_experience:  selectedExp
+        work_experience:  selectedExp,
+        trm_experience:   selectedTrmExp,
+        trm_heard:        likertValues.trm_heard,
+        trm_understand:   likertValues.trm_understand,
+        trm_confidence:   likertValues.trm_confidence,
+        nts1:             likertValues.nts1,
+        nts2:             likertValues.nts2,
+        nts3:             likertValues.nts3,
+        nts4:             likertValues.nts4
       });
       await fetch(GAS_URL + '?' + params.toString(), { method: 'GET', mode: 'no-cors' });
       document.getElementById('thankOverlay').classList.add('show');
     } catch(e) {
       showToast('送出失敗，請再試一次', 'error');
     }
-
-    btn.disabled    = false;
-    btn.textContent = '送出回饋';
+    btn.disabled = false; btn.textContent = '確認送出';
   }
 
-  // ── 重設表單 ──
+  // ── 重設 ──
   function resetForm() {
     document.getElementById('thankOverlay').classList.remove('show');
-    // 重設第1頁
-    document.getElementById('sessionDate').value = new Date().toISOString().slice(0, 10);
-    document.getElementById('campus').value   = '';
-    document.getElementById('group').value    = '';
-    document.getElementById('name').value     = '';
+    document.getElementById('sessionDate').value = new Date().toISOString().slice(0,10);
+    document.getElementById('campus').value = '';
+    document.getElementById('group').value  = '';
+    document.getElementById('name').value   = '';
     document.getElementById('position').value = '';
     document.getElementById('feedbackText').value = '';
-    committedText = '';
-    setMode('text');
-    // 重設第2頁
+    committedText = ''; setMode('text');
     document.querySelectorAll('.opt-card').forEach(function(c) { c.classList.remove('selected'); });
+    document.querySelectorAll('.lk-btn').forEach(function(b) { b.classList.remove('selected'); });
     document.getElementById('jobOtherWrap').classList.remove('show');
     document.getElementById('jobOther').value = '';
-    selectedJob = '';
-    selectedExp = '';
-    // 回第1頁
+    selectedJob = ''; selectedExp = ''; selectedTrmExp = '';
+    Object.keys(likertValues).forEach(function(k) { likertValues[k] = 0; });
     goToPage1();
   }
 
@@ -772,8 +744,7 @@
     setTimeout(function() { t.className = 'toast'; }, 3000);
   }
 
-  // 初始化日期
-  document.getElementById('sessionDate').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('sessionDate').value = new Date().toISOString().slice(0,10);
 </script>
 </body>
 </html>
