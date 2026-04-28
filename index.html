@@ -350,6 +350,32 @@
           </div>
         </div>
       </div>
+      <div class="field">
+        <label>學習 TRM，讓我能依循 ACLS 治療準則來治療病患<span style="color:#e53e3e;"> *</span></label>
+        <div class="likert-wrap">
+          <div class="likert-end-labels"><span>非常不同意</span><span>非常同意</span></div>
+          <div class="likert-buttons" id="lk_trm_acls">
+            <button class="lk-btn" onclick="selectLikert('trm_acls',1,this)">1</button>
+            <button class="lk-btn" onclick="selectLikert('trm_acls',2,this)">2</button>
+            <button class="lk-btn" onclick="selectLikert('trm_acls',3,this)">3</button>
+            <button class="lk-btn" onclick="selectLikert('trm_acls',4,this)">4</button>
+            <button class="lk-btn" onclick="selectLikert('trm_acls',5,this)">5</button>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>學習 TRM，讓團隊成員氣氛融洽<span style="color:#e53e3e;"> *</span></label>
+        <div class="likert-wrap">
+          <div class="likert-end-labels"><span>非常不同意</span><span>非常同意</span></div>
+          <div class="likert-buttons" id="lk_trm_harmony">
+            <button class="lk-btn" onclick="selectLikert('trm_harmony',1,this)">1</button>
+            <button class="lk-btn" onclick="selectLikert('trm_harmony',2,this)">2</button>
+            <button class="lk-btn" onclick="selectLikert('trm_harmony',3,this)">3</button>
+            <button class="lk-btn" onclick="selectLikert('trm_harmony',4,this)">4</button>
+            <button class="lk-btn" onclick="selectLikert('trm_harmony',5,this)">5</button>
+          </div>
+        </div>
+      </div>
 
       <hr class="section-divider">
 
@@ -441,7 +467,7 @@
   var selectedJob   = '';
   var selectedExp   = '';
   var selectedTrmExp = '';
-  var likertValues  = { trm_heard: 0, trm_understand: 0, trm_confidence: 0 };
+  var likertValues  = { trm_heard: 0, trm_understand: 0, trm_confidence: 0, trm_acls: 0, trm_harmony: 0 };
   for (var i = 1; i <= 30; i++) { likertValues['nts' + i] = 0; }
 
   // ── 模式切換 ──
@@ -571,6 +597,8 @@
     if (!likertValues.trm_heard)      { showToast('請回答「聽過TRM」題目', 'error'); return; }
     if (!likertValues.trm_understand) { showToast('請回答「瞭解TRM核心內容」題目', 'error'); return; }
     if (!likertValues.trm_confidence) { showToast('請回答「處理危急病患信心」題目', 'error'); return; }
+    if (!likertValues.trm_acls)       { showToast('請回答「依循ACLS準則」題目', 'error'); return; }
+    if (!likertValues.trm_harmony)    { showToast('請回答「團隊氣氛融洽」題目', 'error'); return; }
     for (var q = 1; q <= 30; q++) {
       if (!likertValues['nts' + q]) {
         showToast('請回答第 ' + q + ' 題 NTS', 'error');
@@ -601,7 +629,9 @@
         trm_experience:   selectedTrmExp,
         trm_heard:        likertValues.trm_heard,
         trm_understand:   likertValues.trm_understand,
-        trm_confidence:   likertValues.trm_confidence
+        trm_confidence:   likertValues.trm_confidence,
+        trm_acls:         likertValues.trm_acls,
+        trm_harmony:      likertValues.trm_harmony
       };
       for (var n = 1; n <= 30; n++) { data['nts' + n] = likertValues['nts' + n]; }
 
@@ -632,7 +662,7 @@
     document.getElementById('jobOtherWrap').classList.remove('show');
     document.getElementById('jobOther').value = '';
     selectedJob = ''; selectedExp = ''; selectedTrmExp = '';
-    likertValues = { trm_heard: 0, trm_understand: 0, trm_confidence: 0 };
+    likertValues = { trm_heard: 0, trm_understand: 0, trm_confidence: 0, trm_acls: 0, trm_harmony: 0 };
     for (var i = 1; i <= 30; i++) { likertValues['nts' + i] = 0; }
     goToPage1();
   }
