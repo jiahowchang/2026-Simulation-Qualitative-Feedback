@@ -282,6 +282,23 @@
         <input type="date" id="sessionDate">
       </div>
       <div class="field">
+        <label for="campus">院區</label>
+        <select id="campus">
+          <option value="">-- 請選擇院區 --</option>
+          <option value="新竹">新竹</option>
+          <option value="生醫">生醫</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="group">組別</label>
+        <select id="group">
+          <option value="">-- 請選擇組別 --</option>
+          <option value="重症組">重症組</option>
+          <option value="新人組">新人組</option>
+          <option value="兒科組">兒科組</option>
+        </select>
+      </div>
+      <div class="field">
         <label for="name">暱稱</label>
         <input type="text" id="name" placeholder="請輸入您的暱稱">
       </div>
@@ -470,11 +487,15 @@
     // 送出回饋
     async function submitFeedback() {
       var sessionDate = document.getElementById('sessionDate').value;
+      var campus      = document.getElementById('campus').value;
+      var group       = document.getElementById('group').value;
       var name        = document.getElementById('name').value.trim();
       var position    = document.getElementById('position').value;
       var content     = document.getElementById('feedbackText').value.trim();
 
       if (!sessionDate) { showToast('請選擇訓練日期', 'error'); return; }
+      if (!campus)      { showToast('請選擇院區', 'error'); return; }
+      if (!group)       { showToast('請選擇組別', 'error'); return; }
       if (!name)        { showToast('請輸入暱稱', 'error'); return; }
       if (!position)    { showToast('請選擇 A-C-L-S 站位', 'error'); return; }
       if (!content)     { showToast('請輸入回饋內容', 'error'); return; }
@@ -486,6 +507,8 @@
       try {
         var params = new URLSearchParams({
           session_date:     sessionDate,
+          campus:           campus,
+          group:            group,
           name:             name,
           acls_position:    position,
           input_type:       currentMode,
