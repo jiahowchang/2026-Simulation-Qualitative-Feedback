@@ -38,20 +38,20 @@
     }
     input:focus, select:focus, textarea:focus { border-color: #3182ce; }
     .field { margin-bottom: 16px; }
-    textarea { min-height: 120px; resize: vertical; }
+    textarea { min-height: 90px; resize: vertical; }
 
     /* 模式切換 */
-    .mode-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+    .mode-toggle { display: flex; gap: 8px; margin-bottom: 10px; }
     .mode-btn {
-      flex: 1; padding: 10px; border: 2px solid #cbd5e0; border-radius: 8px;
-      background: #fff; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; text-align: center;
+      flex: 1; padding: 8px; border: 2px solid #cbd5e0; border-radius: 8px;
+      background: #fff; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; text-align: center;
     }
     .mode-btn.active { border-color: #3182ce; background: #ebf8ff; color: #2b6cb0; }
 
     /* 錄音 */
     .record-btn {
-      width: 80px; height: 80px; border-radius: 50%; border: none;
-      background: #e53e3e; color: #fff; font-size: 0.85rem; font-weight: 700; cursor: pointer;
+      width: 70px; height: 70px; border-radius: 50%; border: none;
+      background: #e53e3e; color: #fff; font-size: 0.8rem; font-weight: 700; cursor: pointer;
       transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center;
       box-shadow: 0 2px 8px rgba(229,62,62,0.4);
     }
@@ -60,11 +60,12 @@
       0%, 100% { box-shadow: 0 0 0 0 rgba(229,62,62,0.5); }
       50%       { box-shadow: 0 0 0 14px rgba(229,62,62,0); }
     }
-    .record-status { margin-top: 10px; font-size: 0.85rem; color: #718096; min-height: 20px; }
+    .record-status { margin-top: 8px; font-size: 0.85rem; color: #718096; min-height: 20px; }
 
     /* 卡片式選項 */
     .option-grid { display: grid; gap: 10px; margin-top: 8px; }
     .option-grid.cols-1 { grid-template-columns: 1fr; }
+    .option-grid.cols-2 { grid-template-columns: 1fr 1fr; }
     .opt-card {
       display: flex; align-items: center; gap: 12px; padding: 13px 14px;
       border: 2px solid #e2e8f0; border-radius: 10px; cursor: pointer;
@@ -92,9 +93,6 @@
     }
     .section-divider { border: none; border-top: 1px dashed #e2e8f0; margin: 20px 0; }
 
-    /* 2欄選項 */
-    .option-grid.cols-2 { grid-template-columns: 1fr 1fr; }
-
     /* 其他輸入 */
     .other-input { display: none; margin-top: 10px; }
     .other-input.show { display: block; }
@@ -103,8 +101,23 @@
       border-radius: 8px; font-size: 1rem; outline: none; background: #ebf8ff;
     }
 
+    /* 問題區塊 */
+    .q-block { padding-top: 20px; margin-top: 4px; border-top: 1px dashed #e2e8f0; }
+    .q-block:first-child { padding-top: 0; border-top: none; }
+    .q-label {
+      font-size: 0.95rem; font-weight: 600; line-height: 1.7;
+      margin-bottom: 10px; display: flex; align-items: flex-start; gap: 10px;
+    }
+    .q-label-text { flex: 1; }
+    .q-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 26px; height: 26px; background: #3182ce; color: #fff;
+      border-radius: 50%; font-size: 0.8rem; font-weight: 700; flex-shrink: 0; margin-top: 2px;
+    }
+    .q-voice-area { margin-bottom: 10px; text-align: center; }
+
     /* 按鈕 */
-    .btn-row { display: flex; gap: 10px; margin-top: 20px; }
+    .btn-row { display: flex; gap: 10px; margin-top: 24px; }
     .btn { flex: 1; padding: 14px; border: none; border-radius: 8px; font-size: 1.05rem; font-weight: 700; cursor: pointer; transition: background 0.2s; }
     .btn-primary { background: #3182ce; color: #fff; }
     .btn-primary:hover { background: #2b6cb0; }
@@ -188,9 +201,9 @@
     </div>
   </div>
 
-  <!-- 表單卡片 -->
+  <!-- 訓練資訊卡片 -->
   <div class="card">
-    <div class="card-title">📝 訓練資訊與回饋</div>
+    <div class="card-title">📋 訓練資訊</div>
 
     <div class="field">
       <label for="sessionDate">訓練日期</label>
@@ -276,35 +289,16 @@
         <div class="opt-card" onclick="selectInsituExp('超過 10 次',this)"><div class="opt-radio"></div><div class="opt-text">超過 10 次</div></div>
       </div>
     </div>
+  </div>
 
-    <label>回饋方式</label>
-    <div class="mode-toggle">
-      <button class="mode-btn active" data-mode="text" onclick="setMode('text')">手動輸入</button>
-      <button class="mode-btn" data-mode="voice" onclick="setMode('voice')">語音輸入</button>
-    </div>
-    <div id="voiceArea" style="display:none; margin-bottom:14px; text-align:center;">
-      <div id="srSupported">
-        <button class="record-btn" id="recordBtn" onclick="toggleRecording()">
-          <span id="recordBtnLabel">點此<br>錄音</span>
-        </button>
-        <p class="record-status" id="recordStatus">按下按鈕開始說話</p>
-      </div>
-      <div id="srFallback" style="display:none; background:#fff7ed; border:1.5px solid #fbd38d; border-radius:8px; padding:14px; text-align:left;">
-        <p style="font-weight:700; color:#c05621; margin-bottom:6px;">⚠️ 您的裝置不支援語音辨識</p>
-        <p style="font-size:0.9rem; color:#744210; line-height:1.6;">請點選下方「回饋內容」輸入框，<br>再按鍵盤上的 🎤 麥克風圖示，<br>即可用語音輸入文字。</p>
-      </div>
-    </div>
-
-    <label for="feedbackText">回饋內容</label>
-    <div style="margin-top:6px;">
-      <textarea id="feedbackText" placeholder="請輸入您對本次訓練的回饋與感想…"></textarea>
-    </div>
-
+  <!-- 回饋問卷卡片 -->
+  <div class="card">
+    <div class="card-title">💬 回饋問卷</div>
+    <div id="questionsContainer"></div>
     <div class="btn-row">
       <button class="btn btn-primary" id="submitBtn" onclick="submitFeedback()">確認送出</button>
     </div>
   </div>
-
 
 </div>
 
@@ -317,14 +311,60 @@
 </div>
 
 <script>
-  // ── 狀態 ──
-  var currentMode       = 'text';
-  var isRecording       = false;
-  var recognition       = null;
-  var committedText     = '';
+  // ── 基本資料狀態 ──
   var selectedInsituExp = '';
   var selectedJob       = '';
   var selectedExp       = '';
+
+  // ── 問卷狀態（6題） ──
+  var Q_COUNT    = 6;
+  var qModes     = ['text','text','text','text','text','text'];
+  var qRecording = [false,false,false,false,false,false];
+  var qRecog     = [null,null,null,null,null,null];
+  var qCommitted = ['','','','','',''];
+
+  // ── 問題清單 ──
+  var QUESTIONS = [
+    '這次團隊合作最有效的一個行為是什麼？',
+    '這次最需要改善的 TRM 行為是什麼？',
+    '指導者回饋中，哪一點最可能改變你下一次的行為？',
+    '第二次演練時，你們實際改變了什麼？',
+    '這次訓練中，你是否曾經注意到病人安全、處置流程、團隊分工或溝通上的疑慮，但因為時間壓力、階級關係、角色不確定、擔心影響團隊氣氛，或不知道如何表達，而沒有即時說出來？請簡要描述當時情境。若沒有，請寫「沒有」；若有，請描述你當時想說什麼、為什麼沒有說、下次會希望怎麼說。',
+    '這次經驗能否轉移到真實臨床？為什麼？'
+  ];
+
+  // ── 動態產生問題區塊 ──
+  (function() {
+    var container = document.getElementById('questionsContainer');
+    for (var i = 0; i < Q_COUNT; i++) {
+      var block = document.createElement('div');
+      block.className = 'q-block';
+      block.id = 'qblock' + i;
+      block.innerHTML =
+        '<div class="q-label">' +
+          '<span class="q-num">' + (i + 1) + '</span>' +
+          '<span class="q-label-text">' + QUESTIONS[i] + ' <span style="color:#e53e3e;">*</span></span>' +
+        '</div>' +
+        '<div class="mode-toggle">' +
+          '<button class="mode-btn active" onclick="setQMode(' + i + ',\'text\',this)">手動輸入</button>' +
+          '<button class="mode-btn" onclick="setQMode(' + i + ',\'voice\',this)">語音輸入</button>' +
+        '</div>' +
+        '<div class="q-voice-area" id="qVoice' + i + '" style="display:none;">' +
+          '<div id="qSrOk' + i + '">' +
+            '<button class="record-btn" id="qRecBtn' + i + '" onclick="toggleQRecording(' + i + ')">' +
+              '<span id="qRecLabel' + i + '">點此<br>錄音</span>' +
+            '</button>' +
+            '<p class="record-status" id="qRecStatus' + i + '">按下按鈕開始說話</p>' +
+          '</div>' +
+          '<div id="qSrFb' + i + '" style="display:none; background:#fff7ed; border:1.5px solid #fbd38d; border-radius:8px; padding:14px; text-align:left; margin-top:8px;">' +
+            '<p style="font-weight:700; color:#c05621; margin-bottom:6px;">⚠️ 您的裝置不支援語音辨識</p>' +
+            '<p style="font-size:0.9rem; color:#744210; line-height:1.6;">請點選輸入框後按鍵盤上的 🎤 麥克風圖示輸入文字。</p>' +
+          '</div>' +
+        '</div>' +
+        '<textarea id="q' + i + '" placeholder="請輸入..."></textarea>';
+      container.appendChild(block);
+    }
+  })();
 
   // ── 初始化日期 ──
   (function() {
@@ -343,7 +383,7 @@
     if (val === 'other') document.getElementById('campusOther').focus();
   }
 
-  // ── 選項 ──
+  // ── 選項（基本資料） ──
   function selectInsituExp(value, el) {
     document.querySelectorAll('#insituExpGrid .opt-card').forEach(function(c) { c.classList.remove('selected'); });
     el.classList.add('selected');
@@ -363,67 +403,72 @@
     selectedExp = value;
   }
 
-  // ── 模式切換 ──
-  function setMode(mode) {
-    currentMode = mode;
-    document.querySelectorAll('.mode-btn').forEach(function(b) {
-      b.classList.toggle('active', b.dataset.mode === mode);
+  // ── 問卷模式切換 ──
+  function setQMode(i, mode, btn) {
+    qModes[i] = mode;
+    var block = document.getElementById('qblock' + i);
+    block.querySelectorAll('.mode-btn').forEach(function(b) {
+      b.classList.toggle('active', b === btn);
     });
-    document.getElementById('voiceArea').style.display = mode === 'voice' ? 'block' : 'none';
-    if (mode === 'text' && isRecording) stopRecording();
-    if (mode === 'voice') checkVoiceSupport();
-  }
-  function checkVoiceSupport() {
-    var SR  = window.SpeechRecognition || window.webkitSpeechRecognition;
-    var sup = document.getElementById('srSupported');
-    var fb  = document.getElementById('srFallback');
-    if (SR) { sup.style.display = 'block'; fb.style.display = 'none'; }
-    else    { sup.style.display = 'none';  fb.style.display = 'block';
-      setTimeout(function() { document.getElementById('feedbackText').focus(); }, 300); }
+    document.getElementById('qVoice' + i).style.display = mode === 'voice' ? 'block' : 'none';
+    if (mode === 'text' && qRecording[i]) stopQRecording(i);
+    if (mode === 'voice') checkQVoiceSupport(i);
   }
 
-  // ── 語音辨識 ──
-  function toggleRecording() {
-    if (isRecording) { stopRecording(); return; }
+  function checkQVoiceSupport(i) {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    document.getElementById('qSrOk' + i).style.display = SR ? 'block' : 'none';
+    document.getElementById('qSrFb' + i).style.display = SR ? 'none' : 'block';
+    if (!SR) setTimeout(function() { document.getElementById('q' + i).focus(); }, 300);
+  }
+
+  // ── 語音辨識（per question） ──
+  function toggleQRecording(i) {
+    if (qRecording[i]) { stopQRecording(i); return; }
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { showToast('此裝置不支援語音辨識', 'error'); return; }
     try {
-      recognition = new SR();
-      recognition.continuous = true; recognition.interimResults = true; recognition.lang = 'zh-TW';
-      recognition.onstart  = function() { document.getElementById('recordStatus').textContent = '🎙 錄音中，請開始說話…'; };
-      recognition.onresult = function(e) {
+      var r = new SR();
+      r.continuous = true; r.interimResults = true; r.lang = 'zh-TW';
+      r.onstart = function() { document.getElementById('qRecStatus' + i).textContent = '🎙 錄音中，請開始說話…'; };
+      r.onresult = function(e) {
         var interim = '';
-        for (var i = e.resultIndex; i < e.results.length; i++) {
-          if (e.results[i].isFinal) committedText += e.results[i][0].transcript;
-          else interim += e.results[i][0].transcript;
+        for (var j = e.resultIndex; j < e.results.length; j++) {
+          if (e.results[j].isFinal) qCommitted[i] += e.results[j][0].transcript;
+          else interim += e.results[j][0].transcript;
         }
-        document.getElementById('feedbackText').value = committedText + interim;
+        document.getElementById('q' + i).value = qCommitted[i] + interim;
       };
-      recognition.onerror = function(e) {
-        if (e.error === 'not-allowed') document.getElementById('recordStatus').textContent = '❌ 請允許麥克風權限後重試';
-        else if (e.error === 'service-not-allowed') { document.getElementById('srSupported').style.display='none'; document.getElementById('srFallback').style.display='block'; }
-        else if (e.error !== 'no-speech') document.getElementById('recordStatus').textContent = '錯誤：' + e.error;
-        stopRecordingUI();
+      r.onerror = function(e) {
+        if (e.error === 'not-allowed') document.getElementById('qRecStatus' + i).textContent = '❌ 請允許麥克風權限後重試';
+        else if (e.error === 'service-not-allowed') {
+          document.getElementById('qSrOk' + i).style.display = 'none';
+          document.getElementById('qSrFb' + i).style.display = 'block';
+        } else if (e.error !== 'no-speech') document.getElementById('qRecStatus' + i).textContent = '錯誤：' + e.error;
+        stopQRecordingUI(i);
       };
-      recognition.onend = function() { if (isRecording) { try { recognition.start(); } catch(ex) {} } };
-      committedText = document.getElementById('feedbackText').value;
-      isRecording = true;
-      document.getElementById('recordBtnLabel').innerHTML = '停止<br>錄音';
-      document.getElementById('recordBtn').classList.add('recording');
-      document.getElementById('recordStatus').textContent = '啟動中…';
-      recognition.start();
-    } catch(e) { showToast('語音啟動失敗：' + e.message, 'error'); stopRecordingUI(); }
+      r.onend = function() { if (qRecording[i]) { try { r.start(); } catch(ex) {} } };
+      qCommitted[i] = document.getElementById('q' + i).value;
+      qRecog[i] = r;
+      qRecording[i] = true;
+      document.getElementById('qRecLabel' + i).innerHTML = '停止<br>錄音';
+      document.getElementById('qRecBtn' + i).classList.add('recording');
+      document.getElementById('qRecStatus' + i).textContent = '啟動中…';
+      r.start();
+    } catch(e) { showToast('語音啟動失敗：' + e.message, 'error'); stopQRecordingUI(i); }
   }
-  function stopRecording() {
-    isRecording = false;
-    if (recognition) { try { recognition.stop(); } catch(e) {} recognition = null; }
-    stopRecordingUI();
+
+  function stopQRecording(i) {
+    qRecording[i] = false;
+    if (qRecog[i]) { try { qRecog[i].stop(); } catch(e) {} qRecog[i] = null; }
+    stopQRecordingUI(i);
   }
-  function stopRecordingUI() {
-    isRecording = false;
-    document.getElementById('recordBtnLabel').innerHTML = '點此<br>錄音';
-    document.getElementById('recordBtn').classList.remove('recording');
-    document.getElementById('recordStatus').textContent = '錄音結束，可繼續編輯內容';
+
+  function stopQRecordingUI(i) {
+    qRecording[i] = false;
+    document.getElementById('qRecLabel' + i).innerHTML = '點此<br>錄音';
+    document.getElementById('qRecBtn' + i).classList.remove('recording');
+    document.getElementById('qRecStatus' + i).textContent = '錄音結束，可繼續編輯內容';
   }
 
   // ── Toast ──
@@ -438,30 +483,41 @@
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbwymktZzHh2BDxYG7wffW8WKk-2LI-a3hTU7PmrnNls-8QA1P2tR9Y8wEj9icAFTDgU/exec';
 
   async function submitFeedback() {
+    // 基本資料驗證
+    if (!selectedJob)                                            { showToast('請選擇職類', 'error'); return; }
+    if (selectedJob === '其他' && !document.getElementById('jobOther').value.trim()) { showToast('請填寫職類（其他）', 'error'); return; }
+    if (!selectedExp)                                            { showToast('請選擇臨床工作年資', 'error'); return; }
+    // 訓練資訊驗證
     if (!document.getElementById('sessionDate').value)           { showToast('請選擇訓練日期', 'error'); return; }
     if (!document.getElementById('practiceNum').value)           { showToast('請選擇團隊第幾次練習', 'error'); return; }
     var campusVal = document.getElementById('campus').value;
-    if (!campusVal) { showToast('請選擇院區', 'error'); return; }
+    if (!campusVal)                                              { showToast('請選擇院區', 'error'); return; }
     if (campusVal === 'other' && !document.getElementById('campusOther').value.trim()) { showToast('請輸入醫院名稱', 'error'); return; }
     if (!document.getElementById('group').value)                 { showToast('請選擇組別', 'error'); return; }
     if (!document.getElementById('name').value.trim())           { showToast('請輸入名字', 'error'); return; }
     var emailVal = document.getElementById('email').value.trim();
-    if (!emailVal)                        { showToast('請輸入 Email', 'error'); return; }
-    if (emailVal.indexOf('@') === -1)     { showToast('Email 格式不正確，請包含 @', 'error'); return; }
+    if (!emailVal)                                               { showToast('請輸入 Email', 'error'); return; }
+    if (emailVal.indexOf('@') === -1)                            { showToast('Email 格式不正確，請包含 @', 'error'); return; }
     if (!document.getElementById('position').value)              { showToast('請選擇 A-C-L-S 分工站位', 'error'); return; }
     if (!selectedInsituExp)                                      { showToast('請選擇參與擬真訓練的經驗', 'error'); return; }
-    if (!document.getElementById('feedbackText').value.trim())   { showToast('請輸入回饋內容', 'error'); return; }
-    if (!selectedJob)                                            { showToast('請選擇職類', 'error'); return; }
-    if (selectedJob === '其他' && !document.getElementById('jobOther').value.trim()) { showToast('請填寫職類（其他）', 'error'); return; }
-    if (!selectedExp)                                            { showToast('請選擇臨床工作年資', 'error'); return; }
+    // 問卷驗證
+    var answers = [];
+    for (var i = 0; i < Q_COUNT; i++) {
+      var val = document.getElementById('q' + i).value.trim();
+      if (!val) { showToast('請回答第 ' + (i + 1) + ' 題', 'error'); return; }
+      answers.push(val);
+    }
 
-    if (isRecording) stopRecording();
+    // 停止所有錄音
+    for (var i = 0; i < Q_COUNT; i++) { if (qRecording[i]) stopQRecording(i); }
 
     var btn = document.getElementById('submitBtn');
     btn.disabled = true; btn.textContent = '送出中…';
 
     try {
       var data = {
+        job_category:      selectedJob === '其他' ? document.getElementById('jobOther').value.trim() : selectedJob,
+        work_experience:   selectedExp,
         session_date:      document.getElementById('sessionDate').value,
         practice_num:      document.getElementById('practiceNum').value,
         campus:            campusVal === 'other' ? document.getElementById('campusOther').value.trim() : campusVal,
@@ -470,10 +526,12 @@
         email:             emailVal,
         acls_position:     document.getElementById('position').value,
         insitu_experience: selectedInsituExp,
-        input_type:        currentMode,
-        feedback_content:  document.getElementById('feedbackText').value.trim(),
-        job_category:      selectedJob === '其他' ? document.getElementById('jobOther').value.trim() : selectedJob,
-        work_experience:   selectedExp
+        q1:                answers[0],
+        q2:                answers[1],
+        q3:                answers[2],
+        q4:                answers[3],
+        q5:                answers[4],
+        q6:                answers[5]
       };
 
       await fetch(GAS_URL + '?' + new URLSearchParams(data).toString(), { method: 'GET', mode: 'no-cors' });
@@ -487,6 +545,7 @@
   // ── 重設 ──
   function resetForm() {
     document.getElementById('thankOverlay').classList.remove('show');
+    // 重設日期
     (function() {
       var now = new Date();
       var y = now.getFullYear();
@@ -494,19 +553,31 @@
       var d = String(now.getDate()).padStart(2, '0');
       document.getElementById('sessionDate').value = y + '-' + m + '-' + d;
     })();
+    // 重設 select
     ['practiceNum', 'campus', 'group', 'position'].forEach(function(id) { document.getElementById(id).value = ''; });
     document.getElementById('campusOther').value = '';
     document.getElementById('campusOtherWrap').style.display = 'none';
+    // 重設文字欄
     document.getElementById('name').value = '';
     document.getElementById('email').value = '';
-    document.getElementById('feedbackText').value = '';
-    committedText = ''; setMode('text');
+    // 重設選項卡片
     document.querySelectorAll('.opt-card').forEach(function(c) { c.classList.remove('selected'); });
     selectedInsituExp = '';
     selectedJob = '';
     selectedExp = '';
     document.getElementById('jobOtherWrap').classList.remove('show');
     document.getElementById('jobOther').value = '';
+    // 重設問卷
+    for (var i = 0; i < Q_COUNT; i++) {
+      if (qRecording[i]) stopQRecording(i);
+      document.getElementById('q' + i).value = '';
+      qCommitted[i] = '';
+      qModes[i] = 'text';
+      document.getElementById('qVoice' + i).style.display = 'none';
+      var btns = document.querySelectorAll('#qblock' + i + ' .mode-btn');
+      btns[0].classList.add('active');
+      btns[1].classList.remove('active');
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 </script>
