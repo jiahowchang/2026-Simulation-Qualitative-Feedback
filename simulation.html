@@ -255,7 +255,7 @@
     </div>
 
     <div class="field">
-      <label for="position">A-C-L-S 站位</label>
+      <label for="position">A-C-L-S 分工站位</label>
       <select id="position">
         <option value="">-- 請選擇站位 --</option>
         <option value="Airway">Airway</option>
@@ -263,6 +263,7 @@
         <option value="Leader">Leader</option>
         <option value="Support">Support</option>
         <option value="觀察員">觀察員</option>
+        <option value="不清楚自己分工位置">不清楚自己分工位置</option>
       </select>
     </div>
 
@@ -447,7 +448,7 @@
     var emailVal = document.getElementById('email').value.trim();
     if (!emailVal)                        { showToast('請輸入 Email', 'error'); return; }
     if (emailVal.indexOf('@') === -1)     { showToast('Email 格式不正確，請包含 @', 'error'); return; }
-    if (!document.getElementById('position').value)              { showToast('請選擇 A-C-L-S 站位', 'error'); return; }
+    if (!document.getElementById('position').value)              { showToast('請選擇 A-C-L-S 分工站位', 'error'); return; }
     if (!selectedInsituExp)                                      { showToast('請選擇參與擬真訓練的經驗', 'error'); return; }
     if (!document.getElementById('feedbackText').value.trim())   { showToast('請輸入回饋內容', 'error'); return; }
     if (!selectedJob)                                            { showToast('請選擇職類', 'error'); return; }
