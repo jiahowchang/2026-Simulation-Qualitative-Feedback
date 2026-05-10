@@ -225,8 +225,8 @@
         </select>
       </div>
       <div class="field">
-        <label for="name">暱稱</label>
-        <input type="text" id="name" placeholder="請輸入您的暱稱">
+        <label for="name">名字</label>
+        <input type="text" id="name" placeholder="請輸入您的名字">
       </div>
       <div class="field">
         <label for="position">A-C-L-S 站位</label>
@@ -563,7 +563,7 @@
     if (!document.getElementById('sessionDate').value) { showToast('請選擇訓練日期', 'error'); return; }
     if (!document.getElementById('campus').value)      { showToast('請選擇院區', 'error'); return; }
     if (!document.getElementById('group').value)       { showToast('請選擇組別', 'error'); return; }
-    if (!document.getElementById('name').value.trim()) { showToast('請輸入暱稱', 'error'); return; }
+    if (!document.getElementById('name').value.trim()) { showToast('請輸入名字', 'error'); return; }
     if (!document.getElementById('position').value)    { showToast('請選擇 A-C-L-S 站位', 'error'); return; }
     if (!document.getElementById('feedbackText').value.trim()) { showToast('請輸入回饋內容', 'error'); return; }
     if (isRecording) stopRecording();
