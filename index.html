@@ -239,6 +239,15 @@
           <option value="觀察員">觀察員</option>
         </select>
       </div>
+      <div class="field">
+        <label>參加原位模擬經驗 <span style="color:#e53e3e;">*</span></label>
+        <div class="option-grid cols-1" id="insituExpGrid">
+          <div class="opt-card" onclick="selectOpt('insituExp','第一次參加',this)"><div class="opt-radio"></div><div class="opt-text">第一次參加</div></div>
+          <div class="opt-card" onclick="selectOpt('insituExp','參加 2~5 次',this)"><div class="opt-radio"></div><div class="opt-text">參加 2 ~ 5 次</div></div>
+          <div class="opt-card" onclick="selectOpt('insituExp','參加 6~10 次',this)"><div class="opt-radio"></div><div class="opt-text">參加 6 ~ 10 次</div></div>
+          <div class="opt-card" onclick="selectOpt('insituExp','超過 10 次',this)"><div class="opt-radio"></div><div class="opt-text">超過 10 次</div></div>
+        </div>
+      </div>
       <label>回饋方式</label>
       <div class="mode-toggle">
         <button class="mode-btn active" data-mode="text" onclick="setMode('text')">手動輸入</button>
@@ -504,9 +513,10 @@
   var isRecording   = false;
   var recognition   = null;
   var committedText = '';
-  var selectedJob   = '';
-  var selectedExp   = '';
-  var selectedTrmExp = '';
+  var selectedJob      = '';
+  var selectedExp      = '';
+  var selectedTrmExp   = '';
+  var selectedInsituExp = '';
   var likertValues  = { trm_heard: 0, trm_understand: 0, trm_confidence: 0, trm_acls: 0, trm_harmony: 0 };
   for (var i = 1; i <= 30; i++) { likertValues['nts' + i] = 0; }
 
@@ -575,7 +585,7 @@
 
   // ── 卡片選項 ──
   function selectOpt(group, value, el) {
-    var gridMap = { job: 'jobGrid', exp: 'expGrid', trmExp: 'trmExpGrid' };
+    var gridMap = { job: 'jobGrid', exp: 'expGrid', trmExp: 'trmExpGrid', insituExp: 'insituExpGrid' };
     document.querySelectorAll('#' + gridMap[group] + ' .opt-card').forEach(function(c) { c.classList.remove('selected'); });
     el.classList.add('selected');
     if (group === 'job') {
@@ -585,6 +595,8 @@
       if (value === '其他') document.getElementById('jobOther').focus();
     } else if (group === 'exp') {
       selectedExp = value;
+    } else if (group === 'insituExp') {
+      selectedInsituExp = value;
     } else {
       selectedTrmExp = value;
     }
@@ -604,6 +616,7 @@
     if (!document.getElementById('group').value)       { showToast('請選擇組別', 'error'); return; }
     if (!document.getElementById('name').value.trim()) { showToast('請輸入名字', 'error'); return; }
     if (!document.getElementById('position').value)    { showToast('請選擇 A-C-L-S 站位', 'error'); return; }
+    if (!selectedInsituExp) { showToast('請選擇參加原位模擬經驗', 'error'); return; }
     if (!document.getElementById('feedbackText').value.trim()) { showToast('請輸入回饋內容', 'error'); return; }
     if (isRecording) stopRecording();
     document.getElementById('page1').classList.add('hidden');
@@ -662,6 +675,7 @@
         group:            document.getElementById('group').value,
         name:             document.getElementById('name').value.trim(),
         acls_position:    document.getElementById('position').value,
+        insitu_experience: selectedInsituExp,
         input_type:       currentMode,
         feedback_content: document.getElementById('feedbackText').value.trim(),
         job_category:     jobValue,
@@ -701,7 +715,7 @@
     document.querySelectorAll('.lk-btn').forEach(function(b) { b.classList.remove('selected'); });
     document.getElementById('jobOtherWrap').classList.remove('show');
     document.getElementById('jobOther').value = '';
-    selectedJob = ''; selectedExp = ''; selectedTrmExp = '';
+    selectedJob = ''; selectedExp = ''; selectedTrmExp = ''; selectedInsituExp = '';
     likertValues = { trm_heard: 0, trm_understand: 0, trm_confidence: 0, trm_acls: 0, trm_harmony: 0 };
     for (var i = 1; i <= 30; i++) { likertValues['nts' + i] = 0; }
     goToPage1();
