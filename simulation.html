@@ -141,11 +141,15 @@
 
     <div class="field">
       <label for="campus">院區</label>
-      <select id="campus">
+      <select id="campus" onchange="toggleCampusOther()">
         <option value="">-- 請選擇院區 --</option>
         <option value="新竹">新竹</option>
         <option value="生醫">生醫</option>
+        <option value="other">其他醫院</option>
       </select>
+      <div id="campusOtherWrap" style="display:none; margin-top:8px;">
+        <input type="text" id="campusOther" placeholder="請輸入醫院名稱">
+      </div>
     </div>
 
     <div class="field">
@@ -241,6 +245,14 @@
     document.getElementById('sessionDate').value = y + '-' + m + '-' + d;
   })();
 
+  // ── 院區其他 ──
+  function toggleCampusOther() {
+    var val = document.getElementById('campus').value;
+    var wrap = document.getElementById('campusOtherWrap');
+    wrap.style.display = val === 'other' ? 'block' : 'none';
+    if (val === 'other') document.getElementById('campusOther').focus();
+  }
+
   // ── 選項 ──
   function selectInsituExp(value, el) {
     document.querySelectorAll('#insituExpGrid .opt-card').forEach(function(c) { c.classList.remove('selected'); });
@@ -324,7 +336,9 @@
 
   async function submitFeedback() {
     if (!document.getElementById('sessionDate').value)           { showToast('請選擇訓練日期', 'error'); return; }
-    if (!document.getElementById('campus').value)                { showToast('請選擇院區', 'error'); return; }
+    var campusVal = document.getElementById('campus').value;
+    if (!campusVal) { showToast('請選擇院區', 'error'); return; }
+    if (campusVal === 'other' && !document.getElementById('campusOther').value.trim()) { showToast('請輸入醫院名稱', 'error'); return; }
     if (!document.getElementById('group').value)                 { showToast('請選擇組別', 'error'); return; }
     if (!document.getElementById('name').value.trim())           { showToast('請輸入名字', 'error'); return; }
     if (!document.getElementById('position').value)              { showToast('請選擇 A-C-L-S 站位', 'error'); return; }
@@ -339,7 +353,7 @@
     try {
       var data = {
         session_date:      document.getElementById('sessionDate').value,
-        campus:            document.getElementById('campus').value,
+        campus:            campusVal === 'other' ? document.getElementById('campusOther').value.trim() : campusVal,
         group:             document.getElementById('group').value,
         name:              document.getElementById('name').value.trim(),
         acls_position:     document.getElementById('position').value,
@@ -367,6 +381,8 @@
       document.getElementById('sessionDate').value = y + '-' + m + '-' + d;
     })();
     ['campus', 'group', 'position'].forEach(function(id) { document.getElementById(id).value = ''; });
+    document.getElementById('campusOther').value = '';
+    document.getElementById('campusOtherWrap').style.display = 'none';
     document.getElementById('name').value = '';
     document.getElementById('feedbackText').value = '';
     committedText = ''; setMode('text');
