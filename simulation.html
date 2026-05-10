@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>擬真訓練質性回饋</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f4f8; color: #1a202c; min-height: 100vh;
+    }
+    .container { max-width: 520px; margin: 0 auto; padding: 24px 16px 60px; }
+
+    /* Header */
+    .header-row { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
+    .header-titles { flex: 1; text-align: center; }
+    h1 { text-align: center; font-size: 1.5rem; margin-bottom: 4px; color: #2b6cb0; }
+    .subtitle { text-align: center; font-size: 0.9rem; color: #718096; }
+    .qr-corner {
+      display: flex; flex-direction: column; align-items: center;
+      background: #fff; border-radius: 10px; padding: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-left: 12px; flex-shrink: 0;
+    }
+    .qr-corner img { border-radius: 4px; }
+    .qr-label { font-size: 0.65rem; color: #718096; margin-top: 4px; text-align: center; }
+
+    /* 卡片 */
+    .card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 16px; }
+    .card-title { font-size: 1rem; font-weight: 700; color: #2b6cb0; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1.5px solid #ebf8ff; }
+
+    /* 欄位 */
+    label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.95rem; }
+    input[type="text"], input[type="date"], select, textarea {
+      width: 100%; padding: 10px 12px;
+      border: 1.5px solid #cbd5e0; border-radius: 8px;
+      font-size: 1rem; transition: border-color 0.2s; outline: none; background: #fff;
+    }
+    input:focus, select:focus, textarea:focus { border-color: #3182ce; }
+    .field { margin-bottom: 16px; }
+    textarea { min-height: 120px; resize: vertical; }
+
+    /* 模式切換 */
+    .mode-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+    .mode-btn {
+      flex: 1; padding: 10px; border: 2px solid #cbd5e0; border-radius: 8px;
+      background: #fff; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; text-align: center;
+    }
+    .mode-btn.active { border-color: #3182ce; background: #ebf8ff; color: #2b6cb0; }
+
+    /* 錄音 */
+    .record-btn {
+      width: 80px; height: 80px; border-radius: 50%; border: none;
+      background: #e53e3e; color: #fff; font-size: 0.85rem; font-weight: 700; cursor: pointer;
+      transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(229,62,62,0.4);
+    }
+    .record-btn.recording { background: #c53030; animation: pulse 1.2s infinite; }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(229,62,62,0.5); }
+      50%       { box-shadow: 0 0 0 14px rgba(229,62,62,0); }
+    }
+    .record-status { margin-top: 10px; font-size: 0.85rem; color: #718096; min-height: 20px; }
+
+    /* 卡片式選項 */
+    .option-grid { display: grid; gap: 10px; margin-top: 8px; }
+    .option-grid.cols-1 { grid-template-columns: 1fr; }
+    .opt-card {
+      display: flex; align-items: center; gap: 12px; padding: 13px 14px;
+      border: 2px solid #e2e8f0; border-radius: 10px; cursor: pointer;
+      background: #fff; transition: all 0.18s;
+      user-select: none; -webkit-tap-highlight-color: transparent;
+    }
+    .opt-card:active { transform: scale(0.97); }
+    .opt-card.selected { border-color: #3182ce; background: #ebf8ff; }
+    .opt-radio {
+      width: 20px; height: 20px; border-radius: 50%; border: 2px solid #cbd5e0;
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.18s;
+    }
+    .opt-card.selected .opt-radio { border-color: #3182ce; background: #3182ce; }
+    .opt-radio::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #fff; display: none; }
+    .opt-card.selected .opt-radio::after { display: block; }
+    .opt-text { font-size: 0.95rem; font-weight: 600; color: #2d3748; line-height: 1.4; }
+    .opt-card.selected .opt-text { color: #2b6cb0; }
+
+    /* 按鈕 */
+    .btn-row { display: flex; gap: 10px; margin-top: 20px; }
+    .btn { flex: 1; padding: 14px; border: none; border-radius: 8px; font-size: 1.05rem; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+    .btn-primary { background: #3182ce; color: #fff; }
+    .btn-primary:hover { background: #2b6cb0; }
+    .btn-primary:disabled { background: #a0aec0; cursor: not-allowed; }
+
+    /* Toast */
+    .toast {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 0.95rem;
+      z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; }
+    .toast.error { background: #fed7d7; color: #822727; }
+
+    /* 感謝 Overlay */
+    .thank-overlay {
+      display: none; position: fixed; inset: 0;
+      background: linear-gradient(135deg, #2b6cb0, #3182ce);
+      z-index: 1000; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 32px;
+    }
+    .thank-overlay.show { display: flex; }
+    .thank-icon { font-size: 4rem; margin-bottom: 24px; }
+    .thank-title { font-size: 1.5rem; font-weight: 700; color: #fff; line-height: 1.6; margin-bottom: 32px; }
+    .thank-btn { padding: 14px 40px; background: #fff; color: #2b6cb0; border: none; border-radius: 10px; font-size: 1.05rem; font-weight: 700; cursor: pointer; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header-row">
+    <div class="header-titles">
+      <img src="logo.png" alt="新竹台大分院"
+           style="height:60px; margin-bottom:8px; display:block; margin-left:auto; margin-right:auto;">
+      <h1>擬真訓練<br>質性回饋</h1>
+      <p class="subtitle">2026 Simulation Qualitative Feedback</p>
+    </div>
+    <div class="qr-corner">
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://jiahowchang.github.io/2026-Simulation-Qualitative-Feedback/simulation.html"
+           width="100" height="100" alt="QR Code">
+      <p class="qr-label">掃描進入</p>
+    </div>
+  </div>
+
+  <!-- 表單卡片 -->
+  <div class="card">
+    <div class="card-title">📝 訓練資訊與回饋</div>
+
+    <div class="field">
+      <label for="sessionDate">訓練日期</label>
+      <input type="date" id="sessionDate">
+    </div>
+
+    <div class="field">
+      <label for="campus">院區</label>
+      <select id="campus">
+        <option value="">-- 請選擇院區 --</option>
+        <option value="新竹">新竹</option>
+        <option value="生醫">生醫</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="group">組別</label>
+      <select id="group">
+        <option value="">-- 請選擇組別 --</option>
+        <option value="急診原位模擬">急診原位模擬</option>
+        <option value="兒科急診原位模擬">兒科急診原位模擬</option>
+        <option value="產科、兒科、急診原位模擬">產科、兒科、急診原位模擬</option>
+        <option value="創傷原位模擬">創傷原位模擬</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="name">名字</label>
+      <input type="text" id="name" placeholder="請輸入您的名字">
+    </div>
+
+    <div class="field">
+      <label for="position">A-C-L-S 站位</label>
+      <select id="position">
+        <option value="">-- 請選擇站位 --</option>
+        <option value="Airway">Airway</option>
+        <option value="Circulation">Circulation</option>
+        <option value="Leader">Leader</option>
+        <option value="Support">Support</option>
+        <option value="觀察員">觀察員</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>參加原位模擬經驗 <span style="color:#e53e3e;">*</span></label>
+      <div class="option-grid cols-1" id="insituExpGrid">
+        <div class="opt-card" onclick="selectInsituExp('第一次參加',this)"><div class="opt-radio"></div><div class="opt-text">第一次參加</div></div>
+        <div class="opt-card" onclick="selectInsituExp('參加 2~5 次',this)"><div class="opt-radio"></div><div class="opt-text">參加 2 ~ 5 次</div></div>
+        <div class="opt-card" onclick="selectInsituExp('參加 6~10 次',this)"><div class="opt-radio"></div><div class="opt-text">參加 6 ~ 10 次</div></div>
+        <div class="opt-card" onclick="selectInsituExp('超過 10 次',this)"><div class="opt-radio"></div><div class="opt-text">超過 10 次</div></div>
+      </div>
+    </div>
+
+    <label>回饋方式</label>
+    <div class="mode-toggle">
+      <button class="mode-btn active" data-mode="text" onclick="setMode('text')">手動輸入</button>
+      <button class="mode-btn" data-mode="voice" onclick="setMode('voice')">語音輸入</button>
+    </div>
+    <div id="voiceArea" style="display:none; margin-bottom:14px; text-align:center;">
+      <div id="srSupported">
+        <button class="record-btn" id="recordBtn" onclick="toggleRecording()">
+          <span id="recordBtnLabel">點此<br>錄音</span>
+        </button>
+        <p class="record-status" id="recordStatus">按下按鈕開始說話</p>
+      </div>
+      <div id="srFallback" style="display:none; background:#fff7ed; border:1.5px solid #fbd38d; border-radius:8px; padding:14px; text-align:left;">
+        <p style="font-weight:700; color:#c05621; margin-bottom:6px;">⚠️ 您的裝置不支援語音辨識</p>
+        <p style="font-size:0.9rem; color:#744210; line-height:1.6;">請點選下方「回饋內容」輸入框，<br>再按鍵盤上的 🎤 麥克風圖示，<br>即可用語音輸入文字。</p>
+      </div>
+    </div>
+
+    <label for="feedbackText">回饋內容</label>
+    <div style="margin-top:6px;">
+      <textarea id="feedbackText" placeholder="請輸入您對本次訓練的回饋與感想…"></textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="submitBtn" onclick="submitFeedback()">確認送出</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="thank-overlay" id="thankOverlay">
+  <div class="thank-icon">🙏</div>
+  <div class="thank-title">謝謝您的寶貴回饋<br>期待擬真訓練帶給您更多成長</div>
+  <button class="thank-btn" onclick="resetForm()">再填一份</button>
+</div>
+
+<script>
+  // ── 狀態 ──
+  var currentMode      = 'text';
+  var isRecording      = false;
+  var recognition      = null;
+  var committedText    = '';
+  var selectedInsituExp = '';
+
+  // ── 初始化日期 ──
+  (function() {
+    var now = new Date();
+    var y = now.getFullYear();
+    var m = String(now.getMonth() + 1).padStart(2, '0');
+    var d = String(now.getDate()).padStart(2, '0');
+    document.getElementById('sessionDate').value = y + '-' + m + '-' + d;
+  })();
+
+  // ── 選項 ──
+  function selectInsituExp(value, el) {
+    document.querySelectorAll('#insituExpGrid .opt-card').forEach(function(c) { c.classList.remove('selected'); });
+    el.classList.add('selected');
+    selectedInsituExp = value;
+  }
+
+  // ── 模式切換 ──
+  function setMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll('.mode-btn').forEach(function(b) {
+      b.classList.toggle('active', b.dataset.mode === mode);
+    });
+    document.getElementById('voiceArea').style.display = mode === 'voice' ? 'block' : 'none';
+    if (mode === 'text' && isRecording) stopRecording();
+    if (mode === 'voice') checkVoiceSupport();
+  }
+  function checkVoiceSupport() {
+    var SR  = window.SpeechRecognition || window.webkitSpeechRecognition;
+    var sup = document.getElementById('srSupported');
+    var fb  = document.getElementById('srFallback');
+    if (SR) { sup.style.display = 'block'; fb.style.display = 'none'; }
+    else    { sup.style.display = 'none';  fb.style.display = 'block';
+      setTimeout(function() { document.getElementById('feedbackText').focus(); }, 300); }
+  }
+
+  // ── 語音辨識 ──
+  function toggleRecording() {
+    if (isRecording) { stopRecording(); return; }
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { showToast('此裝置不支援語音辨識', 'error'); return; }
+    try {
+      recognition = new SR();
+      recognition.continuous = true; recognition.interimResults = true; recognition.lang = 'zh-TW';
+      recognition.onstart  = function() { document.getElementById('recordStatus').textContent = '🎙 錄音中，請開始說話…'; };
+      recognition.onresult = function(e) {
+        var interim = '';
+        for (var i = e.resultIndex; i < e.results.length; i++) {
+          if (e.results[i].isFinal) committedText += e.results[i][0].transcript;
+          else interim += e.results[i][0].transcript;
+        }
+        document.getElementById('feedbackText').value = committedText + interim;
+      };
+      recognition.onerror = function(e) {
+        if (e.error === 'not-allowed') document.getElementById('recordStatus').textContent = '❌ 請允許麥克風權限後重試';
+        else if (e.error === 'service-not-allowed') { document.getElementById('srSupported').style.display='none'; document.getElementById('srFallback').style.display='block'; }
+        else if (e.error !== 'no-speech') document.getElementById('recordStatus').textContent = '錯誤：' + e.error;
+        stopRecordingUI();
+      };
+      recognition.onend = function() { if (isRecording) { try { recognition.start(); } catch(ex) {} } };
+      committedText = document.getElementById('feedbackText').value;
+      isRecording = true;
+      document.getElementById('recordBtnLabel').innerHTML = '停止<br>錄音';
+      document.getElementById('recordBtn').classList.add('recording');
+      document.getElementById('recordStatus').textContent = '啟動中…';
+      recognition.start();
+    } catch(e) { showToast('語音啟動失敗：' + e.message, 'error'); stopRecordingUI(); }
+  }
+  function stopRecording() {
+    isRecording = false;
+    if (recognition) { try { recognition.stop(); } catch(e) {} recognition = null; }
+    stopRecordingUI();
+  }
+  function stopRecordingUI() {
+    isRecording = false;
+    document.getElementById('recordBtnLabel').innerHTML = '點此<br>錄音';
+    document.getElementById('recordBtn').classList.remove('recording');
+    document.getElementById('recordStatus').textContent = '錄音結束，可繼續編輯內容';
+  }
+
+  // ── Toast ──
+  function showToast(msg, type) {
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.className = 'toast ' + (type || '');
+    t.classList.add('show');
+    setTimeout(function() { t.classList.remove('show'); }, 2800);
+  }
+
+  // ── 送出 ──
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbxeC5daxLlof5qQIl5909QqmBqoZhuQAPQ3j5x7doHGVVuZZttgd76IxPs53o9hJ8M/exec';
+
+  async function submitFeedback() {
+    if (!document.getElementById('sessionDate').value)           { showToast('請選擇訓練日期', 'error'); return; }
+    if (!document.getElementById('campus').value)                { showToast('請選擇院區', 'error'); return; }
+    if (!document.getElementById('group').value)                 { showToast('請選擇組別', 'error'); return; }
+    if (!document.getElementById('name').value.trim())           { showToast('請輸入名字', 'error'); return; }
+    if (!document.getElementById('position').value)              { showToast('請選擇 A-C-L-S 站位', 'error'); return; }
+    if (!selectedInsituExp)                                      { showToast('請選擇參加原位模擬經驗', 'error'); return; }
+    if (!document.getElementById('feedbackText').value.trim())   { showToast('請輸入回饋內容', 'error'); return; }
+
+    if (isRecording) stopRecording();
+
+    var btn = document.getElementById('submitBtn');
+    btn.disabled = true; btn.textContent = '送出中…';
+
+    try {
+      var data = {
+        session_date:      document.getElementById('sessionDate').value,
+        campus:            document.getElementById('campus').value,
+        group:             document.getElementById('group').value,
+        name:              document.getElementById('name').value.trim(),
+        acls_position:     document.getElementById('position').value,
+        insitu_experience: selectedInsituExp,
+        input_type:        currentMode,
+        feedback_content:  document.getElementById('feedbackText').value.trim()
+      };
+
+      await fetch(GAS_URL + '?' + new URLSearchParams(data).toString(), { method: 'GET', mode: 'no-cors' });
+      document.getElementById('thankOverlay').classList.add('show');
+    } catch(e) {
+      showToast('送出失敗，請再試一次', 'error');
+    }
+    btn.disabled = false; btn.textContent = '確認送出';
+  }
+
+  // ── 重設 ──
+  function resetForm() {
+    document.getElementById('thankOverlay').classList.remove('show');
+    (function() {
+      var now = new Date();
+      var y = now.getFullYear();
+      var m = String(now.getMonth() + 1).padStart(2, '0');
+      var d = String(now.getDate()).padStart(2, '0');
+      document.getElementById('sessionDate').value = y + '-' + m + '-' + d;
+    })();
+    ['campus', 'group', 'position'].forEach(function(id) { document.getElementById(id).value = ''; });
+    document.getElementById('name').value = '';
+    document.getElementById('feedbackText').value = '';
+    committedText = ''; setMode('text');
+    document.querySelectorAll('.opt-card').forEach(function(c) { c.classList.remove('selected'); });
+    selectedInsituExp = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
