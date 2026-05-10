@@ -250,6 +250,11 @@
     </div>
 
     <div class="field">
+      <label for="email">Email</label>
+      <input type="text" id="email" placeholder="請輸入您的 Email">
+    </div>
+
+    <div class="field">
       <label for="position">A-C-L-S 站位</label>
       <select id="position">
         <option value="">-- 請選擇站位 --</option>
@@ -439,6 +444,7 @@
     if (campusVal === 'other' && !document.getElementById('campusOther').value.trim()) { showToast('請輸入醫院名稱', 'error'); return; }
     if (!document.getElementById('group').value)                 { showToast('請選擇組別', 'error'); return; }
     if (!document.getElementById('name').value.trim())           { showToast('請輸入名字', 'error'); return; }
+    if (!document.getElementById('email').value.trim())          { showToast('請輸入 Email', 'error'); return; }
     if (!document.getElementById('position').value)              { showToast('請選擇 A-C-L-S 站位', 'error'); return; }
     if (!selectedInsituExp)                                      { showToast('請選擇參與擬真訓練的經驗', 'error'); return; }
     if (!document.getElementById('feedbackText').value.trim())   { showToast('請輸入回饋內容', 'error'); return; }
@@ -458,6 +464,7 @@
         campus:            campusVal === 'other' ? document.getElementById('campusOther').value.trim() : campusVal,
         group:             document.getElementById('group').value,
         name:              document.getElementById('name').value.trim(),
+        email:             document.getElementById('email').value.trim(),
         acls_position:     document.getElementById('position').value,
         insitu_experience: selectedInsituExp,
         input_type:        currentMode,
@@ -488,6 +495,7 @@
     document.getElementById('campusOther').value = '';
     document.getElementById('campusOtherWrap').style.display = 'none';
     document.getElementById('name').value = '';
+    document.getElementById('email').value = '';
     document.getElementById('feedbackText').value = '';
     committedText = ''; setMode('text');
     document.querySelectorAll('.opt-card').forEach(function(c) { c.classList.remove('selected'); });
