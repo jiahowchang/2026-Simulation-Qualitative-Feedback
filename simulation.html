@@ -114,6 +114,10 @@
       min-width: 26px; height: 26px; background: #3182ce; color: #fff;
       border-radius: 50%; font-size: 0.8rem; font-weight: 700; flex-shrink: 0; margin-top: 2px;
     }
+    .q-hint {
+      display: block; font-size: 0.82rem; font-weight: 400; color: #718096;
+      margin-top: 5px; line-height: 1.6;
+    }
     .q-voice-area { margin-bottom: 10px; text-align: center; }
 
     /* 按鈕 */
@@ -317,21 +321,22 @@
   var selectedExp       = '';
 
   // ── 問卷狀態（6題） ──
-  var Q_COUNT    = 7;
-  var qModes     = ['text','text','text','text','text','text','text'];
-  var qRecording = [false,false,false,false,false,false,false];
-  var qRecog     = [null,null,null,null,null,null,null];
-  var qCommitted = ['','','','','','',''];
+  var Q_COUNT    = 8;
+  var qModes     = ['text','text','text','text','text','text','text','text'];
+  var qRecording = [false,false,false,false,false,false,false,false];
+  var qRecog     = [null,null,null,null,null,null,null,null];
+  var qCommitted = ['','','','','','','',''];
 
   // ── 問題清單 ──
   var QUESTIONS = [
-    '這次團隊合作最有效的一個行為是什麼？',
-    '這次最需要改善的 TRM 行為是什麼？',
-    '指導者回饋中，哪一點最可能改變你下一次的行為？',
-    '第二次演練時，你們實際改變了什麼？',
-    '這次訓練中，你是否曾經注意到病人安全、處置流程、團隊分工或溝通上的疑慮，但因為時間壓力、階級關係、角色不確定、擔心影響團隊氣氛，或不知道如何表達，而沒有即時說出來？請簡要描述當時情境。若沒有，請寫「沒有」；若有，請描述你當時想說什麼、為什麼沒有說、下次會希望怎麼說。',
-    '這次經驗能否轉移到真實臨床？為什麼？',
-    '其他想對隊員、指導者或自己說的話。'
+    '這次訓練中，能幫助你學習或執行 TRM 的訓練元素是什麼？為什麼？<span class="q-hint">（請先憑印象寫。寫完後若想參考，下面列了一些可能的選項，不必受限）<br>可能包含：第一次演練、coach feedback、第二次演練、錄影回顧、同儕觀察、競賽壓力、角色分工、情境真實性……</span>',
+    '這次訓練中，阻礙你學習或執行 TRM 的因素是什麼？為什麼？<span class="q-hint">（請先憑印象寫。寫完後若想參考，下面列了一些可能的選項，不必受限）<br>可能包含：時間壓力、角色不清、階級壓力、不熟悉隊友、情境太難、設備流程、害怕說錯……</span>',
+    '這次演練中，團隊合作最有效的一個行為是什麼？請描述具體情境（誰做了什麼、結果是什麼）。',
+    '這次最需要改善的 TRM 行為是什麼？下一次你會怎麼做？',
+    '團隊 Debriefing 或指導者回饋中，哪一點最可能改變你下一次的行為？為什麼？',
+    '第二次演練時，你們團隊實際改變了什麼？請描述具體行為。',
+    '這次訓練中，你是否曾經注意到病人安全、處置流程、團隊分工或溝通上的疑慮，但因為時間壓力、階級關係、角色不確定、擔心影響團隊氣氛，或不知道如何表達，而沒有即時說出來？請簡要描述當時情境，你當時想說什麼、為什麼沒有說、下次會希望怎麼說。',
+    '這個經驗能否轉移到真實臨床？為什麼？'
   ];
 
   // ── 動態產生問題區塊 ──
@@ -533,7 +538,8 @@
         q4:                answers[3],
         q5:                answers[4],
         q6:                answers[5],
-        q7:                answers[6]
+        q7:                answers[6],
+        q8:                answers[7]
       };
 
       await fetch(GAS_URL + '?' + new URLSearchParams(data).toString(), { method: 'GET', mode: 'no-cors' });
