@@ -316,7 +316,7 @@
       <div class="field">
         <label>我曾經聽過 TRM（團隊資源管理）這名詞？<span style="color:#e53e3e;"> *</span></label>
         <div class="likert-wrap">
-          <div class="likert-end-labels"><span>非常不同意</span><span>非常同意</span></div>
+          <div class="likert-end-labels"><span>非常不同意</span><span>中立</span><span>非常同意</span></div>
           <div class="likert-buttons" id="lk_trm_heard">
             <button class="lk-btn" onclick="selectLikert('trm_heard',1,this)">1</button>
             <button class="lk-btn" onclick="selectLikert('trm_heard',2,this)">2</button>
@@ -329,7 +329,7 @@
       <div class="field">
         <label>是否瞭解 TRM 的核心內容？<span style="color:#e53e3e;"> *</span></label>
         <div class="likert-wrap">
-          <div class="likert-end-labels"><span>非常不瞭解</span><span>非常瞭解</span></div>
+          <div class="likert-end-labels"><span>非常不瞭解</span><span>中立</span><span>非常瞭解</span></div>
           <div class="likert-buttons" id="lk_trm_understand">
             <button class="lk-btn" onclick="selectLikert('trm_understand',1,this)">1</button>
             <button class="lk-btn" onclick="selectLikert('trm_understand',2,this)">2</button>
@@ -342,7 +342,7 @@
       <div class="field">
         <label>學習 TRM，讓我在處理危急病患時更有信心<span style="color:#e53e3e;"> *</span></label>
         <div class="likert-wrap">
-          <div class="likert-end-labels"><span>非常不同意</span><span>非常同意</span></div>
+          <div class="likert-end-labels"><span>非常不同意</span><span>中立</span><span>非常同意</span></div>
           <div class="likert-buttons" id="lk_trm_confidence">
             <button class="lk-btn" onclick="selectLikert('trm_confidence',1,this)">1</button>
             <button class="lk-btn" onclick="selectLikert('trm_confidence',2,this)">2</button>
@@ -355,7 +355,7 @@
       <div class="field">
         <label>學習 TRM，讓我能依循 ACLS 治療準則來治療病患<span style="color:#e53e3e;"> *</span></label>
         <div class="likert-wrap">
-          <div class="likert-end-labels"><span>非常不同意</span><span>非常同意</span></div>
+          <div class="likert-end-labels"><span>非常不同意</span><span>中立</span><span>非常同意</span></div>
           <div class="likert-buttons" id="lk_trm_acls">
             <button class="lk-btn" onclick="selectLikert('trm_acls',1,this)">1</button>
             <button class="lk-btn" onclick="selectLikert('trm_acls',2,this)">2</button>
@@ -368,7 +368,7 @@
       <div class="field">
         <label>學習 TRM，讓團隊成員氣氛融洽<span style="color:#e53e3e;"> *</span></label>
         <div class="likert-wrap">
-          <div class="likert-end-labels"><span>非常不同意</span><span>非常同意</span></div>
+          <div class="likert-end-labels"><span>非常不同意</span><span>中立</span><span>非常同意</span></div>
           <div class="likert-buttons" id="lk_trm_harmony">
             <button class="lk-btn" onclick="selectLikert('trm_harmony',1,this)">1</button>
             <button class="lk-btn" onclick="selectLikert('trm_harmony',2,this)">2</button>
@@ -450,7 +450,7 @@
       div.innerHTML =
         '<label>' + q + '<span style="color:#e53e3e;"> *</span></label>' +
         '<div class="likert-wrap">' +
-          '<div class="likert-end-labels"><span>非常不同意</span><span>非常同意</span></div>' +
+          '<div class="likert-end-labels"><span>非常不同意</span><span>中立</span><span>非常同意</span></div>' +
           '<div class="likert-buttons" id="lk_' + key + '">' +
             [1,2,3,4,5].map(function(n) {
               return '<button class="lk-btn" onclick="selectLikert(\'' + key + '\',' + n + ',this)">' + n + '</button>';
