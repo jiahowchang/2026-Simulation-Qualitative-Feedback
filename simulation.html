@@ -317,11 +317,11 @@
   var selectedExp       = '';
 
   // ── 問卷狀態（6題） ──
-  var Q_COUNT    = 6;
-  var qModes     = ['text','text','text','text','text','text'];
-  var qRecording = [false,false,false,false,false,false];
-  var qRecog     = [null,null,null,null,null,null];
-  var qCommitted = ['','','','','',''];
+  var Q_COUNT    = 7;
+  var qModes     = ['text','text','text','text','text','text','text'];
+  var qRecording = [false,false,false,false,false,false,false];
+  var qRecog     = [null,null,null,null,null,null,null];
+  var qCommitted = ['','','','','','',''];
 
   // ── 問題清單 ──
   var QUESTIONS = [
@@ -330,7 +330,8 @@
     '指導者回饋中，哪一點最可能改變你下一次的行為？',
     '第二次演練時，你們實際改變了什麼？',
     '這次訓練中，你是否曾經注意到病人安全、處置流程、團隊分工或溝通上的疑慮，但因為時間壓力、階級關係、角色不確定、擔心影響團隊氣氛，或不知道如何表達，而沒有即時說出來？請簡要描述當時情境。若沒有，請寫「沒有」；若有，請描述你當時想說什麼、為什麼沒有說、下次會希望怎麼說。',
-    '這次經驗能否轉移到真實臨床？為什麼？'
+    '這次經驗能否轉移到真實臨床？為什麼？',
+    '其他想對隊員、指導者或自己說的話。'
   ];
 
   // ── 動態產生問題區塊 ──
@@ -531,7 +532,8 @@
         q3:                answers[2],
         q4:                answers[3],
         q5:                answers[4],
-        q6:                answers[5]
+        q6:                answers[5],
+        q7:                answers[6]
       };
 
       await fetch(GAS_URL + '?' + new URLSearchParams(data).toString(), { method: 'GET', mode: 'no-cors' });
