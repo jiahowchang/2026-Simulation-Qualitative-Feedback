@@ -444,7 +444,9 @@
     if (campusVal === 'other' && !document.getElementById('campusOther').value.trim()) { showToast('請輸入醫院名稱', 'error'); return; }
     if (!document.getElementById('group').value)                 { showToast('請選擇組別', 'error'); return; }
     if (!document.getElementById('name').value.trim())           { showToast('請輸入名字', 'error'); return; }
-    if (!document.getElementById('email').value.trim())          { showToast('請輸入 Email', 'error'); return; }
+    var emailVal = document.getElementById('email').value.trim();
+    if (!emailVal)                        { showToast('請輸入 Email', 'error'); return; }
+    if (emailVal.indexOf('@') === -1)     { showToast('Email 格式不正確，請包含 @', 'error'); return; }
     if (!document.getElementById('position').value)              { showToast('請選擇 A-C-L-S 站位', 'error'); return; }
     if (!selectedInsituExp)                                      { showToast('請選擇參與擬真訓練的經驗', 'error'); return; }
     if (!document.getElementById('feedbackText').value.trim())   { showToast('請輸入回饋內容', 'error'); return; }
@@ -464,7 +466,7 @@
         campus:            campusVal === 'other' ? document.getElementById('campusOther').value.trim() : campusVal,
         group:             document.getElementById('group').value,
         name:              document.getElementById('name').value.trim(),
-        email:             document.getElementById('email').value.trim(),
+        email:             emailVal,
         acls_position:     document.getElementById('position').value,
         insitu_experience: selectedInsituExp,
         input_type:        currentMode,
