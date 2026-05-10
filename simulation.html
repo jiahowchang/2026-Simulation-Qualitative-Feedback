@@ -140,6 +140,28 @@
     </div>
 
     <div class="field">
+      <label for="practiceNum">團隊第幾次練習</label>
+      <select id="practiceNum">
+        <option value="">-- 請選擇 --</option>
+        <option value="第1次">第 1 次</option>
+        <option value="第2次">第 2 次</option>
+        <option value="第3次">第 3 次</option>
+        <option value="第4次">第 4 次</option>
+        <option value="第5次">第 5 次</option>
+        <option value="第6次">第 6 次</option>
+        <option value="第7次">第 7 次</option>
+        <option value="第8次">第 8 次</option>
+        <option value="第9次">第 9 次</option>
+        <option value="第10次">第 10 次</option>
+        <option value="第11次">第 11 次</option>
+        <option value="第12次">第 12 次</option>
+        <option value="第13次">第 13 次</option>
+        <option value="第14次">第 14 次</option>
+        <option value="第15次">第 15 次</option>
+      </select>
+    </div>
+
+    <div class="field">
       <label for="campus">院區</label>
       <select id="campus" onchange="toggleCampusOther()">
         <option value="">-- 請選擇院區 --</option>
@@ -336,6 +358,7 @@
 
   async function submitFeedback() {
     if (!document.getElementById('sessionDate').value)           { showToast('請選擇訓練日期', 'error'); return; }
+    if (!document.getElementById('practiceNum').value)           { showToast('請選擇團隊第幾次練習', 'error'); return; }
     var campusVal = document.getElementById('campus').value;
     if (!campusVal) { showToast('請選擇院區', 'error'); return; }
     if (campusVal === 'other' && !document.getElementById('campusOther').value.trim()) { showToast('請輸入醫院名稱', 'error'); return; }
@@ -353,6 +376,7 @@
     try {
       var data = {
         session_date:      document.getElementById('sessionDate').value,
+        practice_num:      document.getElementById('practiceNum').value,
         campus:            campusVal === 'other' ? document.getElementById('campusOther').value.trim() : campusVal,
         group:             document.getElementById('group').value,
         name:              document.getElementById('name').value.trim(),
@@ -380,7 +404,7 @@
       var d = String(now.getDate()).padStart(2, '0');
       document.getElementById('sessionDate').value = y + '-' + m + '-' + d;
     })();
-    ['campus', 'group', 'position'].forEach(function(id) { document.getElementById(id).value = ''; });
+    ['practiceNum', 'campus', 'group', 'position'].forEach(function(id) { document.getElementById(id).value = ''; });
     document.getElementById('campusOther').value = '';
     document.getElementById('campusOtherWrap').style.display = 'none';
     document.getElementById('name').value = '';
