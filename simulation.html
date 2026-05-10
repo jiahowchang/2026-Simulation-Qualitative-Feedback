@@ -83,6 +83,26 @@
     .opt-text { font-size: 0.95rem; font-weight: 600; color: #2d3748; line-height: 1.4; }
     .opt-card.selected .opt-text { color: #2b6cb0; }
 
+    /* 區段標題 */
+    .section-label {
+      font-size: 0.8rem; font-weight: 700; color: #fff;
+      background: #3182ce; border-radius: 6px;
+      padding: 4px 10px; display: inline-block;
+      margin-bottom: 14px; margin-top: 4px;
+    }
+    .section-divider { border: none; border-top: 1px dashed #e2e8f0; margin: 20px 0; }
+
+    /* 2欄選項 */
+    .option-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+
+    /* 其他輸入 */
+    .other-input { display: none; margin-top: 10px; }
+    .other-input.show { display: block; }
+    .other-input input {
+      width: 100%; padding: 10px 12px; border: 1.5px solid #3182ce;
+      border-radius: 8px; font-size: 1rem; outline: none; background: #ebf8ff;
+    }
+
     /* 按鈕 */
     .btn-row { display: flex; gap: 10px; margin-top: 20px; }
     .btn { flex: 1; padding: 14px; border: none; border-radius: 8px; font-size: 1.05rem; font-weight: 700; cursor: pointer; transition: background 0.2s; }
@@ -241,6 +261,42 @@
     </div>
   </div>
 
+  <!-- 基本資料卡片 -->
+  <div class="card">
+    <div class="section-label">基本資料</div>
+
+    <div class="field">
+      <label>職類 <span style="color:#e53e3e;">*</span></label>
+      <div class="option-grid cols-2" id="jobGrid">
+        <div class="opt-card" onclick="selectJob('護理PGY',this)"><div class="opt-radio"></div><div class="opt-text">護理 PGY</div></div>
+        <div class="opt-card" onclick="selectJob('護理師',this)"><div class="opt-radio"></div><div class="opt-text">護理師</div></div>
+        <div class="opt-card" onclick="selectJob('專科護理師',this)"><div class="opt-radio"></div><div class="opt-text">專科護理師</div></div>
+        <div class="opt-card" onclick="selectJob('醫學生',this)"><div class="opt-radio"></div><div class="opt-text">醫學生</div></div>
+        <div class="opt-card" onclick="selectJob('PGY1醫師',this)"><div class="opt-radio"></div><div class="opt-text">PGY1 醫師</div></div>
+        <div class="opt-card" onclick="selectJob('PGY2醫師',this)"><div class="opt-radio"></div><div class="opt-text">PGY2 醫師</div></div>
+        <div class="opt-card" onclick="selectJob('住院醫師',this)"><div class="opt-radio"></div><div class="opt-text">住院醫師</div></div>
+        <div class="opt-card" onclick="selectJob('主治醫師',this)"><div class="opt-radio"></div><div class="opt-text">主治醫師</div></div>
+        <div class="opt-card" style="grid-column:1/-1;" onclick="selectJob('其他',this)"><div class="opt-radio"></div><div class="opt-text">其他</div></div>
+      </div>
+      <div class="other-input" id="jobOtherWrap">
+        <input type="text" id="jobOther" placeholder="請輸入您的職類">
+      </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <div class="field">
+      <label>臨床工作年資 <span style="color:#e53e3e;">*</span></label>
+      <div class="option-grid cols-1" id="expGrid">
+        <div class="opt-card" onclick="selectExp('未滿1年',this)"><div class="opt-radio"></div><div class="opt-text">未滿 1 年</div></div>
+        <div class="opt-card" onclick="selectExp('1~2年',this)"><div class="opt-radio"></div><div class="opt-text">1 ~ 2 年</div></div>
+        <div class="opt-card" onclick="selectExp('2~5年',this)"><div class="opt-radio"></div><div class="opt-text">2 ~ 5 年</div></div>
+        <div class="opt-card" onclick="selectExp('5~10年',this)"><div class="opt-radio"></div><div class="opt-text">5 ~ 10 年</div></div>
+        <div class="opt-card" onclick="selectExp('10年以上',this)"><div class="opt-radio"></div><div class="opt-text">10 年以上</div></div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <div class="toast" id="toast"></div>
@@ -253,11 +309,13 @@
 
 <script>
   // ── 狀態 ──
-  var currentMode      = 'text';
-  var isRecording      = false;
-  var recognition      = null;
-  var committedText    = '';
+  var currentMode       = 'text';
+  var isRecording       = false;
+  var recognition       = null;
+  var committedText     = '';
   var selectedInsituExp = '';
+  var selectedJob       = '';
+  var selectedExp       = '';
 
   // ── 初始化日期 ──
   (function() {
@@ -281,6 +339,19 @@
     document.querySelectorAll('#insituExpGrid .opt-card').forEach(function(c) { c.classList.remove('selected'); });
     el.classList.add('selected');
     selectedInsituExp = value;
+  }
+  function selectJob(value, el) {
+    document.querySelectorAll('#jobGrid .opt-card').forEach(function(c) { c.classList.remove('selected'); });
+    el.classList.add('selected');
+    selectedJob = value;
+    var wrap = document.getElementById('jobOtherWrap');
+    wrap.classList.toggle('show', value === '其他');
+    if (value === '其他') document.getElementById('jobOther').focus();
+  }
+  function selectExp(value, el) {
+    document.querySelectorAll('#expGrid .opt-card').forEach(function(c) { c.classList.remove('selected'); });
+    el.classList.add('selected');
+    selectedExp = value;
   }
 
   // ── 模式切換 ──
@@ -366,8 +437,11 @@
     if (!document.getElementById('group').value)                 { showToast('請選擇組別', 'error'); return; }
     if (!document.getElementById('name').value.trim())           { showToast('請輸入名字', 'error'); return; }
     if (!document.getElementById('position').value)              { showToast('請選擇 A-C-L-S 站位', 'error'); return; }
-    if (!selectedInsituExp)                                      { showToast('請選擇參加原位模擬經驗', 'error'); return; }
+    if (!selectedInsituExp)                                      { showToast('請選擇參與擬真訓練的經驗', 'error'); return; }
     if (!document.getElementById('feedbackText').value.trim())   { showToast('請輸入回饋內容', 'error'); return; }
+    if (!selectedJob)                                            { showToast('請選擇職類', 'error'); return; }
+    if (selectedJob === '其他' && !document.getElementById('jobOther').value.trim()) { showToast('請填寫職類（其他）', 'error'); return; }
+    if (!selectedExp)                                            { showToast('請選擇臨床工作年資', 'error'); return; }
 
     if (isRecording) stopRecording();
 
@@ -384,7 +458,9 @@
         acls_position:     document.getElementById('position').value,
         insitu_experience: selectedInsituExp,
         input_type:        currentMode,
-        feedback_content:  document.getElementById('feedbackText').value.trim()
+        feedback_content:  document.getElementById('feedbackText').value.trim(),
+        job_category:      selectedJob === '其他' ? document.getElementById('jobOther').value.trim() : selectedJob,
+        work_experience:   selectedExp
       };
 
       await fetch(GAS_URL + '?' + new URLSearchParams(data).toString(), { method: 'GET', mode: 'no-cors' });
@@ -413,6 +489,10 @@
     committedText = ''; setMode('text');
     document.querySelectorAll('.opt-card').forEach(function(c) { c.classList.remove('selected'); });
     selectedInsituExp = '';
+    selectedJob = '';
+    selectedExp = '';
+    document.getElementById('jobOtherWrap').classList.remove('show');
+    document.getElementById('jobOther').value = '';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 </script>
