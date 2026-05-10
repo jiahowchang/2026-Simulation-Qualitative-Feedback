@@ -406,58 +406,94 @@
 </div>
 
 <script>
-  // ── NTS 30 題題目 ──
-  var NTS_QUESTIONS = [
-    '1. 詢問患者及家屬對治療情況的回饋是重要的',
-    '2. 患者本身是醫療照護的重要組成部分',
-    '3. 行政管理影響著一線醫療團隊的成功與否',
-    '4. 團隊的使命高於團隊成員各自的目標',
-    '5. 高效率的團隊成員能夠預見其他成員的需求',
-    '6. 高效的醫療團隊與其他行業的高效團隊有共同特點',
-    '7. 領導者與團隊成員共享信息十分重要',
-    '8. 領導者應創造各種機會讓成員共享信息',
-    '9. 高效的領導者應將團隊中的無心之過視為有意義的學習機會',
-    '10. 領導者有責任塑造良好的團隊行為模式',
-    '11. 團隊領導者花時間與團隊成員討論每個患者的治療方案是很重要的',
-    '12. 團隊領導者應確保團隊成員在有需要的時候互相幫助',
-    '13. 團隊成員應學會如何通過審視環境來獲得重要的醫療情境線索',
-    '14. 監測患者的情況非常有助於提高團隊的工作效率',
-    '15. 即便個人不直屬於該醫療團隊也應該鼓勵其關注並報告患者狀態的變化情況',
-    '16. 觀察其他團隊成員的情緒和身體狀態是非常重要的',
-    '17. 當一位成員疲憊不堪或者壓力太大而無法完成任務時，應該讓另一位成員去幫助他',
-    '18. 能夠調控自己工作時的情緒和身體狀態的團隊成員更有效率',
-    '19. 為了提高效率，團隊成員應了解其他成員的工作內容',
-    '20. 向其他團隊成員請求幫助表明這位成員不知道如何有效完成其工作',
-    '21. 向其他團隊成員提供幫助表明這位成員自身工作量不夠',
-    '22. 主動幫助團隊其他成員完成他的個人工作任務是提高團隊表現的有效辦法',
-    '23. 如果對病患安全有所擔憂，應不斷提出直到確定被大家所關注',
-    '24. 團隊成員之間的個人衝突不影響病患安全',
-    '25. 不能有效溝通的團隊會顯著增加出錯的風險',
-    '26. 溝通不暢是醫療失誤最常見的原因',
-    '27. 保持與患者及其家屬交流信息可能會減少不良事件的發生',
-    '28. 我更願意與那些對我提供的訊息提出問題的團隊成員合作',
-    '29. 用標準化的方法與其他成員分享患者信息是非常重要的',
-    '30. 團隊成員的溝通能力幾乎無法通過訓練來提高'
+  // ── NTS 30 題（依 T-TAQ 五大面向分段）──
+  var NTS_SECTIONS = [
+    {
+      title: '團隊結構',
+      questions: [
+        '主動詢問病人和家屬對照護品質的看法，是非常重要的',
+        '病人本身就是醫療照護團隊中不可或缺的一員',
+        '醫院行政管理的方式，直接影響第一線醫療團隊的表現',
+        '團隊整體的使命與目標，比個別成員的個人目標更重要',
+        '優秀的團隊成員能夠事先察覺並預測其他人的需求',
+        '醫療領域中高效能的團隊，與其他行業傑出的團隊有相似的特質'
+      ]
+    },
+    {
+      title: '領導力',
+      questions: [
+        '領導者主動與團隊成員分享資訊，是非常重要的',
+        '領導者應創造輕鬆的場合，讓成員有機會互相交流與分享資訊',
+        '優秀的領導者，會把成員的無心之過視為寶貴的學習機會',
+        '以身作則、展現良好的團隊行為，是領導者應盡的責任',
+        '領導者撥時間與團隊討論每位病人的照護計畫，是非常重要的',
+        '團隊領導者應確保成員在需要時能夠互相支援'
+      ]
+    },
+    {
+      title: '情境監控',
+      questions: [
+        '透過訓練，每個人都能學會主動觀察環境中重要的情境線索',
+        '持續監測病人狀況，對提升整個團隊的工作效能有很大的幫助',
+        '就算不是直接照護團隊的成員，也應鼓勵他們主動留意並回報病人狀況的變化',
+        '隨時留意其他團隊成員的身心狀況，是非常重要的',
+        '當隊友因疲憊或壓力過大而難以勝任工作時，其他人主動伸出援手是正確的做法',
+        '能夠隨時察覺自己身心狀態的團隊成員，在工作上往往更有效率'
+      ]
+    },
+    {
+      title: '相互支持',
+      questions: [
+        '要讓團隊發揮最大效能，成員之間應充分了解彼此的工作內容',
+        '向隊友求助，代表這個人不懂得如何有效完成自己的工作',
+        '主動幫助隊友，代表這個人自己的工作量不夠多',
+        '主動協助隊友完成個人工作任務，是提升整體團隊表現的有效方法',
+        '若對病人安全有所疑慮，應持續發聲，直到確認已被團隊充分重視為止',
+        '團隊成員之間的個人衝突，不會影響病人的安全'
+      ]
+    },
+    {
+      title: '溝通',
+      questions: [
+        '溝通不良的團隊，犯錯的風險會大幅提升',
+        '溝通不良是醫療疏失最常見的根本原因',
+        '持續與病人及家屬保持資訊交流，有助於降低不良事件的發生',
+        '我比較喜歡和會主動針對我提供的資訊提問的隊友合作',
+        '交接病人時，使用一套標準化的資訊傳遞方式是非常重要的',
+        '想透過訓練提升一個人的溝通能力，幾乎是不可能的事'
+      ]
+    }
   ];
 
-  // ── 動態生成 NTS 題目 ──
+  // ── 動態生成 NTS 題目（含分段標題）──
   (function buildNTS() {
     var container = document.getElementById('ntsContainer');
-    NTS_QUESTIONS.forEach(function(q, i) {
-      var key = 'nts' + (i + 1);
-      var div = document.createElement('div');
-      div.className = 'field';
-      div.innerHTML =
-        '<label>' + q + '<span style="color:#e53e3e;"> *</span></label>' +
-        '<div class="likert-wrap">' +
-          '<div class="likert-end-labels"><span>非常不同意</span><span>中立</span><span>非常同意</span></div>' +
-          '<div class="likert-buttons" id="lk_' + key + '">' +
-            [1,2,3,4,5].map(function(n) {
-              return '<button class="lk-btn" onclick="selectLikert(\'' + key + '\',' + n + ',this)">' + n + '</button>';
-            }).join('') +
-          '</div>' +
-        '</div>';
-      container.appendChild(div);
+    var qNum = 1;
+    NTS_SECTIONS.forEach(function(section, si) {
+      // 段落標題
+      var header = document.createElement('div');
+      header.style.cssText = 'font-size:0.95rem; font-weight:700; color:#2b6cb0; margin:' + (si === 0 ? '0' : '24px') + ' 0 12px 0; padding:6px 10px; background:#ebf8ff; border-left:4px solid #3182ce; border-radius:4px;';
+      header.textContent = section.title;
+      container.appendChild(header);
+
+      // 各題目
+      section.questions.forEach(function(q) {
+        var key = 'nts' + qNum;
+        var div = document.createElement('div');
+        div.className = 'field';
+        div.innerHTML =
+          '<label>' + qNum + '. ' + q + '<span style="color:#e53e3e;"> *</span></label>' +
+          '<div class="likert-wrap">' +
+            '<div class="likert-end-labels"><span>非常不同意</span><span>中立</span><span>非常同意</span></div>' +
+            '<div class="likert-buttons" id="lk_' + key + '">' +
+              [1,2,3,4,5].map(function(n) {
+                return '<button class="lk-btn" onclick="selectLikert(\'' + key + '\',' + n + ',this)">' + n + '</button>';
+              }).join('') +
+            '</div>' +
+          '</div>';
+        container.appendChild(div);
+        qNum++;
+      });
     });
   })();
 
