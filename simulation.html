@@ -150,6 +150,42 @@
     </div>
   </div>
 
+  <!-- 基本資料卡片 -->
+  <div class="card">
+    <div class="section-label">基本資料</div>
+
+    <div class="field">
+      <label>職類 <span style="color:#e53e3e;">*</span></label>
+      <div class="option-grid cols-2" id="jobGrid">
+        <div class="opt-card" onclick="selectJob('護理PGY',this)"><div class="opt-radio"></div><div class="opt-text">護理 PGY</div></div>
+        <div class="opt-card" onclick="selectJob('護理師',this)"><div class="opt-radio"></div><div class="opt-text">護理師</div></div>
+        <div class="opt-card" onclick="selectJob('專科護理師',this)"><div class="opt-radio"></div><div class="opt-text">專科護理師</div></div>
+        <div class="opt-card" onclick="selectJob('醫學生',this)"><div class="opt-radio"></div><div class="opt-text">醫學生</div></div>
+        <div class="opt-card" onclick="selectJob('PGY1醫師',this)"><div class="opt-radio"></div><div class="opt-text">PGY1 醫師</div></div>
+        <div class="opt-card" onclick="selectJob('PGY2醫師',this)"><div class="opt-radio"></div><div class="opt-text">PGY2 醫師</div></div>
+        <div class="opt-card" onclick="selectJob('住院醫師',this)"><div class="opt-radio"></div><div class="opt-text">住院醫師</div></div>
+        <div class="opt-card" onclick="selectJob('主治醫師',this)"><div class="opt-radio"></div><div class="opt-text">主治醫師</div></div>
+        <div class="opt-card" style="grid-column:1/-1;" onclick="selectJob('其他',this)"><div class="opt-radio"></div><div class="opt-text">其他</div></div>
+      </div>
+      <div class="other-input" id="jobOtherWrap">
+        <input type="text" id="jobOther" placeholder="請輸入您的職類">
+      </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <div class="field">
+      <label>臨床工作年資 <span style="color:#e53e3e;">*</span></label>
+      <div class="option-grid cols-1" id="expGrid">
+        <div class="opt-card" onclick="selectExp('未滿1年',this)"><div class="opt-radio"></div><div class="opt-text">未滿 1 年</div></div>
+        <div class="opt-card" onclick="selectExp('1~2年',this)"><div class="opt-radio"></div><div class="opt-text">1 ~ 2 年</div></div>
+        <div class="opt-card" onclick="selectExp('2~5年',this)"><div class="opt-radio"></div><div class="opt-text">2 ~ 5 年</div></div>
+        <div class="opt-card" onclick="selectExp('5~10年',this)"><div class="opt-radio"></div><div class="opt-text">5 ~ 10 年</div></div>
+        <div class="opt-card" onclick="selectExp('10年以上',this)"><div class="opt-radio"></div><div class="opt-text">10 年以上</div></div>
+      </div>
+    </div>
+  </div>
+
   <!-- 表單卡片 -->
   <div class="card">
     <div class="card-title">📝 訓練資訊與回饋</div>
@@ -261,41 +297,6 @@
     </div>
   </div>
 
-  <!-- 基本資料卡片 -->
-  <div class="card">
-    <div class="section-label">基本資料</div>
-
-    <div class="field">
-      <label>職類 <span style="color:#e53e3e;">*</span></label>
-      <div class="option-grid cols-2" id="jobGrid">
-        <div class="opt-card" onclick="selectJob('護理PGY',this)"><div class="opt-radio"></div><div class="opt-text">護理 PGY</div></div>
-        <div class="opt-card" onclick="selectJob('護理師',this)"><div class="opt-radio"></div><div class="opt-text">護理師</div></div>
-        <div class="opt-card" onclick="selectJob('專科護理師',this)"><div class="opt-radio"></div><div class="opt-text">專科護理師</div></div>
-        <div class="opt-card" onclick="selectJob('醫學生',this)"><div class="opt-radio"></div><div class="opt-text">醫學生</div></div>
-        <div class="opt-card" onclick="selectJob('PGY1醫師',this)"><div class="opt-radio"></div><div class="opt-text">PGY1 醫師</div></div>
-        <div class="opt-card" onclick="selectJob('PGY2醫師',this)"><div class="opt-radio"></div><div class="opt-text">PGY2 醫師</div></div>
-        <div class="opt-card" onclick="selectJob('住院醫師',this)"><div class="opt-radio"></div><div class="opt-text">住院醫師</div></div>
-        <div class="opt-card" onclick="selectJob('主治醫師',this)"><div class="opt-radio"></div><div class="opt-text">主治醫師</div></div>
-        <div class="opt-card" style="grid-column:1/-1;" onclick="selectJob('其他',this)"><div class="opt-radio"></div><div class="opt-text">其他</div></div>
-      </div>
-      <div class="other-input" id="jobOtherWrap">
-        <input type="text" id="jobOther" placeholder="請輸入您的職類">
-      </div>
-    </div>
-
-    <hr class="section-divider">
-
-    <div class="field">
-      <label>臨床工作年資 <span style="color:#e53e3e;">*</span></label>
-      <div class="option-grid cols-1" id="expGrid">
-        <div class="opt-card" onclick="selectExp('未滿1年',this)"><div class="opt-radio"></div><div class="opt-text">未滿 1 年</div></div>
-        <div class="opt-card" onclick="selectExp('1~2年',this)"><div class="opt-radio"></div><div class="opt-text">1 ~ 2 年</div></div>
-        <div class="opt-card" onclick="selectExp('2~5年',this)"><div class="opt-radio"></div><div class="opt-text">2 ~ 5 年</div></div>
-        <div class="opt-card" onclick="selectExp('5~10年',this)"><div class="opt-radio"></div><div class="opt-text">5 ~ 10 年</div></div>
-        <div class="opt-card" onclick="selectExp('10年以上',this)"><div class="opt-radio"></div><div class="opt-text">10 年以上</div></div>
-      </div>
-    </div>
-  </div>
 
 </div>
 
