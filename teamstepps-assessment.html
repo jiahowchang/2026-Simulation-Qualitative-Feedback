@@ -324,15 +324,6 @@
       </select>
     </div>
 
-    <div class="field">
-      <label>參與擬真訓練的經驗 <span style="color:#e53e3e;">*</span></label>
-      <div class="option-grid cols-1" id="insituExpGrid">
-        <div class="opt-card" onclick="selectInsituExp('第一次參加',this)"><div class="opt-radio"></div><div class="opt-text">第一次參加</div></div>
-        <div class="opt-card" onclick="selectInsituExp('參加 2~5 次',this)"><div class="opt-radio"></div><div class="opt-text">參加 2 ~ 5 次</div></div>
-        <div class="opt-card" onclick="selectInsituExp('參加 6~10 次',this)"><div class="opt-radio"></div><div class="opt-text">參加 6 ~ 10 次</div></div>
-        <div class="opt-card" onclick="selectInsituExp('超過 10 次',this)"><div class="opt-radio"></div><div class="opt-text">超過 10 次</div></div>
-      </div>
-    </div>
   </div>
 
   <!-- T-TAQ -->
@@ -967,7 +958,7 @@ async function submitForm() {
   if (!emailVal) { showToast('請輸入 Email', 'error'); return; }
   if (emailVal.indexOf('@') === -1) { showToast('Email 格式不正確，請包含 @', 'error'); return; }
   if (!document.getElementById('position').value)     { showToast('請選擇 A-C-L-S 分工站位', 'error'); return; }
-  if (!selectedInsituExp) { showToast('請選擇參與擬真訓練的經驗', 'error'); return; }
+
 
   // T-TAQ 驗證
   for (var i = 0; i < 30; i++) {
@@ -1003,7 +994,7 @@ async function submitForm() {
       name:              document.getElementById('name').value.trim(),
       email:             emailVal,
       acls_position:     document.getElementById('position').value,
-      insitu_experience: selectedInsituExp
+      insitu_experience: selectedInsituExp || ''
     };
 
     // T-TAQ
