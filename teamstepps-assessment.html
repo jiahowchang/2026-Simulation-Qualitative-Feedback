@@ -311,18 +311,6 @@
       <input type="text" id="email" placeholder="請輸入您的 Email">
     </div>
 
-    <div class="field">
-      <label for="position">A-C-L-S 分工站位</label>
-      <select id="position">
-        <option value="">-- 請選擇站位 --</option>
-        <option value="Airway">Airway</option>
-        <option value="Circulation">Circulation</option>
-        <option value="Leader">Leader</option>
-        <option value="Support">Support</option>
-        <option value="觀察員">觀察員</option>
-        <option value="不清楚自己分工位置">不清楚自己分工位置</option>
-      </select>
-    </div>
 
   </div>
 
@@ -957,7 +945,7 @@ async function submitForm() {
   var emailVal = document.getElementById('email').value.trim();
   if (!emailVal) { showToast('請輸入 Email', 'error'); return; }
   if (emailVal.indexOf('@') === -1) { showToast('Email 格式不正確，請包含 @', 'error'); return; }
-  if (!document.getElementById('position').value)     { showToast('請選擇 A-C-L-S 分工站位', 'error'); return; }
+
 
 
   // T-TAQ 驗證
@@ -993,7 +981,7 @@ async function submitForm() {
       group:             document.getElementById('group').value,
       name:              document.getElementById('name').value.trim(),
       email:             emailVal,
-      acls_position:     document.getElementById('position').value,
+      acls_position:     '',
       insitu_experience: selectedInsituExp || ''
     };
 
@@ -1027,7 +1015,7 @@ function resetForm() {
       now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
   })();
   // select
-  ['practiceNum', 'campus', 'group', 'position'].forEach(function(id) { document.getElementById(id).value = ''; });
+  ['practiceNum', 'campus', 'group'].forEach(function(id) { document.getElementById(id).value = ''; });
   document.getElementById('campusOther').value = '';
   document.getElementById('campusOtherWrap').style.display = 'none';
   document.getElementById('name').value = '';
