@@ -398,14 +398,18 @@
 
     var infoItems = '';
     if (s.location) infoItems += infoItem('📍', '地點', s.location);
-    if (s.coach)    infoItems += infoItem('👨‍🏫', '教練', s.coach);
-    if (s.ta)       infoItems += infoItem('🧑‍💼', '助教', s.ta);
-    if (s.duty)     infoItems += infoItem('🔧', '值日生', s.duty);
+    infoItems += infoItem('👨‍🏫', '教練', s.coach || '待定');
+    infoItems += infoItem('🧑‍💼', '助教', s.ta   || '待定');
+    infoItems += infoItem('🔧', '值日生', s.duty  || '待定');
 
+    // 顯示隊員：優先用資料庫成員，否則從 GROUP_MEMBERS 帶入
     var membersHtml = '';
     try {
       var mems = typeof s.members === 'string' ? JSON.parse(s.members) : (s.members || []);
       var names = mems.map(function(m){ return m.name; }).filter(Boolean);
+      if (!names.length && GROUP_MEMBERS[s.group]) {
+        names = GROUP_MEMBERS[s.group].map(function(m){ return m.name; }).filter(Boolean);
+      }
       if (names.length) {
         membersHtml = '<div style="margin-bottom:12px;font-size:0.83rem;color:#4a5568;">' +
           '<span style="color:#a0aec0;margin-right:6px;">👥 隊員</span>' +
