@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2026 擬真訓練場次時間表</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f4f8; color: #1a202c; min-height: 100vh;
+    }
+    .container { max-width: 700px; margin: 0 auto; padding: 0 16px 60px; }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #2b6cb0, #3182ce);
+      padding: 28px 20px 24px; text-align: center; margin-bottom: 24px;
+    }
+    .header img { height: 62px; margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto; }
+    .header h1 {
+      font-size: 1.45rem; font-weight: 800; color: #fff; line-height: 1.4;
+      letter-spacing: 0.01em;
+    }
+    .header p { font-size: 0.9rem; color: rgba(255,255,255,0.8); margin-top: 6px; }
+
+    /* ── Filter Pills ── */
+    .filter-wrap {
+      display: flex; gap: 8px; flex-wrap: wrap; padding: 0 0 4px;
+      margin-bottom: 20px;
+    }
+    .pill {
+      padding: 7px 16px; border-radius: 999px; border: 2px solid #cbd5e0;
+      background: #fff; font-size: 0.85rem; font-weight: 600; color: #4a5568;
+      cursor: pointer; transition: all 0.18s; white-space: nowrap; user-select: none;
+    }
+    .pill:hover { border-color: #3182ce; color: #2b6cb0; }
+    .pill.active { border-color: #3182ce; background: #3182ce; color: #fff; }
+
+    /* ── Section Divider ── */
+    .section-label {
+      font-size: 0.8rem; font-weight: 700; color: #718096;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 12px; margin-top: 4px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-label::after {
+      content: ''; flex: 1; height: 1px; background: #e2e8f0;
+    }
+
+    /* ── Session Cards ── */
+    .session-card {
+      background: #fff; border-radius: 14px; padding: 18px 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 12px;
+      border-left: 4px solid #3182ce; transition: box-shadow 0.2s;
+    }
+    .session-card:hover { box-shadow: 0 4px 16px rgba(49,130,206,0.15); }
+    .session-card.past { border-left-color: #cbd5e0; opacity: 0.75; }
+    .session-card.past .session-group { color: #718096; }
+
+    .session-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .session-group { font-size: 1rem; font-weight: 800; color: #2b6cb0; line-height: 1.3; }
+    .session-date-badge {
+      background: #ebf8ff; color: #2b6cb0; border-radius: 8px;
+      padding: 4px 10px; font-size: 0.8rem; font-weight: 700; white-space: nowrap; flex-shrink: 0;
+    }
+    .session-card.past .session-date-badge { background: #f7fafc; color: #a0aec0; }
+
+    .session-info {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px;
+      margin-bottom: 14px; font-size: 0.86rem;
+    }
+    .info-item { display: flex; align-items: flex-start; gap: 6px; }
+    .info-icon { flex-shrink: 0; font-size: 0.9rem; margin-top: 1px; }
+    .info-text { color: #4a5568; line-height: 1.5; }
+    .info-label { color: #a0aec0; font-size: 0.78rem; }
+
+    .session-note {
+      background: #fffbeb; border: 1px solid #fbd38d; border-radius: 8px;
+      padding: 8px 12px; font-size: 0.84rem; color: #744210; margin-bottom: 12px; line-height: 1.6;
+    }
+
+    .session-actions { display: flex; justify-content: flex-end; }
+    .btn-feedback {
+      padding: 9px 20px; background: #3182ce; color: #fff; border: none;
+      border-radius: 8px; font-size: 0.88rem; font-weight: 700; cursor: pointer;
+      text-decoration: none; display: inline-block; transition: background 0.2s;
+    }
+    .btn-feedback:hover { background: #2b6cb0; }
+    .session-card.past .btn-feedback { background: #a0aec0; pointer-events: none; display: none; }
+
+    /* ── Loading / Empty ── */
+    .loading { text-align: center; padding: 60px 20px; color: #a0aec0; }
+    .loading-spinner {
+      width: 36px; height: 36px; border: 3px solid #e2e8f0;
+      border-top-color: #3182ce; border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 0 auto 14px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty { text-align: center; padding: 60px 20px; color: #a0aec0; }
+    .empty-icon { font-size: 3rem; margin-bottom: 12px; }
+    .empty-text { font-size: 1rem; }
+
+    @media (max-width: 480px) {
+      .session-info { grid-template-columns: 1fr; }
+      .header h1 { font-size: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <img src="logo.png" alt="新竹台大分院">
+  <h1>2026 擬真訓練<br>場次時間表</h1>
+  <p>Simulation Training Schedule</p>
+</div>
+
+<div class="container">
+
+  <div class="filter-wrap" id="filterWrap">
+    <button class="pill active" onclick="filterGroup('', this)">全部</button>
+    <button class="pill" onclick="filterGroup('急診原位模擬', this)">急診原位模擬</button>
+    <button class="pill" onclick="filterGroup('兒科急診原位模擬', this)">兒科急診原位模擬</button>
+    <button class="pill" onclick="filterGroup('產科、兒科、急診原位模擬', this)">產科兒科急診</button>
+    <button class="pill" onclick="filterGroup('創傷原位模擬', this)">創傷原位模擬</button>
+    <button class="pill" onclick="filterGroup('新人組', this)">新人組</button>
+    <button class="pill" onclick="filterGroup('急重症照護組', this)">急重症照護組</button>
+    <button class="pill" onclick="filterGroup('新生兒組', this)">新生兒組</button>
+    <button class="pill" onclick="filterGroup('醫事放射組', this)">醫事放射組</button>
+    <button class="pill" onclick="filterGroup('桃竹苗擬真情境競賽', this)">桃竹苗競賽</button>
+  </div>
+
+  <div id="scheduleContent">
+    <div class="loading">
+      <div class="loading-spinner"></div>
+      <div>載入場次中…</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbwymktZzHh2BDxYG7wffW8WKk-2LI-a3hTU7PmrnNls-8QA1P2tR9Y8wEj9icAFTDgU/exec';
+  var allSessions = [];
+  var currentGroup = '';
+  var cbIndex = 0;
+
+  function jsonp(params, cb) {
+    var name = '__cb' + (cbIndex++);
+    var s = document.createElement('script');
+    window[name] = function(data) {
+      delete window[name];
+      if (document.head.contains(s)) document.head.removeChild(s);
+      cb(null, data);
+    };
+    params.callback = name;
+    var qs = Object.keys(params).map(function(k) {
+      return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+    }).join('&');
+    s.src = GAS_URL + '?' + qs;
+    s.onerror = function() {
+      delete window[name];
+      if (document.head.contains(s)) document.head.removeChild(s);
+      cb(new Error('JSONP error'));
+    };
+    document.head.appendChild(s);
+  }
+
+  function esc(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function filterGroup(group, btn) {
+    currentGroup = group;
+    document.querySelectorAll('.pill').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    renderSchedule();
+  }
+
+  function parseDate(d) {
+    if (!d) return null;
+    var parts = d.split('-');
+    if (parts.length === 3) return new Date(parts[0], parts[1] - 1, parts[2]);
+    return new Date(d);
+  }
+
+  function renderSchedule() {
+    var el = document.getElementById('scheduleContent');
+    var today = new Date(); today.setHours(0,0,0,0);
+
+    var filtered = allSessions.filter(function(s) {
+      return !currentGroup || s.group === currentGroup;
+    });
+
+    if (filtered.length === 0) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">目前無場次資料</div></div>';
+      return;
+    }
+
+    var upcoming = [], past = [];
+    filtered.forEach(function(s) {
+      var d = parseDate(s.date);
+      if (d && d < today) past.push(s);
+      else upcoming.push(s);
+    });
+
+    // Sort upcoming ascending, past descending
+    upcoming.sort(function(a, b) { return (parseDate(a.date) || 0) - (parseDate(b.date) || 0); });
+    past.sort(function(a, b) { return (parseDate(b.date) || 0) - (parseDate(a.date) || 0); });
+
+    var html = '';
+
+    if (upcoming.length) {
+      html += '<div class="section-label">即將到來</div>';
+      upcoming.forEach(function(s) { html += buildCard(s, false); });
+    }
+
+    if (past.length) {
+      html += '<div class="section-label" style="margin-top:24px;">過去場次</div>';
+      past.forEach(function(s) { html += buildCard(s, true); });
+    }
+
+    el.innerHTML = html;
+  }
+
+  function buildCard(s, isPast) {
+    var cls = 'session-card' + (isPast ? ' past' : '');
+    var dateText = s.date || '';
+    if (s.time) dateText += ' ' + s.time;
+
+    var infoItems = '';
+    if (s.location) infoItems += infoItem('📍', '地點', s.location);
+    if (s.coach)    infoItems += infoItem('👨‍🏫', '教練', s.coach);
+    if (s.ta)       infoItems += infoItem('🧑‍💼', '助教', s.ta);
+    if (s.duty)     infoItems += infoItem('🔧', '值日生', s.duty);
+
+    var noteHtml = s.note ? '<div class="session-note">📝 ' + esc(s.note) + '</div>' : '';
+    var actionHtml = isPast ? '' :
+      '<div class="session-actions">' +
+        '<a href="simulation.html" class="btn-feedback">填寫回饋 →</a>' +
+      '</div>';
+
+    return '<div class="' + cls + '">' +
+      '<div class="session-top">' +
+        '<div class="session-group">' + esc(s.group) + '</div>' +
+        '<div class="session-date-badge">' + esc(dateText) + '</div>' +
+      '</div>' +
+      (infoItems ? '<div class="session-info">' + infoItems + '</div>' : '') +
+      noteHtml +
+      actionHtml +
+    '</div>';
+  }
+
+  function infoItem(icon, label, text) {
+    return '<div class="info-item">' +
+      '<span class="info-icon">' + icon + '</span>' +
+      '<div><div class="info-label">' + esc(label) + '</div><div class="info-text">' + esc(text) + '</div></div>' +
+    '</div>';
+  }
+
+  // Load sessions on page load
+  jsonp({ action: 'getPublicSchedule' }, function(err, data) {
+    if (err || !data || data.error) {
+      document.getElementById('scheduleContent').innerHTML =
+        '<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">載入失敗，請重新整理頁面</div></div>';
+      return;
+    }
+    allSessions = data.sessions || [];
+    renderSchedule();
+  });
+</script>
+</body>
+</html>

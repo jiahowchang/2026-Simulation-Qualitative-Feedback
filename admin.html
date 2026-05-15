@@ -3,479 +3,825 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>管理後台 — 擬真訓練質性回饋</title>
+  <title>管理後台 — 擬真訓練</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #f0f4f8;
-      color: #1a202c;
-      min-height: 100vh;
+      background: #f0f4f8; color: #1a202c; min-height: 100vh;
     }
 
-    /* 登入畫面 */
-    .login-wrap {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
+    /* ── Login Screen ── */
+    .login-screen {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px;
     }
     .login-card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 36px 32px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-      width: 320px;
-      text-align: center;
+      background: #fff; border-radius: 16px; padding: 40px 32px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.12); width: 100%; max-width: 380px; text-align: center;
     }
-    .login-card h2 { color: #2b6cb0; margin-bottom: 6px; }
-    .login-card p  { font-size: 0.85rem; color: #718096; margin-bottom: 24px; }
-    .login-card input {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1.5px solid #cbd5e0;
-      border-radius: 8px;
-      font-size: 1rem;
-      margin-bottom: 12px;
-      outline: none;
+    .login-card img { height: 56px; margin-bottom: 16px; }
+    .login-card h1 { font-size: 1.4rem; color: #2b6cb0; margin-bottom: 6px; }
+    .login-card p { font-size: 0.9rem; color: #718096; margin-bottom: 28px; }
+    .login-card input[type="password"] {
+      width: 100%; padding: 12px 16px; border: 2px solid #cbd5e0; border-radius: 10px;
+      font-size: 1rem; outline: none; margin-bottom: 16px; transition: border-color 0.2s;
     }
     .login-card input:focus { border-color: #3182ce; }
-    .login-card button {
-      width: 100%;
-      padding: 11px;
-      background: #3182ce;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
+    .login-card .login-hint { font-size: 0.82rem; color: #a0aec0; margin-bottom: 16px; min-height: 18px; }
+    .btn-login {
+      width: 100%; padding: 13px; background: #3182ce; color: #fff; border: none;
+      border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: background 0.2s;
     }
-    .login-error {
-      color: #c53030;
-      font-size: 0.85rem;
-      margin-top: 8px;
-      display: none;
-    }
+    .btn-login:hover { background: #2b6cb0; }
+    .btn-login:disabled { background: #a0aec0; cursor: not-allowed; }
 
-    /* 主後台 */
-    .admin-wrap { display: none; padding: 24px 20px; max-width: 1100px; margin: 0 auto; }
+    /* ── App Shell ── */
+    .app { display: none; min-height: 100vh; flex-direction: column; }
+    .app.show { display: flex; }
 
-    .top-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-      gap: 12px;
+    .topbar {
+      background: linear-gradient(135deg, #2b6cb0, #3182ce);
+      color: #fff; padding: 14px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
-    .top-bar h1 { font-size: 1.4rem; color: #2b6cb0; }
-    .top-bar-right { display: flex; gap: 8px; flex-wrap: wrap; }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .topbar-left img { height: 36px; border-radius: 4px; background: rgba(255,255,255,0.15); }
+    .topbar-title { font-size: 1.05rem; font-weight: 700; }
+    .topbar-subtitle { font-size: 0.75rem; opacity: 0.85; }
+    .btn-logout {
+      background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.4);
+      border-radius: 8px; padding: 6px 14px; font-size: 0.85rem; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-logout:hover { background: rgba(255,255,255,0.3); }
 
-    /* 統計卡片 */
-    .stats-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 12px;
-      margin-bottom: 20px;
+    /* ── Tab Nav ── */
+    .tab-nav {
+      background: #fff; border-bottom: 2px solid #e2e8f0;
+      display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch;
+      position: sticky; top: 0; z-index: 100;
     }
-    .stat-card {
-      background: #fff;
-      border-radius: 10px;
-      padding: 16px;
-      text-align: center;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    .tab-nav::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      flex: 0 0 auto; padding: 14px 20px; border: none; background: none;
+      font-size: 0.9rem; font-weight: 600; color: #718096; cursor: pointer;
+      border-bottom: 3px solid transparent; transition: all 0.2s; white-space: nowrap;
     }
-    .stat-num { font-size: 2rem; font-weight: 800; color: #2b6cb0; }
-    .stat-label { font-size: 0.8rem; color: #718096; margin-top: 4px; }
+    .tab-btn.active { color: #2b6cb0; border-bottom-color: #3182ce; }
 
-    /* 篩選列 */
-    .filter-bar {
-      background: #fff;
-      border-radius: 10px;
-      padding: 14px 16px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-      margin-bottom: 16px;
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: flex-end;
-    }
-    .filter-bar label { font-size: 0.8rem; font-weight: 600; color: #4a5568; display: block; margin-bottom: 4px; }
-    .filter-bar input, .filter-bar select {
-      padding: 7px 10px;
-      border: 1.5px solid #cbd5e0;
-      border-radius: 7px;
-      font-size: 0.9rem;
-      outline: none;
-      background: #fff;
-    }
-    .filter-bar input:focus, .filter-bar select:focus { border-color: #3182ce; }
-    .filter-btn {
-      padding: 8px 16px;
-      border: none;
-      border-radius: 7px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .btn-primary { background: #3182ce; color: #fff; }
-    .btn-secondary { background: #edf2f7; color: #4a5568; }
-    .btn-success { background: #38a169; color: #fff; }
-    .btn-danger  { background: #e53e3e; color: #fff; font-size: 0.85rem; padding: 6px 14px; }
+    /* ── Tab Content ── */
+    .tab-content { display: none; padding: 20px 16px 60px; max-width: 900px; margin: 0 auto; width: 100%; }
+    .tab-content.active { display: block; }
 
-    /* 表格 */
-    .table-wrap {
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-      overflow: auto;
+    /* ── Cards ── */
+    .card {
+      background: #fff; border-radius: 12px; padding: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 16px;
     }
-    table { width: 100%; border-collapse: collapse; min-width: 700px; }
+    .card-title { font-size: 1rem; font-weight: 700; color: #2b6cb0; margin-bottom: 16px; }
+
+    /* ── Progress ── */
+    .session-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 12px; overflow: hidden; }
+    .session-header {
+      padding: 16px 20px; cursor: pointer; display: flex; align-items: center; gap: 14px;
+      transition: background 0.15s;
+    }
+    .session-header:hover { background: #f7fafc; }
+    .session-meta { flex: 1; min-width: 0; }
+    .session-name { font-weight: 700; color: #2d3748; font-size: 0.95rem; }
+    .session-info { font-size: 0.8rem; color: #718096; margin-top: 2px; }
+    .session-stats { font-size: 0.85rem; font-weight: 600; color: #2b6cb0; white-space: nowrap; }
+    .progress-bar-wrap { flex: 1; background: #e2e8f0; border-radius: 999px; height: 8px; min-width: 60px; max-width: 120px; }
+    .progress-bar-fill { height: 8px; border-radius: 999px; background: linear-gradient(90deg, #3182ce, #63b3ed); transition: width 0.4s; }
+    .chevron { font-size: 0.75rem; color: #a0aec0; transition: transform 0.2s; margin-left: 4px; }
+    .session-card.open .chevron { transform: rotate(90deg); }
+
+    .session-body { display: none; padding: 0 20px 16px; border-top: 1px solid #e2e8f0; }
+    .session-card.open .session-body { display: block; }
+    .member-list { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+    .member-row {
+      display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+      background: #f7fafc; border-radius: 8px; font-size: 0.88rem;
+    }
+    .member-status { font-size: 1rem; flex-shrink: 0; }
+    .member-name { flex: 1; color: #2d3748; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .member-email { color: #a0aec0; font-size: 0.8rem; flex-shrink: 0; }
+    .btn-notify {
+      margin-top: 14px; padding: 9px 18px; background: #fff; border: 2px solid #3182ce;
+      color: #2b6cb0; border-radius: 8px; font-size: 0.88rem; font-weight: 700; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-notify:hover { background: #ebf8ff; }
+    .btn-notify:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Session Management ── */
+    .session-list-item {
+      background: #fff; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      margin-bottom: 12px; padding: 16px 20px;
+    }
+    .session-list-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .session-list-group { font-weight: 700; color: #2b6cb0; font-size: 0.95rem; }
+    .session-list-detail { font-size: 0.82rem; color: #718096; margin-top: 4px; line-height: 1.7; }
+    .btn-delete {
+      background: none; border: 1.5px solid #fc8181; color: #e53e3e;
+      border-radius: 8px; padding: 5px 12px; font-size: 0.82rem; cursor: pointer;
+      font-weight: 600; transition: all 0.2s; flex-shrink: 0;
+    }
+    .btn-delete:hover { background: #fff5f5; }
+    .btn-delete:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-add {
+      width: 100%; padding: 14px; background: #3182ce; color: #fff; border: none;
+      border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer;
+      transition: background 0.2s; margin-bottom: 16px;
+    }
+    .btn-add:hover { background: #2b6cb0; }
+
+    /* ── Feedback Table ── */
+    .filter-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .filter-row select, .filter-row input {
+      padding: 8px 12px; border: 1.5px solid #cbd5e0; border-radius: 8px;
+      font-size: 0.9rem; outline: none; background: #fff; flex: 1; min-width: 120px;
+    }
+    .filter-row select:focus, .filter-row input:focus { border-color: #3182ce; }
+    .table-wrap { overflow-x: auto; border-radius: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
     th {
-      background: #ebf8ff;
-      color: #2b6cb0;
-      font-size: 0.85rem;
-      font-weight: 700;
-      padding: 11px 14px;
-      text-align: left;
-      border-bottom: 2px solid #bee3f8;
-      white-space: nowrap;
+      background: #ebf8ff; color: #2b6cb0; font-weight: 700; padding: 10px 12px;
+      text-align: left; white-space: nowrap;
     }
-    td {
-      padding: 11px 14px;
-      font-size: 0.88rem;
-      border-bottom: 1px solid #e2e8f0;
-      vertical-align: top;
-    }
+    td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
     tr:last-child td { border-bottom: none; }
-    tr:hover td { background: #f7fafc; }
+    tbody tr:hover td { background: #f7fafc; cursor: pointer; }
     .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 0.78rem;
-      font-weight: 600;
+      display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem;
+      font-weight: 600; background: #ebf8ff; color: #2b6cb0;
     }
-    .badge-voice { background: #e9d8fd; color: #553c9a; }
-    .badge-text  { background: #c6f6d5; color: #22543d; }
-    .feedback-cell { max-width: 320px; white-space: pre-wrap; word-break: break-word; }
 
-    .empty-msg { text-align: center; color: #a0aec0; padding: 48px 0; font-size: 1rem; }
-    .loading-msg { text-align: center; color: #718096; padding: 48px 0; }
+    /* ── Settings ── */
+    .settings-section { max-width: 480px; }
+    .modal-field { margin-bottom: 14px; }
+    .modal-field label { display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 5px; color: #4a5568; }
+    .modal-field input, .modal-field select, .modal-field textarea {
+      width: 100%; padding: 9px 12px; border: 1.5px solid #cbd5e0; border-radius: 8px;
+      font-size: 0.95rem; outline: none; transition: border-color 0.2s;
+    }
+    .modal-field input:focus, .modal-field select:focus, .modal-field textarea:focus { border-color: #3182ce; }
+    .modal-field textarea { min-height: 70px; resize: vertical; }
+    .btn-save {
+      padding: 12px 28px; background: #3182ce; color: #fff; border: none;
+      border-radius: 8px; font-size: 0.95rem; font-weight: 700; cursor: pointer;
+    }
+    .btn-save:hover { background: #2b6cb0; }
 
-    /* Toast */
+    /* ── Modal ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      z-index: 500; align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: #fff; border-radius: 16px; width: 100%; max-width: 560px;
+      max-height: 90vh; overflow-y: auto; padding: 28px 24px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    }
+    .modal h2 { font-size: 1.15rem; color: #2b6cb0; margin-bottom: 20px; }
+    .member-input-row {
+      display: flex; gap: 8px; margin-bottom: 8px; align-items: center;
+    }
+    .member-input-row input { flex: 1; min-width: 0; }
+    .btn-remove-member {
+      background: none; border: 1.5px solid #fc8181; color: #e53e3e;
+      border-radius: 6px; width: 30px; height: 30px; cursor: pointer; font-size: 1rem;
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    }
+    .btn-add-member {
+      background: none; border: 1.5px dashed #cbd5e0; color: #718096;
+      border-radius: 8px; padding: 8px; width: 100%; cursor: pointer; font-size: 0.85rem;
+      transition: all 0.2s; margin-top: 4px;
+    }
+    .btn-add-member:hover { border-color: #3182ce; color: #2b6cb0; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .btn-cancel {
+      flex: 1; padding: 12px; background: #f7fafc; border: 1.5px solid #e2e8f0;
+      border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; color: #4a5568;
+    }
+    .btn-confirm {
+      flex: 1; padding: 12px; background: #3182ce; color: #fff; border: none;
+      border-radius: 8px; font-size: 0.95rem; font-weight: 700; cursor: pointer;
+    }
+    .btn-confirm:hover { background: #2b6cb0; }
+    .btn-confirm:disabled { background: #a0aec0; cursor: not-allowed; }
+
+    /* Detail modal */
+    .detail-meta { background: #f7fafc; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 0.87rem; line-height: 2; }
+    .detail-q { margin-bottom: 14px; }
+    .detail-q-label { font-size: 0.8rem; font-weight: 700; color: #3182ce; margin-bottom: 4px; }
+    .detail-q-ans { font-size: 0.9rem; color: #2d3748; line-height: 1.7; background: #f7fafc; border-radius: 8px; padding: 10px 12px; white-space: pre-wrap; }
+
+    /* ── Loading / Empty ── */
+    .loading { text-align: center; padding: 40px; color: #a0aec0; font-size: 0.95rem; }
+    .empty { text-align: center; padding: 40px; color: #a0aec0; }
+    .empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
+    .empty-text { font-size: 0.9rem; }
+
+    /* ── Toast ── */
     .toast {
-      position: fixed; top: 20px; left: 50%;
-      transform: translateX(-50%);
-      padding: 10px 22px; border-radius: 8px;
-      font-weight: 600; font-size: 0.9rem;
-      z-index: 999; opacity: 0; transition: opacity 0.3s;
-      pointer-events: none;
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      padding: 11px 22px; border-radius: 8px; font-weight: 600; font-size: 0.9rem;
+      z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap;
     }
     .toast.show { opacity: 1; }
-    .toast.success { background: #c6f6d5; color: #22543d; }
-    .toast.error   { background: #fed7d7; color: #822727; }
+    .toast.success { background: #c6f6d5; color: #276749; }
+    .toast.error { background: #fed7d7; color: #822727; }
+    .toast.info { background: #ebf8ff; color: #2b6cb0; }
+
+    @media (max-width: 600px) {
+      .tab-btn { padding: 12px 14px; font-size: 0.82rem; }
+      .modal { padding: 20px 16px; }
+      .topbar { padding: 12px 14px; }
+    }
   </style>
 </head>
 <body>
 
-<!-- 登入畫面 -->
-<div class="login-wrap" id="loginWrap">
+<!-- ══════════ LOGIN SCREEN ══════════ -->
+<div class="login-screen" id="loginScreen">
   <div class="login-card">
-    <h2>管理後台</h2>
-    <p>擬真訓練質性回饋系統</p>
-    <input type="password" id="pwInput" placeholder="請輸入管理密碼" onkeydown="if(event.key==='Enter') doLogin()">
-    <button onclick="doLogin()">登入</button>
-    <p class="login-error" id="loginError" style="display:none;">密碼錯誤，請再試一次</p>
+    <img src="logo.png" alt="Logo">
+    <h1>管理後台</h1>
+    <p id="loginSubtitle">請輸入管理員密碼</p>
+    <input type="password" id="loginPw" placeholder="密碼" onkeydown="if(event.key==='Enter')doLogin()">
+    <p class="login-hint" id="loginHint"></p>
+    <button class="btn-login" id="loginBtn" onclick="doLogin()">登入</button>
   </div>
 </div>
 
-<!-- 主後台 -->
-<div class="admin-wrap" id="adminWrap">
-  <div class="top-bar">
-    <h1>📋 回饋資料後台</h1>
-    <div class="top-bar-right">
-      <button class="filter-btn btn-success" onclick="exportCSV()">匯出 CSV</button>
-      <button class="filter-btn btn-secondary" onclick="doLogout()">登出</button>
+<!-- ══════════ MAIN APP ══════════ -->
+<div class="app" id="appShell">
+
+  <div class="topbar">
+    <div class="topbar-left">
+      <img src="logo.png" alt="Logo">
+      <div>
+        <div class="topbar-title">擬真訓練管理後台</div>
+        <div class="topbar-subtitle">2026 Simulation Training</div>
+      </div>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">登出</button>
+  </div>
+
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('progress',this)">📊 進度追蹤</button>
+    <button class="tab-btn" onclick="switchTab('sessions',this)">📅 場次管理</button>
+    <button class="tab-btn" onclick="switchTab('feedback',this)">💬 回饋資料</button>
+    <button class="tab-btn" onclick="switchTab('settings',this)">⚙️ 設定</button>
+  </div>
+
+  <!-- ── Tab 1: 進度追蹤 ── -->
+  <div class="tab-content active" id="tab-progress">
+    <div id="progressList"><div class="loading">載入中…</div></div>
+  </div>
+
+  <!-- ── Tab 2: 場次管理 ── -->
+  <div class="tab-content" id="tab-sessions">
+    <button class="btn-add" onclick="openAddSession()">＋ 新增場次</button>
+    <div id="sessionList"><div class="loading">載入中…</div></div>
+  </div>
+
+  <!-- ── Tab 3: 回饋資料 ── -->
+  <div class="tab-content" id="tab-feedback">
+    <div class="filter-row">
+      <select id="filterGroup" onchange="applyFeedbackFilter()">
+        <option value="">所有組別</option>
+        <option>急診原位模擬</option>
+        <option>兒科急診原位模擬</option>
+        <option>產科、兒科、急診原位模擬</option>
+        <option>創傷原位模擬</option>
+        <option>新人組</option>
+        <option>急重症照護組</option>
+        <option>新生兒組</option>
+        <option>醫事放射組</option>
+        <option>桃竹苗擬真情境競賽</option>
+      </select>
+      <input type="date" id="filterDate" onchange="applyFeedbackFilter()">
+    </div>
+    <div class="table-wrap">
+      <table id="feedbackTable">
+        <thead>
+          <tr>
+            <th>送出時間</th><th>組別</th><th>日期</th><th>名字</th><th>職類</th><th>院區</th>
+          </tr>
+        </thead>
+        <tbody id="feedbackTbody">
+          <tr><td colspan="6" style="text-align:center;color:#a0aec0;padding:30px;">載入中…</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <!-- 統計 -->
-  <div class="stats-row">
-    <div class="stat-card"><div class="stat-num" id="statTotal">-</div><div class="stat-label">總回饋數</div></div>
-    <div class="stat-card"><div class="stat-num" id="statToday">-</div><div class="stat-label">今日回饋</div></div>
-    <div class="stat-card"><div class="stat-num" id="statVoice">-</div><div class="stat-label">語音輸入</div></div>
-    <div class="stat-card"><div class="stat-num" id="statText">-</div><div class="stat-label">手動輸入</div></div>
+  <!-- ── Tab 4: 設定 ── -->
+  <div class="tab-content" id="tab-settings">
+    <div class="card settings-section">
+      <div class="card-title">🔒 變更管理員密碼</div>
+      <div class="modal-field">
+        <label>目前密碼</label>
+        <input type="password" id="curPw" placeholder="輸入目前密碼">
+      </div>
+      <div class="modal-field">
+        <label>新密碼</label>
+        <input type="password" id="newPw" placeholder="輸入新密碼">
+      </div>
+      <div class="modal-field">
+        <label>確認新密碼</label>
+        <input type="password" id="confirmPw" placeholder="再次輸入新密碼">
+      </div>
+      <button class="btn-save" onclick="changePassword()">儲存變更</button>
+    </div>
   </div>
 
-  <!-- 篩選 -->
-  <div class="filter-bar">
-    <div>
-      <label>開始日期</label>
-      <input type="date" id="filterFrom">
-    </div>
-    <div>
-      <label>結束日期</label>
-      <input type="date" id="filterTo">
-    </div>
-    <div>
-      <label>A-C-L-S 站位</label>
-      <select id="filterPosition">
-        <option value="">全部</option>
-        <option>Airway</option>
-        <option>Circulation</option>
-        <option>Leader</option>
-        <option>Support</option>
-        <option>Observer</option>
+</div><!-- /.app -->
+
+<!-- ══════════ ADD SESSION MODAL ══════════ -->
+<div class="modal-overlay" id="addSessionModal">
+  <div class="modal">
+    <h2>➕ 新增場次</h2>
+    <div class="modal-field">
+      <label>組別 *</label>
+      <select id="newGroup">
+        <option value="">-- 請選擇 --</option>
+        <option>急診原位模擬</option>
+        <option>兒科急診原位模擬</option>
+        <option>產科、兒科、急診原位模擬</option>
+        <option>創傷原位模擬</option>
+        <option>新人組</option>
+        <option>急重症照護組</option>
+        <option>新生兒組</option>
+        <option>醫事放射組</option>
+        <option>桃竹苗擬真情境競賽</option>
       </select>
     </div>
-    <div>
-      <label>輸入方式</label>
-      <select id="filterType">
-        <option value="">全部</option>
-        <option value="voice">語音</option>
-        <option value="text">手動</option>
-      </select>
+    <div class="modal-field">
+      <label>日期 *</label>
+      <input type="date" id="newDate">
     </div>
-    <div>
-      <label>搜尋暱稱</label>
-      <input type="text" id="filterName" placeholder="輸入暱稱">
+    <div class="modal-field">
+      <label>時間</label>
+      <input type="time" id="newTime">
     </div>
-    <div style="display:flex; gap:8px; align-items:flex-end;">
-      <button class="filter-btn btn-primary" onclick="applyFilter()">篩選</button>
-      <button class="filter-btn btn-secondary" onclick="clearFilter()">重置</button>
+    <div class="modal-field">
+      <label>地點</label>
+      <input type="text" id="newLocation" placeholder="例：急診教育訓練室">
+    </div>
+    <div class="modal-field">
+      <label>教練</label>
+      <input type="text" id="newCoach" placeholder="教練姓名">
+    </div>
+    <div class="modal-field">
+      <label>助教</label>
+      <input type="text" id="newTA" placeholder="助教姓名">
+    </div>
+    <div class="modal-field">
+      <label>值日生</label>
+      <input type="text" id="newDuty" placeholder="值日生姓名">
+    </div>
+    <div class="modal-field">
+      <label>備注</label>
+      <textarea id="newNote" placeholder="備注（選填）"></textarea>
+    </div>
+    <div class="modal-field">
+      <label>成員名單（姓名 + Email）</label>
+      <div id="memberRows"></div>
+      <button class="btn-add-member" onclick="addMemberRow()">＋ 新增成員</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('addSessionModal')">取消</button>
+      <button class="btn-confirm" id="confirmAddBtn" onclick="submitAddSession()">新增場次</button>
     </div>
   </div>
+</div>
 
-  <!-- 資料表格 -->
-  <div class="table-wrap">
-    <div class="loading-msg" id="loadingMsg">載入中…</div>
-    <table id="dataTable" style="display:none;">
-      <thead>
-        <tr>
-          <th>訓練日期</th>
-          <th>送出時間</th>
-          <th>暱稱</th>
-          <th>A-C-L-S 站位</th>
-          <th>方式</th>
-          <th>回饋內容</th>
-        </tr>
-      </thead>
-      <tbody id="tableBody"></tbody>
-    </table>
-    <div class="empty-msg" id="emptyMsg" style="display:none;">目前沒有回饋資料</div>
+<!-- ══════════ FEEDBACK DETAIL MODAL ══════════ -->
+<div class="modal-overlay" id="feedbackDetailModal">
+  <div class="modal">
+    <h2 id="detailTitle">回饋詳細內容</h2>
+    <div id="detailBody"></div>
+    <div class="modal-actions">
+      <button class="btn-confirm" onclick="closeModal('feedbackDetailModal')">關閉</button>
+    </div>
   </div>
-
-  <div style="margin-top:10px; font-size:0.82rem; color:#a0aec0;" id="rowCount"></div>
 </div>
 
 <div class="toast" id="toast"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" async
-  onload="onSupabaseLoaded()"></script>
 <script>
-  // ===== 密碼（可自行修改）=====
-  var ADMIN_PASSWORD = 'stella0223';
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbwymktZzHh2BDxYG7wffW8WKk-2LI-a3hTU7PmrnNls-8QA1P2tR9Y8wEj9icAFTDgU/exec';
+  var adminPassword = '';
+  var allFeedback = [];
+  var allSessions = [];
+  var cbIndex = 0;
 
-  var _sb = null;
-  var allData = [];
-
-  function onSupabaseLoaded() {
-    try {
-      _sb = window.supabase.createClient(
-        'https://fgufsfvrfkvixqpirtol.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZndWZzZnZyZmt2aXhxcGlydG9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMjMxNzMsImV4cCI6MjA5MTg5OTE3M30.2gLvN-UzKyNsB_RqbR2bauOzLU4LNzI4s9JZym5gcp4'
-      );
-      if (sessionStorage.getItem('adminAuth') === 'ok') loadData();
-    } catch(e) { console.error('Supabase init failed:', e); }
+  /* ── JSONP helper ── */
+  function jsonp(params, cb) {
+    var name = '__cb' + (cbIndex++);
+    var s = document.createElement('script');
+    window[name] = function(data) {
+      delete window[name];
+      if (document.head.contains(s)) document.head.removeChild(s);
+      cb(null, data);
+    };
+    params.callback = name;
+    var qs = Object.keys(params).map(function(k) {
+      return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+    }).join('&');
+    s.src = GAS_URL + '?' + qs;
+    s.onerror = function() {
+      delete window[name];
+      if (document.head.contains(s)) document.head.removeChild(s);
+      cb(new Error('JSONP error'));
+    };
+    document.head.appendChild(s);
   }
 
-  // ===== 登入 =====
-  function doLogin() {
-    var pw = document.getElementById('pwInput').value;
-    if (pw === ADMIN_PASSWORD) {
-      sessionStorage.setItem('adminAuth', 'ok');
-      document.getElementById('loginWrap').style.display = 'none';
-      document.getElementById('adminWrap').style.display = 'block';
-      if (_sb) loadData();
-    } else {
-      document.getElementById('loginError').style.display = 'block';
-      document.getElementById('pwInput').value = '';
-    }
-  }
-
-  function doLogout() {
-    sessionStorage.removeItem('adminAuth');
-    location.reload();
-  }
-
-  // 自動還原登入狀態
-  window.addEventListener('DOMContentLoaded', function() {
-    if (sessionStorage.getItem('adminAuth') === 'ok') {
-      document.getElementById('loginWrap').style.display = 'none';
-      document.getElementById('adminWrap').style.display = 'block';
-    }
-    // 預設篩選：今天
-    var today = new Date().toISOString().slice(0, 10);
-    document.getElementById('filterTo').value = today;
-  });
-
-  // ===== 載入資料 =====
-  async function loadData() {
-    document.getElementById('loadingMsg').style.display = 'block';
-    document.getElementById('dataTable').style.display = 'none';
-    document.getElementById('emptyMsg').style.display = 'none';
-
-    try {
-      var result = await _sb.from('feedback').select('*')
-        .order('created_at', { ascending: false })
-        .limit(500);
-      if (result.error) throw result.error;
-      allData = result.data || [];
-      updateStats(allData);
-      applyFilter();
-    } catch(e) {
-      console.error('loadData error:', e);
-      showToast('載入失敗：' + e.message, 'error');
-      document.getElementById('loadingMsg').style.display = 'none';
-    }
-  }
-
-  // ===== 統計 =====
-  function updateStats(data) {
-    var today = new Date().toISOString().slice(0, 10);
-    document.getElementById('statTotal').textContent = data.length;
-    document.getElementById('statToday').textContent = data.filter(function(r) {
-      return r.created_at && r.created_at.slice(0,10) === today;
-    }).length;
-    document.getElementById('statVoice').textContent = data.filter(function(r) { return r.input_type === 'voice'; }).length;
-    document.getElementById('statText').textContent  = data.filter(function(r) { return r.input_type === 'text'; }).length;
-  }
-
-  // ===== 篩選 =====
-  function applyFilter() {
-    var from     = document.getElementById('filterFrom').value;
-    var to       = document.getElementById('filterTo').value;
-    var position = document.getElementById('filterPosition').value;
-    var type     = document.getElementById('filterType').value;
-    var name     = document.getElementById('filterName').value.trim().toLowerCase();
-
-    var filtered = allData.filter(function(r) {
-      var date = (r.session_date || r.created_at || '').slice(0, 10);
-      if (from && date < from) return false;
-      if (to   && date > to)   return false;
-      if (position && r.acls_position !== position) return false;
-      if (type     && r.input_type    !== type)     return false;
-      if (name     && !(r.name || '').toLowerCase().includes(name)) return false;
-      return true;
-    });
-
-    renderTable(filtered);
-  }
-
-  function clearFilter() {
-    document.getElementById('filterFrom').value = '';
-    document.getElementById('filterTo').value = new Date().toISOString().slice(0,10);
-    document.getElementById('filterPosition').value = '';
-    document.getElementById('filterType').value = '';
-    document.getElementById('filterName').value = '';
-    applyFilter();
-  }
-
-  // ===== 渲染表格 =====
-  function renderTable(data) {
-    document.getElementById('loadingMsg').style.display = 'none';
-
-    if (data.length === 0) {
-      document.getElementById('dataTable').style.display = 'none';
-      document.getElementById('emptyMsg').style.display = 'block';
-      document.getElementById('rowCount').textContent = '';
-      return;
-    }
-
-    document.getElementById('emptyMsg').style.display = 'none';
-    document.getElementById('dataTable').style.display = 'table';
-    document.getElementById('rowCount').textContent = '共 ' + data.length + ' 筆';
-
-    document.getElementById('tableBody').innerHTML = data.map(function(r) {
-      var sessionDate = r.session_date || '-';
-      var createdAt   = r.created_at
-        ? new Date(r.created_at).toLocaleString('zh-TW', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })
-        : '-';
-      var typeBadge = r.input_type === 'voice'
-        ? '<span class="badge badge-voice">語音</span>'
-        : '<span class="badge badge-text">手動</span>';
-      return '<tr>'
-        + '<td>' + esc(sessionDate) + '</td>'
-        + '<td style="white-space:nowrap">' + createdAt + '</td>'
-        + '<td>' + esc(r.name || '-') + '</td>'
-        + '<td>' + esc(r.acls_position || '-') + '</td>'
-        + '<td>' + typeBadge + '</td>'
-        + '<td class="feedback-cell">' + esc(r.feedback_content || '') + '</td>'
-        + '</tr>';
-    }).join('');
-  }
-
-  function esc(t) {
-    var d = document.createElement('div'); d.textContent = String(t); return d.innerHTML;
-  }
-
-  // ===== 匯出 CSV =====
-  function exportCSV() {
-    if (allData.length === 0) { showToast('沒有資料可匯出', 'error'); return; }
-
-    var from     = document.getElementById('filterFrom').value;
-    var to       = document.getElementById('filterTo').value;
-    var position = document.getElementById('filterPosition').value;
-    var type     = document.getElementById('filterType').value;
-    var name     = document.getElementById('filterName').value.trim().toLowerCase();
-
-    var data = allData.filter(function(r) {
-      var date = (r.session_date || r.created_at || '').slice(0, 10);
-      if (from && date < from) return false;
-      if (to   && date > to)   return false;
-      if (position && r.acls_position !== position) return false;
-      if (type     && r.input_type    !== type)     return false;
-      if (name     && !(r.name || '').toLowerCase().includes(name)) return false;
-      return true;
-    });
-
-    var rows = [['訓練日期', '送出時間', '暱稱', 'A-C-L-S站位', '輸入方式', '回饋內容']];
-    data.forEach(function(r) {
-      rows.push([
-        r.session_date || '',
-        r.created_at ? new Date(r.created_at).toLocaleString('zh-TW') : '',
-        r.name || '',
-        r.acls_position || '',
-        r.input_type === 'voice' ? '語音' : '手動',
-        (r.feedback_content || '').replace(/\n/g, '｜'),
-      ]);
-    });
-
-    var csv = '\uFEFF' + rows.map(function(row) {
-      return row.map(function(cell) {
-        return '"' + String(cell).replace(/"/g, '""') + '"';
-      }).join(',');
-    }).join('\r\n');
-
-    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    var url  = URL.createObjectURL(blob);
-    var a    = document.createElement('a');
-    a.href     = url;
-    a.download = 'feedback_' + new Date().toISOString().slice(0,10) + '.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast('CSV 已匯出', 'success');
-  }
-
-  // ===== Toast =====
+  /* ── Toast ── */
   function showToast(msg, type) {
     var t = document.getElementById('toast');
     t.textContent = msg;
-    t.className = 'toast show ' + (type || 'success');
-    setTimeout(function() { t.className = 'toast'; }, 3000);
+    t.className = 'toast ' + (type || 'info');
+    t.classList.add('show');
+    setTimeout(function() { t.classList.remove('show'); }, 3200);
   }
+
+  /* ── Login / Logout ── */
+  function doLogin() {
+    var pw = document.getElementById('loginPw').value.trim();
+    if (!pw) { document.getElementById('loginHint').textContent = '請輸入密碼'; return; }
+    var btn = document.getElementById('loginBtn');
+    btn.disabled = true; btn.textContent = '驗證中…';
+    document.getElementById('loginHint').textContent = '';
+
+    jsonp({ action: 'getSessions', password: pw }, function(err, data) {
+      btn.disabled = false; btn.textContent = '登入';
+      if (err) {
+        document.getElementById('loginHint').textContent = '連線失敗，請重試';
+        return;
+      }
+      if (data && data.error === 'unauthorized') {
+        document.getElementById('loginHint').textContent = '密碼錯誤，請重試';
+        return;
+      }
+      adminPassword = pw;
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('appShell').classList.add('show');
+      loadProgress();
+    });
+  }
+
+  function doLogout() {
+    adminPassword = '';
+    document.getElementById('loginPw').value = '';
+    document.getElementById('loginHint').textContent = '';
+    document.getElementById('appShell').classList.remove('show');
+    document.getElementById('loginScreen').style.display = 'flex';
+  }
+
+  /* ── Tab switching ── */
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById('tab-' + name).classList.add('active');
+    if (name === 'progress') loadProgress();
+    if (name === 'sessions') loadSessions();
+    if (name === 'feedback') loadFeedback();
+  }
+
+  /* ── Modal helpers ── */
+  function openModal(id) { document.getElementById(id).classList.add('show'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+  document.querySelectorAll('.modal-overlay').forEach(function(overlay) {
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) overlay.classList.remove('show');
+    });
+  });
+
+  /* ── Tab 1: Progress Tracking ── */
+  function loadProgress() {
+    var el = document.getElementById('progressList');
+    el.innerHTML = '<div class="loading">載入中…</div>';
+    jsonp({ action: 'getProgress', password: adminPassword }, function(err, data) {
+      if (err || !data || data.error) {
+        el.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">載入失敗，請重新整理</div></div>';
+        return;
+      }
+      if (!data.sessions || data.sessions.length === 0) {
+        el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">尚無場次資料</div></div>';
+        return;
+      }
+      var html = '';
+      data.sessions.forEach(function(s) {
+        var pct = s.total > 0 ? Math.round(s.filled / s.total * 100) : 0;
+        var membersHtml = '';
+        if (s.members && s.members.length) {
+          s.members.forEach(function(m) {
+            membersHtml += '<div class="member-row">' +
+              '<span class="member-status">' + (m.filled ? '✅' : '❌') + '</span>' +
+              '<span class="member-name">' + esc(m.name) + '</span>' +
+              '<span class="member-email">' + esc(m.email) + '</span>' +
+            '</div>';
+          });
+        } else {
+          membersHtml = '<div style="color:#a0aec0;font-size:0.85rem;padding:8px 0;">尚無成員名單</div>';
+        }
+        var sid = esc(s.session_id);
+        html += '<div class="session-card" id="sc-' + sid + '">' +
+          '<div class="session-header" onclick="toggleSession(\'' + sid + '\')">' +
+            '<div class="session-meta">' +
+              '<div class="session-name">' + esc(s.group) + '</div>' +
+              '<div class="session-info">' + esc(s.date) + (s.time ? ' ' + esc(s.time) : '') + '</div>' +
+            '</div>' +
+            '<div class="progress-bar-wrap">' +
+              '<div class="progress-bar-fill" style="width:' + pct + '%"></div>' +
+            '</div>' +
+            '<div class="session-stats">' + s.filled + '/' + s.total + '</div>' +
+            '<span class="chevron">&#9654;</span>' +
+          '</div>' +
+          '<div class="session-body">' +
+            '<div class="member-list">' + membersHtml + '</div>' +
+            '<button class="btn-notify" onclick="sendNotify(\'' + sid + '\',this)">發送提醒 📧</button>' +
+          '</div>' +
+        '</div>';
+      });
+      el.innerHTML = html;
+    });
+  }
+
+  function toggleSession(id) {
+    var card = document.getElementById('sc-' + id);
+    if (card) card.classList.toggle('open');
+  }
+
+  function sendNotify(sessionId, btn) {
+    btn.disabled = true; btn.textContent = '發送中…';
+    jsonp({ action: 'sendNotification', password: adminPassword, session_id: sessionId }, function(err, data) {
+      btn.disabled = false; btn.textContent = '發送提醒 📧';
+      if (err || (data && data.error)) {
+        showToast('發送失敗：' + (data && data.error ? data.error : '請重試'), 'error');
+      } else {
+        showToast('提醒信已發送給未填成員 ✅', 'success');
+      }
+    });
+  }
+
+  /* ── Tab 2: Session Management ── */
+  function loadSessions() {
+    var el = document.getElementById('sessionList');
+    el.innerHTML = '<div class="loading">載入中…</div>';
+    jsonp({ action: 'getSessions', password: adminPassword }, function(err, data) {
+      if (err || !data || data.error) {
+        el.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">載入失敗</div></div>';
+        return;
+      }
+      allSessions = data.sessions || [];
+      if (allSessions.length === 0) {
+        el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">尚無場次，請點上方按鈕新增</div></div>';
+        return;
+      }
+      var html = '';
+      allSessions.forEach(function(s) {
+        var members = [];
+        try { members = typeof s.members === 'string' ? JSON.parse(s.members) : (s.members || []); } catch(e) {}
+        var details = [];
+        if (s.date)     details.push('📅 ' + s.date);
+        if (s.time)     details.push('⏰ ' + s.time);
+        if (s.location) details.push('📍 ' + s.location);
+        if (s.coach)    details.push('👨‍🏫 教練：' + s.coach);
+        if (s.ta)       details.push('🧑‍💼 助教：' + s.ta);
+        if (s.duty)     details.push('🔧 值日：' + s.duty);
+        if (members.length) details.push('👥 ' + members.length + ' 人');
+        if (s.note)     details.push('📝 ' + s.note);
+        var sid = esc(s.session_id);
+        html += '<div class="session-list-item">' +
+          '<div class="session-list-header">' +
+            '<div style="min-width:0;">' +
+              '<div class="session-list-group">' + esc(s.group) + '</div>' +
+              '<div class="session-list-detail">' + details.map(esc).join('　') + '</div>' +
+            '</div>' +
+            '<button class="btn-delete" onclick="deleteSession(\'' + sid + '\',this)">刪除</button>' +
+          '</div>' +
+        '</div>';
+      });
+      el.innerHTML = html;
+    });
+  }
+
+  function deleteSession(id, btn) {
+    if (!confirm('確定刪除此場次？此操作無法復原。')) return;
+    btn.disabled = true; btn.textContent = '刪除中…';
+    jsonp({ action: 'deleteSession', password: adminPassword, session_id: id }, function(err, data) {
+      if (err || (data && data.error)) {
+        btn.disabled = false; btn.textContent = '刪除';
+        showToast('刪除失敗，請重試', 'error');
+      } else {
+        showToast('已刪除場次', 'success');
+        loadSessions();
+      }
+    });
+  }
+
+  /* ── Add Session Modal ── */
+  function openAddSession() {
+    ['newGroup','newTime','newLocation','newCoach','newTA','newDuty','newNote'].forEach(function(id) {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('newDate').value = '';
+    document.getElementById('memberRows').innerHTML = '';
+    addMemberRow();
+    openModal('addSessionModal');
+  }
+
+  function addMemberRow() {
+    var row = document.createElement('div');
+    row.className = 'member-input-row';
+    row.innerHTML =
+      '<input type="text" placeholder="姓名">' +
+      '<input type="email" placeholder="Email">' +
+      '<button class="btn-remove-member" onclick="this.parentNode.remove()">&#215;</button>';
+    document.getElementById('memberRows').appendChild(row);
+  }
+
+  function submitAddSession() {
+    var group = document.getElementById('newGroup').value;
+    var date  = document.getElementById('newDate').value;
+    if (!group) { showToast('請選擇組別', 'error'); return; }
+    if (!date)  { showToast('請選擇日期', 'error'); return; }
+
+    var members = [];
+    document.querySelectorAll('#memberRows .member-input-row').forEach(function(row) {
+      var inputs = row.querySelectorAll('input');
+      var name  = inputs[0].value.trim();
+      var email = inputs[1].value.trim();
+      if (name || email) members.push({ name: name, email: email });
+    });
+
+    var btn = document.getElementById('confirmAddBtn');
+    btn.disabled = true; btn.textContent = '新增中…';
+
+    jsonp({
+      action: 'addSession',
+      password: adminPassword,
+      group: group,
+      date: date,
+      time: document.getElementById('newTime').value,
+      location: document.getElementById('newLocation').value,
+      coach: document.getElementById('newCoach').value,
+      ta: document.getElementById('newTA').value,
+      duty: document.getElementById('newDuty').value,
+      note: document.getElementById('newNote').value,
+      members: JSON.stringify(members)
+    }, function(err, data) {
+      btn.disabled = false; btn.textContent = '新增場次';
+      if (err || (data && data.error)) {
+        showToast('新增失敗：' + (data && data.error ? data.error : '請重試'), 'error');
+      } else {
+        showToast('場次已新增 ✅', 'success');
+        closeModal('addSessionModal');
+        loadSessions();
+      }
+    });
+  }
+
+  /* ── Tab 3: Feedback ── */
+  var QUESTION_LABELS = [
+    'Q1 能幫助學習的訓練元素',
+    'Q2 阻礙學習的因素',
+    'Q3 團隊合作最有效行為',
+    'Q4 需改善的 TRM 行為',
+    'Q5 Debriefing 最能改變行為的回饋',
+    'Q6 第二次演練實際改變',
+    'Q7 未說出的疑慮',
+    'Q8 轉移至真實臨床'
+  ];
+
+  function loadFeedback() {
+    var tbody = document.getElementById('feedbackTbody');
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#a0aec0;padding:30px;">載入中…</td></tr>';
+    jsonp({ action: 'getFeedback', password: adminPassword }, function(err, data) {
+      if (err || !data || data.error) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#e53e3e;padding:30px;">載入失敗</td></tr>';
+        return;
+      }
+      allFeedback = data.rows || [];
+      applyFeedbackFilter();
+    });
+  }
+
+  function applyFeedbackFilter() {
+    var fg = document.getElementById('filterGroup').value;
+    var fd = document.getElementById('filterDate').value;
+    var rows = allFeedback.filter(function(r) {
+      if (fg && r['組別'] !== fg) return false;
+      if (fd && r['訓練日期'] !== fd) return false;
+      return true;
+    });
+    renderFeedbackTable(rows);
+  }
+
+  function renderFeedbackTable(rows) {
+    var tbody = document.getElementById('feedbackTbody');
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#a0aec0;padding:30px;">尚無資料</td></tr>';
+      return;
+    }
+    // Store a safe reference for click
+    window._fbRows = rows;
+    var html = '';
+    rows.forEach(function(r, i) {
+      html += '<tr onclick="openFeedbackDetail(' + i + ')">' +
+        '<td>' + esc(r['送出時間'] || '') + '</td>' +
+        '<td><span class="badge">' + esc(r['組別'] || '') + '</span></td>' +
+        '<td>' + esc(r['訓練日期'] || '') + '</td>' +
+        '<td>' + esc(r['名字'] || '') + '</td>' +
+        '<td>' + esc(r['職類'] || '') + '</td>' +
+        '<td>' + esc(r['院區'] || '') + '</td>' +
+      '</tr>';
+    });
+    tbody.innerHTML = html;
+  }
+
+  function openFeedbackDetail(idx) {
+    var r = window._fbRows[idx];
+    if (!r) return;
+    var group = r['組別'] || '';
+    var name  = r['名字'] || '';
+    var date  = r['訓練日期'] || '';
+    document.getElementById('detailTitle').textContent = group + (name ? ' — ' + name : '') + (date ? ' (' + date + ')' : '');
+
+    var metaFields = ['職類','臨床工作年資','院區','Email','A-C-L-S分工站位','擬真訓練經驗'];
+    var metaHtml = '<div class="detail-meta">';
+    metaFields.forEach(function(f) {
+      if (r[f]) metaHtml += '<b>' + esc(f) + '：</b>' + esc(r[f]) + '<br>';
+    });
+    metaHtml += '</div>';
+
+    var qKeys = [
+      'Q1-幫助學習的訓練元素','Q2-阻礙學習的因素','Q3-團隊合作最有效行為','Q4-需改善TRM行為',
+      'Q5-Debriefing最能改變行為的回饋','Q6-第二次演練實際改變','Q7-未說出的疑慮','Q8-轉移至真實臨床'
+    ];
+    var qHtml = '';
+    qKeys.forEach(function(k, i) {
+      qHtml += '<div class="detail-q">' +
+        '<div class="detail-q-label">' + esc(QUESTION_LABELS[i]) + '</div>' +
+        '<div class="detail-q-ans">' + esc(r[k] || '（未填）') + '</div>' +
+      '</div>';
+    });
+
+    document.getElementById('detailBody').innerHTML = metaHtml + qHtml;
+    openModal('feedbackDetailModal');
+  }
+
+  /* ── Tab 4: Settings ── */
+  function changePassword() {
+    var cur  = document.getElementById('curPw').value.trim();
+    var nw   = document.getElementById('newPw').value.trim();
+    var conf = document.getElementById('confirmPw').value.trim();
+    if (!cur || !nw || !conf) { showToast('請填寫所有欄位', 'error'); return; }
+    if (cur !== adminPassword) { showToast('目前密碼不正確', 'error'); return; }
+    if (nw !== conf)  { showToast('新密碼與確認密碼不符', 'error'); return; }
+    if (nw.length < 4) { showToast('新密碼至少需 4 個字元', 'error'); return; }
+    jsonp({ action: 'setPassword', password: adminPassword, newPassword: nw }, function(err, data) {
+      if (err || (data && data.error)) {
+        showToast('變更失敗，請重試', 'error');
+      } else {
+        adminPassword = nw;
+        showToast('密碼已成功變更 ✅', 'success');
+        document.getElementById('curPw').value = '';
+        document.getElementById('newPw').value = '';
+        document.getElementById('confirmPw').value = '';
+      }
+    });
+  }
+
+  /* ── Utilities ── */
+  function esc(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  /* ── Init: check if first-time setup ── */
+  (function() {
+    jsonp({ action: 'checkInit' }, function(err, data) {
+      if (!err && data && data.firstTime) {
+        document.getElementById('loginSubtitle').textContent = '首次登入，請設定管理員密碼';
+        document.getElementById('loginHint').textContent = '您輸入的密碼將成為管理員密碼';
+      }
+    });
+  })();
 </script>
 </body>
 </html>
