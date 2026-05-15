@@ -432,6 +432,9 @@
   var allFeedback = [];
   var allSessions = [];
   var cbIndex = 0;
+  var autoRefreshTimer = null;
+  var currentTab = 'progress';
+  var REFRESH_INTERVAL_MS = 30000; // 30 秒自動刷新
 
   /* ── JSONP helper ── */
   function jsonp(params, cb) {
@@ -486,6 +489,7 @@
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('appShell').classList.add('show');
       loadProgress();
+      startAutoRefresh();
     });
   }
 
@@ -503,10 +507,28 @@
     document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
     btn.classList.add('active');
     document.getElementById('tab-' + name).classList.add('active');
+    currentTab = name;
     if (name === 'progress') loadProgress();
     if (name === 'sessions') loadSessions();
     if (name === 'feedback') loadFeedback();
     if (name === 'settings') loadNotifyEmails();
+    startAutoRefresh();
+  }
+
+  /* ── Auto Refresh ── */
+  function startAutoRefresh() {
+    stopAutoRefresh();
+    if (currentTab !== 'progress' && currentTab !== 'feedback') return;
+    autoRefreshTimer = setInterval(function() {
+      if (document.hidden) return; // 頁面在背景時不刷新
+      if (document.querySelector('.modal-overlay.show')) return; // 有開啟對話框時不刷新
+      if (currentTab === 'progress') loadProgress(true);
+      else if (currentTab === 'feedback') loadFeedback(true);
+    }, REFRESH_INTERVAL_MS);
+  }
+
+  function stopAutoRefresh() {
+    if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
   }
 
   /* ── Modal helpers ── */
@@ -520,9 +542,9 @@
   });
 
   /* ── Tab 1: Progress Tracking ── */
-  function loadProgress() {
+  function loadProgress(silent) {
     var el = document.getElementById('progressList');
-    el.innerHTML = '<div class="loading">載入中…</div>';
+    if (!silent) el.innerHTML = '<div class="loading">載入中…</div>';
     jsonp({ action: 'getProgress', password: adminPassword }, function(err, data) {
       if (err || !data || data.error) {
         el.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">載入失敗，請重新整理</div></div>';
@@ -782,9 +804,9 @@
     'Q8 轉移至真實臨床'
   ];
 
-  function loadFeedback() {
+  function loadFeedback(silent) {
     var tbody = document.getElementById('feedbackTbody');
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#a0aec0;padding:30px;">載入中…</td></tr>';
+    if (!silent) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#a0aec0;padding:30px;">載入中…</td></tr>';
     jsonp({ action: 'getFeedback', password: adminPassword }, function(err, data) {
       if (err || !data || data.error) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#e53e3e;padding:30px;">載入失敗</td></tr>';
