@@ -319,6 +319,20 @@
 
   <!-- ── Tab 4: 設定 ── -->
   <div class="tab-content" id="tab-settings">
+
+    <div class="card settings-section">
+      <div class="card-title">📧 固定通知信箱</div>
+      <p style="font-size:0.85rem;color:#718096;margin-bottom:14px;line-height:1.6;">
+        學員預約新場次時，系統除了寄信給隊員外，也會自動通知以下信箱（講師、助教、行政助理等）。<br>
+        多個信箱請用逗號分隔。
+      </p>
+      <div class="modal-field">
+        <label>固定通知信箱</label>
+        <textarea id="notifyEmails" placeholder="例：coach@ntuh.gov.tw, admin@ntuh.gov.tw" style="min-height:90px;"></textarea>
+      </div>
+      <button class="btn-save" onclick="saveNotifyEmails()">儲存信箱設定</button>
+    </div>
+
     <div class="card settings-section">
       <div class="card-title">🔒 變更管理員密碼</div>
       <div class="modal-field">
@@ -333,7 +347,7 @@
         <label>確認新密碼</label>
         <input type="password" id="confirmPw" placeholder="再次輸入新密碼">
       </div>
-      <button class="btn-save" onclick="changePassword()">儲存變更</button>
+      <button class="btn-save" onclick="changePassword()">儲存密碼變更</button>
     </div>
   </div>
 
@@ -361,7 +375,7 @@
     </div>
     <div class="modal-field">
       <label>時間</label>
-      <input type="time" id="newTime">
+      <input type="text" id="newTime" placeholder="例：15:30–16:30">
     </div>
     <div class="modal-field">
       <label>地點</label>
@@ -488,6 +502,7 @@
     if (name === 'progress') loadProgress();
     if (name === 'sessions') loadSessions();
     if (name === 'feedback') loadFeedback();
+    if (name === 'settings') loadNotifyEmails();
   }
 
   /* ── Modal helpers ── */
@@ -776,6 +791,25 @@
   }
 
   /* ── Tab 4: Settings ── */
+  function loadNotifyEmails() {
+    jsonp({ action: 'getNotifyEmails', password: adminPassword }, function(err, data) {
+      if (!err && data && data.emails != null) {
+        document.getElementById('notifyEmails').value = data.emails;
+      }
+    });
+  }
+
+  function saveNotifyEmails() {
+    var emails = document.getElementById('notifyEmails').value.trim();
+    jsonp({ action: 'setNotifyEmails', password: adminPassword, emails: emails }, function(err, data) {
+      if (err || (data && data.error)) {
+        showToast('儲存失敗，請重試', 'error');
+      } else {
+        showToast('通知信箱已儲存 ✅', 'success');
+      }
+    });
+  }
+
   function changePassword() {
     var cur  = document.getElementById('curPw').value.trim();
     var nw   = document.getElementById('newPw').value.trim();

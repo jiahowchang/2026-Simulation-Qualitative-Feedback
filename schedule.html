@@ -27,7 +27,7 @@
     /* ── Filter Pills ── */
     .filter-wrap {
       display: flex; gap: 8px; flex-wrap: wrap; padding: 0 0 4px;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
     .pill {
       padding: 7px 16px; border-radius: 999px; border: 2px solid #cbd5e0;
@@ -36,6 +36,17 @@
     }
     .pill:hover { border-color: #3182ce; color: #2b6cb0; }
     .pill.active { border-color: #3182ce; background: #3182ce; color: #fff; }
+
+    /* ── Propose Button ── */
+    .btn-propose {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 14px 22px; background: linear-gradient(135deg, #2b6cb0, #3182ce);
+      color: #fff; border: none; border-radius: 12px; font-size: 0.95rem; font-weight: 700;
+      cursor: pointer; margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(49,130,206,0.35); transition: all 0.2s;
+    }
+    .btn-propose:hover { transform: translateY(-1px); box-shadow: 0 4px 18px rgba(49,130,206,0.45); }
+    .btn-propose:active { transform: none; }
 
     /* ── Section Divider ── */
     .section-label {
@@ -101,9 +112,82 @@
     .empty-icon { font-size: 3rem; margin-bottom: 12px; }
     .empty-text { font-size: 1rem; }
 
+    /* ── Modal ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      z-index: 500; align-items: flex-end; justify-content: center; padding: 0;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: #fff; border-radius: 20px 20px 0 0; width: 100%; max-width: 600px;
+      max-height: 92vh; overflow-y: auto; padding: 28px 20px 40px;
+      box-shadow: 0 -8px 32px rgba(0,0,0,0.18);
+      animation: slideUp 0.25s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(60px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .modal-handle {
+      width: 40px; height: 4px; background: #cbd5e0; border-radius: 2px;
+      margin: 0 auto 20px;
+    }
+    .modal h2 { font-size: 1.15rem; color: #2b6cb0; margin-bottom: 6px; }
+    .modal-desc { font-size: 0.85rem; color: #718096; margin-bottom: 20px; line-height: 1.6; }
+
+    .modal-field { margin-bottom: 14px; }
+    .modal-field label {
+      display: block; font-weight: 600; font-size: 0.88rem;
+      margin-bottom: 5px; color: #4a5568;
+    }
+    .modal-field input, .modal-field select, .modal-field textarea {
+      width: 100%; padding: 10px 12px; border: 1.5px solid #cbd5e0; border-radius: 8px;
+      font-size: 0.95rem; outline: none; transition: border-color 0.2s; background: #fff;
+      font-family: inherit;
+    }
+    .modal-field input:focus, .modal-field select:focus, .modal-field textarea:focus { border-color: #3182ce; }
+    .modal-field textarea { min-height: 70px; resize: vertical; }
+
+    .member-input-row {
+      display: flex; gap: 8px; margin-bottom: 8px; align-items: center;
+    }
+    .member-input-row input { flex: 1; min-width: 0; }
+    .btn-remove-member {
+      background: none; border: 1.5px solid #fc8181; color: #e53e3e;
+      border-radius: 6px; width: 32px; height: 32px; cursor: pointer; font-size: 1rem;
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    }
+    .btn-add-member {
+      background: none; border: 1.5px dashed #cbd5e0; color: #718096;
+      border-radius: 8px; padding: 9px; width: 100%; cursor: pointer; font-size: 0.85rem;
+      transition: all 0.2s; margin-top: 4px;
+    }
+    .btn-add-member:hover { border-color: #3182ce; color: #2b6cb0; }
+
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .btn-cancel {
+      flex: 1; padding: 13px; background: #f7fafc; border: 1.5px solid #e2e8f0;
+      border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; color: #4a5568;
+    }
+    .btn-confirm {
+      flex: 2; padding: 13px; background: #3182ce; color: #fff; border: none;
+      border-radius: 10px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: background 0.2s;
+    }
+    .btn-confirm:hover { background: #2b6cb0; }
+    .btn-confirm:disabled { background: #a0aec0; cursor: not-allowed; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+      padding: 12px 24px; border-radius: 10px; font-weight: 600; font-size: 0.9rem;
+      z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+      white-space: nowrap; max-width: 90vw; text-align: center;
+    }
+    .toast.show { opacity: 1; }
+    .toast.success { background: #c6f6d5; color: #276749; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+    .toast.error   { background: #fed7d7; color: #822727; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+
     @media (max-width: 480px) {
       .session-info { grid-template-columns: 1fr; }
       .header h1 { font-size: 1.25rem; }
+      .modal { padding: 24px 16px 36px; }
     }
   </style>
 </head>
@@ -127,6 +211,10 @@
     <button class="pill" onclick="filterGroup('生醫醫事放射組', this)">生醫醫事放射組</button>
   </div>
 
+  <button class="btn-propose" onclick="openProposeModal()">
+    📅 預約練習時間　→
+  </button>
+
   <div id="scheduleContent">
     <div class="loading">
       <div class="loading-spinner"></div>
@@ -135,6 +223,66 @@
   </div>
 
 </div>
+
+<!-- ══════════ PROPOSE SESSION MODAL ══════════ -->
+<div class="modal-overlay" id="proposeModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2>📅 預約練習時間</h2>
+    <p class="modal-desc">填寫後系統將自動發送通知信給所有隊員及講師。</p>
+
+    <div class="modal-field">
+      <label>組別 *</label>
+      <select id="pGroup">
+        <option value="">-- 請選擇組別 --</option>
+        <option>新竹新人組</option>
+        <option>新竹急重症照護組</option>
+        <option>新竹新生兒組</option>
+        <option>生醫急重症照護組</option>
+        <option>生醫新生兒組</option>
+        <option>生醫醫事放射組</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>日期 *</label>
+      <input type="date" id="pDate">
+    </div>
+    <div class="modal-field">
+      <label>時間區間 *</label>
+      <input type="text" id="pTime" placeholder="例：13:00–15:00">
+    </div>
+    <div class="modal-field">
+      <label>地點</label>
+      <input type="text" id="pLocation" placeholder="例：急診教育訓練室">
+    </div>
+    <div class="modal-field">
+      <label>備注</label>
+      <textarea id="pNote" placeholder="其他說明（選填）"></textarea>
+    </div>
+
+    <div class="modal-field">
+      <label>隊員名單（姓名 ＋ Email）</label>
+      <div id="pMemberRows"></div>
+      <button class="btn-add-member" onclick="addPMemberRow()">＋ 新增隊員</button>
+    </div>
+
+    <div class="modal-field">
+      <label>你的姓名 *</label>
+      <input type="text" id="pSubmitterName" placeholder="填寫者姓名">
+    </div>
+    <div class="modal-field">
+      <label>你的 Email *</label>
+      <input type="email" id="pSubmitterEmail" placeholder="填寫者 Email（也會收到通知）">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeProposeModal()">取消</button>
+      <button class="btn-confirm" id="proposeSubmitBtn" onclick="submitPropose()">送出預約 →</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script>
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbxry8msOCgkK26qbveQbxpZ-TTXp1y1Ps3kjHBz6QmshndyVSpFduoZdgk9UwQx4GoT/exec';
@@ -172,6 +320,16 @@
       .replace(/"/g, '&quot;');
   }
 
+  /* ── Toast ── */
+  function showToast(msg, type) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + (type || 'success');
+    t.classList.add('show');
+    setTimeout(function() { t.classList.remove('show'); }, 3500);
+  }
+
+  /* ── Filter ── */
   function filterGroup(group, btn) {
     currentGroup = group;
     document.querySelectorAll('.pill').forEach(function(p) { p.classList.remove('active'); });
@@ -206,17 +364,14 @@
       else upcoming.push(s);
     });
 
-    // Sort upcoming ascending, past descending
     upcoming.sort(function(a, b) { return (parseDate(a.date) || 0) - (parseDate(b.date) || 0); });
     past.sort(function(a, b) { return (parseDate(b.date) || 0) - (parseDate(a.date) || 0); });
 
     var html = '';
-
     if (upcoming.length) {
       html += '<div class="section-label">即將到來</div>';
       upcoming.forEach(function(s) { html += buildCard(s, false); });
     }
-
     if (past.length) {
       html += '<div class="section-label" style="margin-top:24px;">過去場次</div>';
       past.forEach(function(s) { html += buildCard(s, true); });
@@ -260,7 +415,89 @@
     '</div>';
   }
 
-  // Load sessions on page load
+  /* ── Propose Modal ── */
+  function openProposeModal() {
+    ['pGroup','pDate','pTime','pLocation','pNote','pSubmitterName','pSubmitterEmail'].forEach(function(id) {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('pMemberRows').innerHTML = '';
+    addPMemberRow();
+    addPMemberRow();
+    document.getElementById('proposeModal').classList.add('show');
+  }
+
+  function closeProposeModal() {
+    document.getElementById('proposeModal').classList.remove('show');
+  }
+
+  function addPMemberRow() {
+    var row = document.createElement('div');
+    row.className = 'member-input-row';
+    row.innerHTML =
+      '<input type="text" placeholder="姓名">' +
+      '<input type="email" placeholder="Email">' +
+      '<button class="btn-remove-member" onclick="this.parentNode.remove()">✕</button>';
+    document.getElementById('pMemberRows').appendChild(row);
+  }
+
+  function submitPropose() {
+    var group   = document.getElementById('pGroup').value.trim();
+    var date    = document.getElementById('pDate').value;
+    var time    = document.getElementById('pTime').value.trim();
+    var sName   = document.getElementById('pSubmitterName').value.trim();
+    var sEmail  = document.getElementById('pSubmitterEmail').value.trim();
+
+    if (!group)  { showToast('請選擇組別', 'error'); return; }
+    if (!date)   { showToast('請選擇日期', 'error'); return; }
+    if (!time)   { showToast('請輸入時間區間', 'error'); return; }
+    if (!sName)  { showToast('請輸入你的姓名', 'error'); return; }
+    if (!sEmail || !sEmail.includes('@')) { showToast('請輸入有效的 Email', 'error'); return; }
+
+    var members = [];
+    document.querySelectorAll('#pMemberRows .member-input-row').forEach(function(row) {
+      var inputs = row.querySelectorAll('input');
+      var n = inputs[0].value.trim();
+      var e = inputs[1].value.trim();
+      if (n || e) members.push({ name: n, email: e });
+    });
+
+    var btn = document.getElementById('proposeSubmitBtn');
+    btn.disabled = true; btn.textContent = '送出中…';
+
+    jsonp({
+      action: 'proposeSession',
+      group: group,
+      date: date,
+      time: time,
+      location: document.getElementById('pLocation').value.trim(),
+      note: document.getElementById('pNote').value.trim(),
+      submitter_name: sName,
+      submitter_email: sEmail,
+      members: JSON.stringify(members)
+    }, function(err, data) {
+      btn.disabled = false; btn.textContent = '送出預約 →';
+      if (err || (data && data.error)) {
+        showToast('送出失敗，請稍後再試', 'error');
+      } else {
+        closeProposeModal();
+        showToast('✅ 預約完成！通知信已發送給所有隊員', 'success');
+        // Reload sessions
+        jsonp({ action: 'getPublicSchedule' }, function(e2, d2) {
+          if (!e2 && d2 && !d2.error) {
+            allSessions = d2.sessions || [];
+            renderSchedule();
+          }
+        });
+      }
+    });
+  }
+
+  /* ── Close modal on backdrop click ── */
+  document.getElementById('proposeModal').addEventListener('click', function(e) {
+    if (e.target === this) closeProposeModal();
+  });
+
+  /* ── Load sessions on page load ── */
   jsonp({ action: 'getPublicSchedule' }, function(err, data) {
     if (err || !data || data.error) {
       document.getElementById('scheduleContent').innerHTML =
