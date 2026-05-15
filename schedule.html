@@ -261,6 +261,13 @@
     </div>
 
     <div class="modal-field">
+      <label>通知講師／助教（選填）</label>
+      <p style="font-size:0.8rem;color:#718096;margin-bottom:8px;">填入要收到通知的講師或助教姓名與 Email</p>
+      <div id="pStaffRows"></div>
+      <button class="btn-add-member" onclick="addPStaffRow()">＋ 新增講師／助教</button>
+    </div>
+
+    <div class="modal-field">
       <label>隊員名單（姓名 ＋ Email）</label>
       <div id="pMemberRows"></div>
       <button class="btn-add-member" onclick="addPMemberRow()">＋ 新增隊員</button>
@@ -420,6 +427,7 @@
     ['pGroup','pDate','pTime','pLocation','pNote','pSubmitterName','pSubmitterEmail'].forEach(function(id) {
       document.getElementById(id).value = '';
     });
+    document.getElementById('pStaffRows').innerHTML = '';
     document.getElementById('pMemberRows').innerHTML = '';
     addPMemberRow();
     addPMemberRow();
@@ -428,6 +436,16 @@
 
   function closeProposeModal() {
     document.getElementById('proposeModal').classList.remove('show');
+  }
+
+  function addPStaffRow() {
+    var row = document.createElement('div');
+    row.className = 'member-input-row';
+    row.innerHTML =
+      '<input type="text" placeholder="姓名">' +
+      '<input type="email" placeholder="Email">' +
+      '<button class="btn-remove-member" onclick="this.parentNode.remove()">✕</button>';
+    document.getElementById('pStaffRows').appendChild(row);
   }
 
   function addPMemberRow() {
@@ -453,6 +471,14 @@
     if (!sName)  { showToast('請輸入你的姓名', 'error'); return; }
     if (!sEmail || !sEmail.includes('@')) { showToast('請輸入有效的 Email', 'error'); return; }
 
+    var staff = [];
+    document.querySelectorAll('#pStaffRows .member-input-row').forEach(function(row) {
+      var inputs = row.querySelectorAll('input');
+      var n = inputs[0].value.trim();
+      var e = inputs[1].value.trim();
+      if (n || e) staff.push({ name: n, email: e });
+    });
+
     var members = [];
     document.querySelectorAll('#pMemberRows .member-input-row').forEach(function(row) {
       var inputs = row.querySelectorAll('input');
@@ -473,6 +499,7 @@
       note: document.getElementById('pNote').value.trim(),
       submitter_name: sName,
       submitter_email: sEmail,
+      notify_staff: JSON.stringify(staff),
       members: JSON.stringify(members)
     }, function(err, data) {
       btn.disabled = false; btn.textContent = '送出預約 →';
