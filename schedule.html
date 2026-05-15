@@ -235,7 +235,7 @@
 
     <div class="modal-field">
       <label>組別 *</label>
-      <select id="pGroup">
+      <select id="pGroup" onchange="loadGroupMembers()">
         <option value="">-- 請選擇組別 --</option>
         <option>新竹新人組</option>
         <option>新竹急重症照護組</option>
@@ -424,6 +424,71 @@
       '<span class="info-icon">' + icon + '</span>' +
       '<div><div class="info-label">' + esc(label) + '</div><div class="info-text">' + esc(text) + '</div></div>' +
     '</div>';
+  }
+
+  /* ── Group Members 自動帶入 ── */
+  var GROUP_MEMBERS = {
+    '新竹新人組': [
+      { name: '陳品卉', email: 'isemi891013@gmail.com' },
+      { name: '李奕儒', email: 'ortho06159@gmail.com' },
+      { name: '楊智宇', email: 'zhiyuy4@gmail.com' },
+      { name: '陳蕙瑜', email: 'ltjang1213@gmail.com' }
+    ],
+    '新竹急重症照護組': [
+      { name: '王梓學', email: '' },
+      { name: '鄭治雲', email: 'james0124abc@gmail.com' },
+      { name: '蘇欣恰', email: '' },
+      { name: '杜文志', email: '' },
+      { name: '林育禎', email: '' }
+    ],
+    '新竹新生兒組': [
+      { name: '張哲嘉', email: '' }
+    ],
+    '生醫急重症照護組': [
+      { name: '蔡于捷', email: 'th5118tw@hotmail.com' },
+      { name: '林志賢', email: '' },
+      { name: '闕早苗', email: '' },
+      { name: '宋馨妮', email: 'ni06160817@gmail.com' },
+      { name: '莊翔佯', email: 'lovely902548@gmail.com' }
+    ],
+    '生醫新生兒組': [
+      { name: '廖萸鳳', email: '' },
+      { name: '李婉慈', email: '' },
+      { name: '羅秋玲', email: '' },
+      { name: '蕭翎竹', email: '' }
+    ],
+    '生醫醫事放射組': [
+      { name: '魏嘉妤', email: 'G62034@hch.gov.tw' },
+      { name: '陳惠芬', email: 'G08733@gmail.com' },
+      { name: '楊淑芳', email: 'G04159@hch.gov.tw' },
+      { name: '葉姵呈', email: 'G05835@hch.gov.tw' }
+    ],
+    '桃竹苗競賽生醫重症1組': [
+      { name: '鄭治雲', email: 'james0124abc@gmail.com' },
+      { name: '張院廷', email: 'j5131819@gmail.com' },
+      { name: '江立羽', email: 'lihyeu1992@gmail.com' }
+    ],
+    '桃竹苗競賽生醫重症2組': []
+  };
+
+  function loadGroupMembers() {
+    var group = document.getElementById('pGroup').value;
+    var container = document.getElementById('pMemberRows');
+    container.innerHTML = '';
+    var members = GROUP_MEMBERS[group] || [];
+    if (members.length > 0) {
+      members.forEach(function(m) {
+        var row = document.createElement('div');
+        row.className = 'member-input-row';
+        row.innerHTML =
+          '<input type="text" placeholder="姓名" value="' + m.name + '">' +
+          '<input type="email" placeholder="Email" value="' + m.email + '">' +
+          '<button class="btn-remove-member" onclick="this.parentNode.remove()">✕</button>';
+        container.appendChild(row);
+      });
+    } else {
+      addPMemberRow();
+    }
   }
 
   /* ── Propose Modal ── */
