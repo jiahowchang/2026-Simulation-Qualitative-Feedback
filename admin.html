@@ -712,7 +712,10 @@
               '<div class="session-list-group">' + esc(s.group) + '</div>' +
               '<div class="session-list-detail">' + details.map(esc).join('　') + '</div>' +
             '</div>' +
-            '<button class="btn-delete" onclick="deleteSession(\'' + sid + '\',this)">刪除</button>' +
+            '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">' +
+              '<button class="btn-notify" style="margin-top:0;padding:6px 12px;font-size:0.82rem;" onclick="openEditSession(\'' + sid + '\')">編輯</button>' +
+              '<button class="btn-delete" onclick="deleteSession(\'' + sid + '\',this)">刪除</button>' +
+            '</div>' +
           '</div>' +
         '</div>';
       });
@@ -937,14 +940,62 @@
     }
   }
 
-  /* ── Add Session Modal ── */
+  /* ── Add / Edit Session Modal ── */
+  var editingSessionId = '';
+
   function openAddSession() {
+    editingSessionId = '';
     ['newGroup','newTime','newLocation','newCoach','newTA','newDuty','newNote'].forEach(function(id) {
       document.getElementById(id).value = '';
     });
     document.getElementById('newDate').value = '';
     document.getElementById('memberRows').innerHTML = '';
     addMemberRow();
+    // 修改 modal 標題與按鈕
+    var modalH2 = document.querySelector('#addSessionModal h2');
+    if (modalH2) modalH2.textContent = '➕ 新增場次';
+    document.getElementById('confirmAddBtn').textContent = '新增場次';
+    openModal('addSessionModal');
+  }
+
+  function openEditSession(sid) {
+    var s = null;
+    for (var i = 0; i < allSessions.length; i++) {
+      if (String(allSessions[i].session_id) === String(sid)) { s = allSessions[i]; break; }
+    }
+    if (!s) { showToast('找不到場次', 'error'); return; }
+    editingSessionId = sid;
+
+    document.getElementById('newGroup').value    = s.group || '';
+    document.getElementById('newDate').value     = s.date  || '';
+    document.getElementById('newTime').value     = s.time  || '';
+    document.getElementById('newLocation').value = s.location || '';
+    document.getElementById('newCoach').value    = s.coach || '';
+    document.getElementById('newTA').value       = s.ta    || '';
+    document.getElementById('newDuty').value     = s.duty  || '';
+    document.getElementById('newNote').value     = s.note  || '';
+
+    // 載入成員
+    document.getElementById('memberRows').innerHTML = '';
+    var mems = [];
+    try { mems = typeof s.members === 'string' ? JSON.parse(s.members) : (s.members || []); } catch(e) {}
+    if (mems.length === 0) {
+      addMemberRow();
+    } else {
+      mems.forEach(function(m) {
+        var row = document.createElement('div');
+        row.className = 'member-input-row';
+        row.innerHTML =
+          '<input type="text" placeholder="姓名" value="' + esc(m.name||'') + '">' +
+          '<input type="email" placeholder="Email" value="' + esc(m.email||'') + '">' +
+          '<button class="btn-remove-member" onclick="this.parentNode.remove()">&#215;</button>';
+        document.getElementById('memberRows').appendChild(row);
+      });
+    }
+
+    var modalH2 = document.querySelector('#addSessionModal h2');
+    if (modalH2) modalH2.textContent = '✏️ 編輯場次';
+    document.getElementById('confirmAddBtn').textContent = '儲存變更';
     openModal('addSessionModal');
   }
 
@@ -973,10 +1024,12 @@
     });
 
     var btn = document.getElementById('confirmAddBtn');
-    btn.disabled = true; btn.textContent = '新增中…';
+    var isEdit = !!editingSessionId;
+    var origText = isEdit ? '儲存變更' : '新增場次';
+    btn.disabled = true; btn.textContent = isEdit ? '儲存中…' : '新增中…';
 
-    jsonp({
-      action: 'addSession',
+    var params = {
+      action: isEdit ? 'updateSession' : 'addSession',
       password: adminPassword,
       group: group,
       date: date,
@@ -987,12 +1040,15 @@
       duty: document.getElementById('newDuty').value,
       note: document.getElementById('newNote').value,
       members: JSON.stringify(members)
-    }, function(err, data) {
-      btn.disabled = false; btn.textContent = '新增場次';
+    };
+    if (isEdit) params.session_id = editingSessionId;
+
+    jsonp(params, function(err, data) {
+      btn.disabled = false; btn.textContent = origText;
       if (err || (data && data.error)) {
-        showToast('新增失敗：' + (data && data.error ? data.error : '請重試'), 'error');
+        showToast((isEdit?'更新':'新增') + '失敗：' + (data && data.error ? data.error : '請重試'), 'error');
       } else {
-        showToast('場次已新增 ✅', 'success');
+        showToast((isEdit?'場次已更新':'場次已新增') + ' ✅', 'success');
         closeModal('addSessionModal');
         loadSessions();
       }
