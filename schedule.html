@@ -610,6 +610,13 @@
     if (e.target === this) closeProposeModal();
   });
 
+  /* ── Load group members on page load（動態覆蓋預設值）── */
+  jsonp({ action: 'getGroupMembers' }, function(err, data) {
+    if (!err && data && data.groups) {
+      GROUP_MEMBERS = data.groups;
+    }
+  });
+
   /* ── Load sessions on page load ── */
   jsonp({ action: 'getPublicSchedule' }, function(err, data) {
     if (err || !data || data.error) {

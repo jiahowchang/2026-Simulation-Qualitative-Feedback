@@ -275,6 +275,7 @@
     <button class="tab-btn active" onclick="switchTab('progress',this)">📊 進度追蹤</button>
     <button class="tab-btn" onclick="switchTab('sessions',this)">📅 場次管理</button>
     <button class="tab-btn" onclick="switchTab('feedback',this)">💬 回饋資料</button>
+    <button class="tab-btn" onclick="switchTab('groups',this)">👥 組別成員</button>
     <button class="tab-btn" onclick="switchTab('settings',this)">⚙️ 設定</button>
   </div>
 
@@ -317,6 +318,12 @@
         </tbody>
       </table>
     </div>
+  </div>
+
+  <!-- ── Tab: 組別成員 ── -->
+  <div class="tab-content" id="tab-groups">
+    <button class="btn-add" onclick="openAddGroupModal()">＋ 新增組別</button>
+    <div id="groupsList"><div class="loading">載入中…</div></div>
   </div>
 
   <!-- ── Tab 4: 設定 ── -->
@@ -413,6 +420,37 @@
   </div>
 </div>
 
+<!-- ══════════ ADD GROUP MODAL ══════════ -->
+<div class="modal-overlay" id="addGroupModal">
+  <div class="modal">
+    <h2>➕ 新增組別</h2>
+    <div class="modal-field">
+      <label>組別名稱 *</label>
+      <input type="text" id="newGroupName" placeholder="例：新竹新人組">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('addGroupModal')">取消</button>
+      <button class="btn-confirm" onclick="submitAddGroup()">新增</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ EDIT GROUP MEMBERS MODAL ══════════ -->
+<div class="modal-overlay" id="editGroupModal">
+  <div class="modal">
+    <h2 id="editGroupTitle">編輯成員</h2>
+    <div class="modal-field">
+      <label>成員名單（姓名 ＋ Email）</label>
+      <div id="editMemberRows"></div>
+      <button class="btn-add-member" onclick="addEditMemberRow()">＋ 新增成員</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('editGroupModal')">取消</button>
+      <button class="btn-confirm" onclick="submitEditGroup()">儲存</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════ FEEDBACK DETAIL MODAL ══════════ -->
 <div class="modal-overlay" id="feedbackDetailModal">
   <div class="modal">
@@ -488,7 +526,7 @@
       adminPassword = pw;
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('appShell').classList.add('show');
-      loadProgress();
+      refreshGroupMembers(function(){ loadProgress(); });
       startAutoRefresh();
     });
   }
@@ -511,6 +549,7 @@
     if (name === 'progress') loadProgress();
     if (name === 'sessions') loadSessions();
     if (name === 'feedback') loadFeedback();
+    if (name === 'groups')   loadGroups();
     if (name === 'settings') loadNotifyEmails();
     startAutoRefresh();
   }
@@ -665,7 +704,7 @@
     });
   }
 
-  /* ── Group Members ── */
+  /* ── Group Members（會從 GAS 動態覆蓋）── */
   var GROUP_MEMBERS = {
     '新竹新人組': [
       { name: '陳品卉', email: 'isemi891013@gmail.com' },
@@ -709,6 +748,144 @@
     ],
     '桃竹苗競賽生醫重症2組': []
   };
+
+  /* 從 GAS 載入最新的組別成員資料 */
+  function refreshGroupMembers(cb) {
+    jsonp({ action: 'getGroupMembers' }, function(err, data) {
+      if (!err && data && data.groups) {
+        GROUP_MEMBERS = data.groups;
+      }
+      if (cb) cb();
+    });
+  }
+
+  /* ══════════ Tab: 組別成員 ══════════ */
+  var editingGroupName = '';
+
+  function loadGroups() {
+    var el = document.getElementById('groupsList');
+    el.innerHTML = '<div class="loading">載入中…</div>';
+    refreshGroupMembers(function() {
+      renderGroups();
+    });
+  }
+
+  function renderGroups() {
+    var el = document.getElementById('groupsList');
+    var names = Object.keys(GROUP_MEMBERS);
+    if (names.length === 0) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">尚無組別，點上方按鈕新增</div></div>';
+      return;
+    }
+    var html = '';
+    names.forEach(function(g) {
+      var mems = GROUP_MEMBERS[g] || [];
+      var memHtml = mems.length ? mems.map(function(m){
+        return '<div class="member-row"><span class="member-name">' + esc(m.name||'') + '</span><span class="member-email">' + esc(m.email||'') + '</span></div>';
+      }).join('') : '<div style="color:#a0aec0;font-size:0.85rem;padding:8px 0;">尚無成員</div>';
+      html += '<div class="session-list-item">' +
+        '<div class="session-list-header">' +
+          '<div style="min-width:0;flex:1;">' +
+            '<div class="session-list-group">' + esc(g) + ' <span style="color:#718096;font-weight:500;font-size:0.85rem;">(' + mems.length + ' 人)</span></div>' +
+            '<div class="member-list" style="margin-top:10px;">' + memHtml + '</div>' +
+          '</div>' +
+          '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">' +
+            '<button class="btn-notify" style="margin-top:0;padding:6px 12px;font-size:0.82rem;" onclick="openEditGroupModal(\'' + esc(g).replace(/\\/g,'\\\\').replace(/\x27/g,"\\\x27") + '\')">編輯成員</button>' +
+            '<button class="btn-delete" onclick="deleteGroup(\'' + esc(g).replace(/\\/g,'\\\\').replace(/\x27/g,"\\\x27") + '\')">刪除</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    });
+    el.innerHTML = html;
+  }
+
+  function openAddGroupModal() {
+    document.getElementById('newGroupName').value = '';
+    openModal('addGroupModal');
+  }
+
+  function submitAddGroup() {
+    var name = document.getElementById('newGroupName').value.trim();
+    if (!name) { showToast('請輸入組別名稱', 'error'); return; }
+    if (GROUP_MEMBERS[name]) { showToast('此組別已存在', 'error'); return; }
+    GROUP_MEMBERS[name] = [];
+    saveAllGroups(function(ok){
+      if (ok) {
+        closeModal('addGroupModal');
+        showToast('已新增組別 ✅', 'success');
+        renderGroups();
+      }
+    });
+  }
+
+  function openEditGroupModal(groupName) {
+    editingGroupName = groupName;
+    document.getElementById('editGroupTitle').textContent = '編輯成員 — ' + groupName;
+    var container = document.getElementById('editMemberRows');
+    container.innerHTML = '';
+    var mems = GROUP_MEMBERS[groupName] || [];
+    if (mems.length === 0) {
+      addEditMemberRow();
+    } else {
+      mems.forEach(function(m){ addEditMemberRow(m.name, m.email); });
+    }
+    openModal('editGroupModal');
+  }
+
+  function addEditMemberRow(name, email) {
+    var row = document.createElement('div');
+    row.className = 'member-input-row';
+    row.innerHTML =
+      '<input type="text" placeholder="姓名" value="' + esc(name||'') + '">' +
+      '<input type="email" placeholder="Email" value="' + esc(email||'') + '">' +
+      '<button class="btn-remove-member" onclick="this.parentNode.remove()">&#215;</button>';
+    document.getElementById('editMemberRows').appendChild(row);
+  }
+
+  function submitEditGroup() {
+    if (!editingGroupName) return;
+    var mems = [];
+    document.querySelectorAll('#editMemberRows .member-input-row').forEach(function(row){
+      var inputs = row.querySelectorAll('input');
+      var n = inputs[0].value.trim();
+      var e = inputs[1].value.trim();
+      if (n || e) mems.push({ name: n, email: e });
+    });
+    GROUP_MEMBERS[editingGroupName] = mems;
+    saveAllGroups(function(ok){
+      if (ok) {
+        closeModal('editGroupModal');
+        showToast('已更新成員 ✅', 'success');
+        renderGroups();
+      }
+    });
+  }
+
+  function deleteGroup(groupName) {
+    if (!confirm('確定刪除「' + groupName + '」組別及其所有成員？')) return;
+    delete GROUP_MEMBERS[groupName];
+    saveAllGroups(function(ok){
+      if (ok) {
+        showToast('已刪除組別', 'success');
+        renderGroups();
+      }
+    });
+  }
+
+  function saveAllGroups(cb) {
+    jsonp({
+      action: 'saveGroupMembers',
+      password: adminPassword,
+      groups: JSON.stringify(GROUP_MEMBERS)
+    }, function(err, data) {
+      if (err || (data && data.error)) {
+        showToast('儲存失敗：' + (data && data.error ? data.error : '請重試'), 'error');
+        if (cb) cb(false);
+      } else {
+        if (cb) cb(true);
+      }
+    });
+  }
 
   function loadGroupMembersAdmin() {
     var group = document.getElementById('newGroup').value;
