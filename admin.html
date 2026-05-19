@@ -696,31 +696,51 @@
       allSessions.forEach(function(s) {
         var members = [];
         try { members = typeof s.members === 'string' ? JSON.parse(s.members) : (s.members || []); } catch(e) {}
-        var details = [];
-        if (s.date)     details.push('📅 ' + s.date);
-        if (s.time)     details.push('⏰ ' + s.time);
-        if (s.location) details.push('📍 ' + s.location);
-        if (s.coach)    details.push('👨‍🏫 教練：' + s.coach);
-        if (s.ta)       details.push('🧑‍💼 助教：' + s.ta);
-        if (s.duty)     details.push('🔧 值日：' + s.duty);
-        if (members.length) details.push('👥 ' + members.length + ' 人');
-        if (s.note)     details.push('📝 ' + s.note);
+        // 若場次未設定成員，從 GROUP_MEMBERS fallback
+        if (members.length === 0 && GROUP_MEMBERS[s.group]) {
+          members = GROUP_MEMBERS[s.group].slice();
+        }
         var sid = esc(s.session_id);
+        var details = [];
+        if (s.date)     details.push(esc('📅 ' + s.date));
+        if (s.time)     details.push(esc('⏰ ' + s.time));
+        if (s.location) details.push(esc('📍 ' + s.location));
+        if (s.coach)    details.push(esc('👨‍🏫 教練：' + s.coach));
+        if (s.ta)       details.push(esc('🧑‍💼 助教：' + s.ta));
+        if (s.duty)     details.push(esc('🔧 值日：' + s.duty));
+        if (members.length) {
+          details.push('<a href="javascript:void(0)" onclick="toggleSessionMembers(\'' + sid + '\')" style="color:#2b6cb0;text-decoration:underline;cursor:pointer;">👥 ' + members.length + ' 人</a>');
+        }
+        if (s.note)     details.push(esc('📝 ' + s.note));
+
+        var memberListHtml = members.length ? members.map(function(m){
+          return '<div class="member-row">' +
+            '<span class="member-name">' + esc(m.name || '') + '</span>' +
+            '<span class="member-email">' + esc(m.email || '') + '</span>' +
+          '</div>';
+        }).join('') : '';
+
         html += '<div class="session-list-item">' +
           '<div class="session-list-header">' +
             '<div style="min-width:0;">' +
               '<div class="session-list-group">' + esc(s.group) + '</div>' +
-              '<div class="session-list-detail">' + details.map(esc).join('　') + '</div>' +
+              '<div class="session-list-detail">' + details.join('　') + '</div>' +
             '</div>' +
             '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">' +
               '<button class="btn-notify" style="margin-top:0;padding:6px 12px;font-size:0.82rem;" onclick="openEditSession(\'' + sid + '\')">編輯</button>' +
               '<button class="btn-delete" onclick="deleteSession(\'' + sid + '\',this)">刪除</button>' +
             '</div>' +
           '</div>' +
+          (memberListHtml ? '<div id="sm-' + sid + '" class="member-list" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0;">' + memberListHtml + '</div>' : '') +
         '</div>';
       });
       el.innerHTML = html;
     });
+  }
+
+  function toggleSessionMembers(sid) {
+    var el = document.getElementById('sm-' + sid);
+    if (el) el.style.display = el.style.display === 'none' ? 'flex' : 'none';
   }
 
   function deleteSession(id, btn) {
