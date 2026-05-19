@@ -527,16 +527,46 @@
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('appShell').classList.add('show');
       refreshGroupMembers(function(){ loadProgress(); });
+      startIdleTimer();
       startAutoRefresh();
     });
   }
 
-  function doLogout() {
+  function doLogout(reason) {
     adminPassword = '';
+    stopIdleTimer();
+    stopAutoRefresh();
     document.getElementById('loginPw').value = '';
-    document.getElementById('loginHint').textContent = '';
+    document.getElementById('loginHint').textContent = reason === 'idle' ? '閒置超過 1 小時，已自動登出' : '';
     document.getElementById('appShell').classList.remove('show');
     document.getElementById('loginScreen').style.display = 'flex';
+  }
+
+  /* ── 閒置自動登出（1 小時）── */
+  var IDLE_TIMEOUT_MS = 60 * 60 * 1000; // 1 小時
+  var idleTimer = null;
+  var lastActivity = 0;
+
+  function resetIdleTimer() { lastActivity = Date.now(); }
+
+  function startIdleTimer() {
+    resetIdleTimer();
+    stopIdleTimer();
+    ['mousemove','mousedown','keydown','touchstart','scroll','click'].forEach(function(ev){
+      document.addEventListener(ev, resetIdleTimer, true);
+    });
+    idleTimer = setInterval(function() {
+      if (Date.now() - lastActivity >= IDLE_TIMEOUT_MS) {
+        doLogout('idle');
+      }
+    }, 30000); // 每 30 秒檢查一次
+  }
+
+  function stopIdleTimer() {
+    if (idleTimer) { clearInterval(idleTimer); idleTimer = null; }
+    ['mousemove','mousedown','keydown','touchstart','scroll','click'].forEach(function(ev){
+      document.removeEventListener(ev, resetIdleTimer, true);
+    });
   }
 
   /* ── Tab switching ── */
