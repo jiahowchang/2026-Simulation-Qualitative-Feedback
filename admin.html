@@ -322,7 +322,11 @@
 
   <!-- ── Tab: 組別成員 ── -->
   <div class="tab-content" id="tab-groups">
-    <button class="btn-add" onclick="openAddGroupModal()">＋ 新增組別</button>
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+      <button class="btn-add" onclick="openAddGroupModal()" style="margin-bottom:0;flex:1;min-width:140px;">＋ 新增組別</button>
+      <button class="btn-add" onclick="openBatchImportModal()" style="margin-bottom:0;flex:1;min-width:140px;background:#38a169;">📥 批次匯入成員</button>
+    </div>
+    <div id="unassignedSection"></div>
     <div id="groupsList"><div class="loading">載入中…</div></div>
   </div>
 
@@ -431,6 +435,26 @@
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('addGroupModal')">取消</button>
       <button class="btn-confirm" onclick="submitAddGroup()">新增</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ BATCH IMPORT MEMBERS MODAL ══════════ -->
+<div class="modal-overlay" id="batchImportModal">
+  <div class="modal">
+    <h2>📥 批次匯入成員</h2>
+    <div class="modal-field">
+      <label>目標組別 *</label>
+      <select id="batchTargetGroup"></select>
+    </div>
+    <div class="modal-field">
+      <label>成員清單 *</label>
+      <p style="font-size:0.8rem;color:#718096;margin-bottom:6px;">每行一人，格式可為：<code>姓名 email</code> 或 <code>姓名[tab]email</code>，重複的會自動略過</p>
+      <textarea id="batchMembersText" placeholder="陳小明 example@gmail.com&#10;王大華 wang@hch.gov.tw&#10;李美麗 lee@gmail.com" style="min-height:200px;font-family:monospace;font-size:0.85rem;"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('batchImportModal')">取消</button>
+      <button class="btn-confirm" onclick="submitBatchImport()">匯入</button>
     </div>
   </div>
 </div>
@@ -841,11 +865,146 @@
   /* ══════════ Tab: 組別成員 ══════════ */
   var editingGroupName = '';
 
+  var unassignedCache = [];
+
   function loadGroups() {
     var el = document.getElementById('groupsList');
     el.innerHTML = '<div class="loading">載入中…</div>';
+    document.getElementById('unassignedSection').innerHTML = '';
     refreshGroupMembers(function() {
-      renderGroups();
+      // 同時抓回饋資料找出「未分組成員」
+      jsonp({ action: 'getFeedback', password: adminPassword }, function(err, data) {
+        var feedbackRows = (data && data.rows) || [];
+        renderUnassignedSection(feedbackRows);
+        renderGroups();
+      });
+    });
+  }
+
+  function renderUnassignedSection(feedbackRows) {
+    var assignedEmails = {};
+    var assignedNames = {};
+    Object.keys(GROUP_MEMBERS).forEach(function(g) {
+      (GROUP_MEMBERS[g] || []).forEach(function(m) {
+        if (m.email) assignedEmails[m.email.toLowerCase().trim()] = true;
+        if (m.name) assignedNames[m.name.trim()] = true;
+      });
+    });
+
+    var seen = {};
+    unassignedCache = [];
+    feedbackRows.forEach(function(r) {
+      var email  = String(r['Email'] || r['email'] || '').toLowerCase().trim();
+      var name   = String(r['名字'] || r['name'] || '').trim();
+      var campus = String(r['院區'] || r['campus'] || '').trim();
+      var group  = String(r['組別'] || r['group'] || '').trim();
+      if (!email && !name) return;
+      var key = email || ('n:' + name);
+      if (seen[key]) return;
+      seen[key] = true;
+      if (email && assignedEmails[email]) return;
+      if (name && assignedNames[name]) return;
+      unassignedCache.push({ name: name, email: email, campus: campus, group: group });
+    });
+
+    var el = document.getElementById('unassignedSection');
+    if (unassignedCache.length === 0) {
+      el.innerHTML = '';
+      return;
+    }
+
+    var groupOpts = '<option value="">-- 指派到 --</option>' +
+      Object.keys(GROUP_MEMBERS).map(function(g){ return '<option>' + esc(g) + '</option>'; }).join('');
+
+    var rowsHtml = unassignedCache.map(function(p, i){
+      var labelText = (p.name || '（無姓名）') + (p.email ? ' · ' + p.email : '');
+      var hint = (p.campus || p.group) ? '<span style="color:#a0aec0;font-size:0.78rem;margin-left:8px;">原填：' + esc(p.campus) + esc(p.group) + '</span>' : '';
+      return '<div class="member-row" style="flex-wrap:wrap;gap:6px;">' +
+        '<span style="flex:1;min-width:180px;">' + esc(labelText) + hint + '</span>' +
+        '<select id="assign-' + i + '" style="padding:5px 8px;border:1px solid #cbd5e0;border-radius:6px;font-size:0.85rem;">' + groupOpts + '</select>' +
+        '<button class="btn-notify" style="margin-top:0;padding:5px 12px;font-size:0.8rem;" onclick="assignUnassigned(' + i + ')">指派</button>' +
+      '</div>';
+    }).join('');
+
+    el.innerHTML =
+      '<div class="card" style="border-left:4px solid #f6ad55;background:#fffbeb;">' +
+        '<div class="card-title" style="color:#9c4221;">⚠️ 未分組成員 (' + unassignedCache.length + ' 人)</div>' +
+        '<p style="font-size:0.85rem;color:#744210;margin-bottom:12px;">以下成員曾填過回饋但尚未加入任何組別，請指派：</p>' +
+        '<div class="member-list">' + rowsHtml + '</div>' +
+      '</div>';
+  }
+
+  function assignUnassigned(idx) {
+    var p = unassignedCache[idx];
+    if (!p) return;
+    var sel = document.getElementById('assign-' + idx);
+    var group = sel.value;
+    if (!group) { showToast('請選擇組別', 'error'); return; }
+    if (!GROUP_MEMBERS[group]) GROUP_MEMBERS[group] = [];
+    GROUP_MEMBERS[group].push({ name: p.name, email: p.email });
+    saveAllGroups(function(ok){
+      if (ok) {
+        showToast('已將 ' + (p.name || p.email) + ' 指派到 ' + group, 'success');
+        loadGroups();
+      }
+    });
+  }
+
+  /* ── 批次匯入 ── */
+  function openBatchImportModal() {
+    var sel = document.getElementById('batchTargetGroup');
+    sel.innerHTML = '<option value="">-- 請選擇組別 --</option>' +
+      Object.keys(GROUP_MEMBERS).map(function(g){ return '<option>' + esc(g) + '</option>'; }).join('');
+    document.getElementById('batchMembersText').value = '';
+    openModal('batchImportModal');
+  }
+
+  function submitBatchImport() {
+    var group = document.getElementById('batchTargetGroup').value;
+    if (!group) { showToast('請選擇目標組別', 'error'); return; }
+    var text = document.getElementById('batchMembersText').value.trim();
+    if (!text) { showToast('請貼上成員資料', 'error'); return; }
+
+    var existing = (GROUP_MEMBERS[group] || []).slice();
+    var existingEmails = {};
+    var existingNames = {};
+    existing.forEach(function(m){
+      if (m.email) existingEmails[m.email.toLowerCase().trim()] = true;
+      if (m.name) existingNames[m.name.trim()] = true;
+    });
+
+    var added = 0, skipped = 0;
+    text.split('\n').forEach(function(line) {
+      line = line.trim();
+      if (!line) return;
+      var parts = line.split(/[\t ,，]+/).filter(Boolean);
+      var name = '', email = '';
+      for (var i = parts.length - 1; i >= 0; i--) {
+        if (parts[i].indexOf('@') >= 0) {
+          email = parts[i];
+          parts.splice(i, 1);
+          break;
+        }
+      }
+      name = parts.join(' ').trim();
+      if (!name && !email) return;
+      if (email && existingEmails[email.toLowerCase()]) { skipped++; return; }
+      if (!email && name && existingNames[name]) { skipped++; return; }
+      existing.push({ name: name, email: email });
+      if (email) existingEmails[email.toLowerCase()] = true;
+      if (name) existingNames[name] = true;
+      added++;
+    });
+
+    if (added === 0) { showToast('沒有新成員可匯入', 'error'); return; }
+
+    GROUP_MEMBERS[group] = existing;
+    saveAllGroups(function(ok){
+      if (ok) {
+        closeModal('batchImportModal');
+        showToast('已匯入 ' + added + ' 人' + (skipped ? '（略過重複 ' + skipped + '）' : ''), 'success');
+        loadGroups();
+      }
     });
   }
 
