@@ -266,9 +266,12 @@
 
     <div class="modal-field">
       <label>通知講師／助教（選填）</label>
-      <p style="font-size:0.8rem;color:#718096;margin-bottom:8px;">填入要收到通知的講師或助教姓名與 Email</p>
+      <p style="font-size:0.8rem;color:#718096;margin-bottom:8px;">從名冊選擇或手動新增，名冊由管理員維護</p>
+      <select id="pStaffPicker" onchange="addStaffFromList(this)" style="margin-bottom:8px;">
+        <option value="">📋 從名冊選擇講師／助教</option>
+      </select>
       <div id="pStaffRows"></div>
-      <button class="btn-add-member" onclick="addPStaffRow()">＋ 新增講師／助教</button>
+      <button class="btn-add-member" onclick="addPStaffRow()">＋ 手動新增</button>
     </div>
 
     <div class="modal-field">
@@ -616,6 +619,36 @@
       GROUP_MEMBERS = data.groups;
     }
   });
+
+  /* ── Load staff list 講師/助教名冊 ── */
+  var STAFF_LIST = [];
+  jsonp({ action: 'getStaffList' }, function(err, data) {
+    STAFF_LIST = (data && data.staff) || [];
+    var sel = document.getElementById('pStaffPicker');
+    if (sel) {
+      var html = '<option value="">📋 從名冊選擇講師／助教</option>';
+      STAFF_LIST.forEach(function(s, i) {
+        var label = s.name + (s.role ? ' (' + s.role + ')' : '') + (s.campus ? ' · ' + s.campus : '');
+        html += '<option value="' + i + '">' + esc(label) + '</option>';
+      });
+      sel.innerHTML = html;
+    }
+  });
+
+  function addStaffFromList(select) {
+    var idx = parseInt(select.value);
+    if (isNaN(idx)) return;
+    var s = STAFF_LIST[idx];
+    if (!s) return;
+    var row = document.createElement('div');
+    row.className = 'member-input-row';
+    row.innerHTML =
+      '<input type="text" placeholder="姓名" value="' + esc(s.name||'') + '">' +
+      '<input type="email" placeholder="Email" value="' + esc(s.email||'') + '">' +
+      '<button class="btn-remove-member" onclick="this.parentNode.remove()">✕</button>';
+    document.getElementById('pStaffRows').appendChild(row);
+    select.value = '';
+  }
 
   /* ── Load sessions on page load ── */
   jsonp({ action: 'getPublicSchedule' }, function(err, data) {

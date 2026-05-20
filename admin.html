@@ -276,6 +276,7 @@
     <button class="tab-btn" onclick="switchTab('sessions',this)">📅 場次管理</button>
     <button class="tab-btn" onclick="switchTab('feedback',this)">💬 回饋資料</button>
     <button class="tab-btn" onclick="switchTab('groups',this)">👥 組別成員</button>
+    <button class="tab-btn" onclick="switchTab('staff',this)">📋 講師名冊</button>
     <button class="tab-btn" onclick="switchTab('settings',this)">⚙️ 設定</button>
   </div>
 
@@ -328,6 +329,15 @@
     </div>
     <div id="unassignedSection"></div>
     <div id="groupsList"><div class="loading">載入中…</div></div>
+  </div>
+
+  <!-- ── Tab: 講師/助教名冊 ── -->
+  <div class="tab-content" id="tab-staff">
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+      <button class="btn-add" onclick="openAddStaffModal()" style="margin-bottom:0;flex:1;min-width:140px;">＋ 新增講師／助教</button>
+      <button class="btn-add" onclick="openBatchImportStaffModal()" style="margin-bottom:0;flex:1;min-width:140px;background:#38a169;">📥 批次匯入</button>
+    </div>
+    <div id="staffList"><div class="loading">載入中…</div></div>
   </div>
 
   <!-- ── Tab 4: 設定 ── -->
@@ -475,6 +485,55 @@
   </div>
 </div>
 
+<!-- ══════════ ADD/EDIT STAFF MODAL ══════════ -->
+<div class="modal-overlay" id="staffModal">
+  <div class="modal">
+    <h2 id="staffModalTitle">新增講師／助教</h2>
+    <div class="modal-field">
+      <label>姓名 *</label>
+      <input type="text" id="staffName" placeholder="例：張小明">
+    </div>
+    <div class="modal-field">
+      <label>Email *</label>
+      <input type="email" id="staffEmail" placeholder="example@gmail.com">
+    </div>
+    <div class="modal-field">
+      <label>角色 / 職稱</label>
+      <input type="text" id="staffRole" placeholder="例：主治醫師、護理師、教練、助教">
+    </div>
+    <div class="modal-field">
+      <label>院區</label>
+      <select id="staffCampus">
+        <option value="">-- 選填 --</option>
+        <option>新竹</option>
+        <option>生醫</option>
+        <option>台大總院</option>
+        <option>兩院</option>
+        <option>其他</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('staffModal')">取消</button>
+      <button class="btn-confirm" onclick="submitStaff()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ BATCH IMPORT STAFF MODAL ══════════ -->
+<div class="modal-overlay" id="batchImportStaffModal">
+  <div class="modal">
+    <h2>📥 批次匯入講師／助教</h2>
+    <p style="font-size:0.85rem;color:#718096;margin-bottom:6px;">每行一人，格式：<code>姓名 email 角色 院區</code>（用空格、tab 或逗號分隔，角色和院區選填）</p>
+    <div class="modal-field">
+      <textarea id="batchStaffText" placeholder="張小明 dr.chang@hch.gov.tw 主治醫師 新竹&#10;李美麗 lee@gmail.com 護理師 生醫" style="min-height:200px;font-family:monospace;font-size:0.85rem;"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('batchImportStaffModal')">取消</button>
+      <button class="btn-confirm" onclick="submitBatchImportStaff()">匯入</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════ FEEDBACK DETAIL MODAL ══════════ -->
 <div class="modal-overlay" id="feedbackDetailModal">
   <div class="modal">
@@ -604,6 +663,7 @@
     if (name === 'sessions') loadSessions();
     if (name === 'feedback') loadFeedback();
     if (name === 'groups')   loadGroups();
+    if (name === 'staff')    loadStaff();
     if (name === 'settings') loadNotifyEmails();
     startAutoRefresh();
   }
@@ -1121,6 +1181,171 @@
         if (cb) cb(false);
       } else {
         if (cb) cb(true);
+      }
+    });
+  }
+
+  /* ══════════ Tab: 講師/助教名冊 ══════════ */
+  var STAFF_LIST = [];
+  var editingStaffIdx = -1;
+
+  function loadStaff() {
+    var el = document.getElementById('staffList');
+    el.innerHTML = '<div class="loading">載入中…</div>';
+    jsonp({ action: 'getStaffList' }, function(err, data) {
+      STAFF_LIST = (data && data.staff) || [];
+      renderStaff();
+    });
+  }
+
+  function renderStaff() {
+    var el = document.getElementById('staffList');
+    if (STAFF_LIST.length === 0) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">尚無講師/助教，點上方按鈕新增</div></div>';
+      return;
+    }
+    var html = '';
+    STAFF_LIST.forEach(function(s, i) {
+      var meta = [];
+      if (s.role)   meta.push(esc(s.role));
+      if (s.campus) meta.push(esc(s.campus));
+      html += '<div class="session-list-item">' +
+        '<div class="session-list-header">' +
+          '<div style="min-width:0;flex:1;">' +
+            '<div class="session-list-group">' + esc(s.name || '') + (meta.length ? ' <span style="color:#718096;font-weight:500;font-size:0.85rem;">' + meta.join(' · ') + '</span>' : '') + '</div>' +
+            '<div class="session-list-detail">' + esc(s.email || '') + '</div>' +
+          '</div>' +
+          '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">' +
+            '<button class="btn-notify" style="margin-top:0;padding:6px 12px;font-size:0.82rem;" onclick="openEditStaffModal(' + i + ')">編輯</button>' +
+            '<button class="btn-delete" onclick="deleteStaff(' + i + ')">刪除</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    });
+    el.innerHTML = html;
+  }
+
+  function openAddStaffModal() {
+    editingStaffIdx = -1;
+    document.getElementById('staffModalTitle').textContent = '➕ 新增講師／助教';
+    document.getElementById('staffName').value = '';
+    document.getElementById('staffEmail').value = '';
+    document.getElementById('staffRole').value = '';
+    document.getElementById('staffCampus').value = '';
+    openModal('staffModal');
+  }
+
+  function openEditStaffModal(idx) {
+    var s = STAFF_LIST[idx];
+    if (!s) return;
+    editingStaffIdx = idx;
+    document.getElementById('staffModalTitle').textContent = '✏️ 編輯講師／助教';
+    document.getElementById('staffName').value = s.name || '';
+    document.getElementById('staffEmail').value = s.email || '';
+    document.getElementById('staffRole').value = s.role || '';
+    document.getElementById('staffCampus').value = s.campus || '';
+    openModal('staffModal');
+  }
+
+  function submitStaff() {
+    var name  = document.getElementById('staffName').value.trim();
+    var email = document.getElementById('staffEmail').value.trim();
+    var role  = document.getElementById('staffRole').value.trim();
+    var campus = document.getElementById('staffCampus').value;
+    if (!name) { showToast('請輸入姓名', 'error'); return; }
+    if (!email || !email.includes('@')) { showToast('請輸入有效 Email', 'error'); return; }
+    var entry = { name: name, email: email, role: role, campus: campus };
+    if (editingStaffIdx >= 0) {
+      STAFF_LIST[editingStaffIdx] = entry;
+    } else {
+      STAFF_LIST.push(entry);
+    }
+    saveStaffList(function(ok){
+      if (ok) {
+        closeModal('staffModal');
+        showToast(editingStaffIdx >= 0 ? '已更新 ✅' : '已新增 ✅', 'success');
+        renderStaff();
+      }
+    });
+  }
+
+  function deleteStaff(idx) {
+    var s = STAFF_LIST[idx];
+    if (!s) return;
+    if (!confirm('確定刪除「' + s.name + '」？')) return;
+    STAFF_LIST.splice(idx, 1);
+    saveStaffList(function(ok){
+      if (ok) { showToast('已刪除', 'success'); renderStaff(); }
+    });
+  }
+
+  function saveStaffList(cb) {
+    jsonp({
+      action: 'saveStaffList',
+      password: adminPassword,
+      staff: JSON.stringify(STAFF_LIST)
+    }, function(err, data) {
+      if (err || (data && data.error)) {
+        showToast('儲存失敗：' + (data && data.error ? data.error : '請重試'), 'error');
+        if (cb) cb(false);
+      } else {
+        if (cb) cb(true);
+      }
+    });
+  }
+
+  function openBatchImportStaffModal() {
+    document.getElementById('batchStaffText').value = '';
+    openModal('batchImportStaffModal');
+  }
+
+  function submitBatchImportStaff() {
+    var text = document.getElementById('batchStaffText').value.trim();
+    if (!text) { showToast('請貼上資料', 'error'); return; }
+
+    var existingEmails = {};
+    STAFF_LIST.forEach(function(s){ if (s.email) existingEmails[s.email.toLowerCase()] = true; });
+
+    var added = 0, skipped = 0;
+    text.split('\n').forEach(function(line) {
+      line = line.trim();
+      if (!line) return;
+      var parts = line.split(/[\t ,，]+/).filter(Boolean);
+      var name = '', email = '', role = '', campus = '';
+      // 找 email
+      for (var i = parts.length - 1; i >= 0; i--) {
+        if (parts[i].indexOf('@') >= 0) {
+          email = parts[i];
+          parts.splice(i, 1);
+          break;
+        }
+      }
+      // 找 院區（在預設選項裡）
+      var campusOpts = ['新竹','生醫','台大總院','兩院','其他'];
+      for (var i = parts.length - 1; i >= 0; i--) {
+        if (campusOpts.indexOf(parts[i]) >= 0) {
+          campus = parts[i];
+          parts.splice(i, 1);
+          break;
+        }
+      }
+      // 第一個是名字，剩下是角色
+      if (parts.length >= 1) name = parts[0];
+      if (parts.length >= 2) role = parts.slice(1).join(' ');
+      if (!name || !email) return;
+      if (existingEmails[email.toLowerCase()]) { skipped++; return; }
+      STAFF_LIST.push({ name: name, email: email, role: role, campus: campus });
+      existingEmails[email.toLowerCase()] = true;
+      added++;
+    });
+
+    if (added === 0) { showToast('沒有新成員可匯入', 'error'); return; }
+
+    saveStaffList(function(ok){
+      if (ok) {
+        closeModal('batchImportStaffModal');
+        showToast('已匯入 ' + added + ' 人' + (skipped ? '（略過重複 ' + skipped + '）' : ''), 'success');
+        renderStaff();
       }
     });
   }
