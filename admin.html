@@ -692,11 +692,21 @@
         el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">尚無場次，請點上方按鈕新增</div></div>';
         return;
       }
-      var html = '';
+      // 拆成「即將到來」與「已完成」
+      var today = new Date(); today.setHours(0,0,0,0);
+      var upcoming = [], past = [];
       allSessions.forEach(function(s) {
+        var d = s.date ? new Date(s.date) : null;
+        if (d) d.setHours(0,0,0,0);
+        if (d && d < today) past.push(s);
+        else upcoming.push(s);
+      });
+      upcoming.sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
+      past.sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+
+      function renderSessionCard(s, isPast) {
         var members = [];
         try { members = typeof s.members === 'string' ? JSON.parse(s.members) : (s.members || []); } catch(e) {}
-        // 若場次未設定成員，從 GROUP_MEMBERS fallback
         if (members.length === 0 && GROUP_MEMBERS[s.group]) {
           members = GROUP_MEMBERS[s.group].slice();
         }
@@ -720,10 +730,13 @@
           '</div>';
         }).join('') : '';
 
-        html += '<div class="session-list-item">' +
+        var doneBadge = isPast ? '<span style="display:inline-block;background:#e6fffa;color:#234e52;border:1px solid #b2f5ea;border-radius:999px;padding:2px 10px;font-size:0.75rem;font-weight:700;margin-left:8px;vertical-align:middle;">✓ 已完成</span>' : '';
+        var cardStyle = isPast ? 'opacity:0.7;' : '';
+
+        return '<div class="session-list-item" style="' + cardStyle + '">' +
           '<div class="session-list-header">' +
             '<div style="min-width:0;">' +
-              '<div class="session-list-group">' + esc(s.group) + '</div>' +
+              '<div class="session-list-group">' + esc(s.group) + doneBadge + '</div>' +
               '<div class="session-list-detail">' + details.join('　') + '</div>' +
             '</div>' +
             '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">' +
@@ -733,7 +746,20 @@
           '</div>' +
           (memberListHtml ? '<div id="sm-' + sid + '" class="member-list" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0;">' + memberListHtml + '</div>' : '') +
         '</div>';
-      });
+      }
+
+      var sectionStyle = 'font-size:0.85rem;font-weight:700;color:#718096;text-transform:uppercase;letter-spacing:0.08em;margin:18px 0 10px;display:flex;align-items:center;gap:10px;';
+      var dividerStyle = 'flex:1;height:1px;background:#e2e8f0;';
+
+      var html = '';
+      if (upcoming.length) {
+        html += '<div style="' + sectionStyle + '">📅 即將到來<span style="' + dividerStyle + '"></span></div>';
+        upcoming.forEach(function(s){ html += renderSessionCard(s, false); });
+      }
+      if (past.length) {
+        html += '<div style="' + sectionStyle + 'margin-top:28px;">✓ 已完成<span style="' + dividerStyle + '"></span></div>';
+        past.forEach(function(s){ html += renderSessionCard(s, true); });
+      }
       el.innerHTML = html;
     });
   }
