@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>動態心電圖教學 ECG Teaching</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+    background: #0f172a; color: #e2e8f0; min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  .layout { display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 240px; background: #1e293b; padding: 20px 12px;
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    border-right: 1px solid #334155; flex-shrink: 0;
+  }
+  .brand { font-size: 1.1rem; font-weight: 700; color: #38bdf8; margin-bottom: 4px; padding: 0 8px; }
+  .brand-sub { font-size: 0.75rem; color: #94a3b8; margin-bottom: 18px; padding: 0 8px; }
+  .nav-item {
+    display: block; padding: 9px 12px; margin-bottom: 3px;
+    border-radius: 7px; cursor: pointer; font-size: 0.88rem;
+    color: #cbd5e1; transition: all 0.15s; border-left: 3px solid transparent;
+  }
+  .nav-item:hover { background: #334155; color: #f1f5f9; }
+  .nav-item.active { background: #0c4a6e; color: #7dd3fc; border-left-color: #38bdf8; font-weight: 600; }
+  .nav-group-title {
+    font-size: 0.7rem; text-transform: uppercase; color: #64748b;
+    padding: 14px 12px 6px; letter-spacing: 0.05em; font-weight: 700;
+  }
+
+  /* Main */
+  .main { flex: 1; padding: 28px 36px 60px; max-width: 1100px; }
+  .page-title { font-size: 1.6rem; font-weight: 700; color: #f1f5f9; margin-bottom: 6px; }
+  .page-sub { color: #94a3b8; margin-bottom: 24px; font-size: 0.92rem; }
+
+  .card {
+    background: #1e293b; border-radius: 14px; padding: 22px;
+    margin-bottom: 22px; border: 1px solid #334155;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  }
+  .card-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  .card-title { font-size: 1.25rem; font-weight: 700; color: #f1f5f9; }
+  .card-en { font-size: 0.85rem; color: #38bdf8; font-weight: 500; }
+  .severity {
+    font-size: 0.72rem; padding: 3px 10px; border-radius: 999px; font-weight: 700;
+    display: inline-block; margin-left: 8px;
+  }
+  .sev-emergent { background: #7f1d1d; color: #fecaca; }
+  .sev-urgent   { background: #78350f; color: #fed7aa; }
+  .sev-stable   { background: #14532d; color: #bbf7d0; }
+
+  .ecg-wrap {
+    background: #000; border-radius: 10px; padding: 0;
+    margin: 14px 0; position: relative; overflow: hidden;
+    border: 1px solid #334155;
+  }
+  canvas { display: block; width: 100%; height: 180px; }
+  .ecg-meta {
+    position: absolute; top: 8px; left: 12px;
+    font-size: 0.75rem; color: #4ade80; font-family: ui-monospace, monospace;
+    text-shadow: 0 0 4px rgba(74,222,128,0.6);
+    pointer-events: none;
+  }
+  .ecg-meta .rate { color: #fbbf24; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px; }
+  @media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } .sidebar { display: none; } .main { padding: 18px; } }
+
+  .block {
+    background: #0f172a; padding: 12px 14px; border-radius: 8px;
+    border-left: 3px solid #38bdf8;
+  }
+  .block.warn { border-left-color: #ef4444; }
+  .block.good { border-left-color: #22c55e; }
+  .block-title {
+    font-size: 0.78rem; font-weight: 700; color: #38bdf8;
+    text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;
+  }
+  .block.warn .block-title { color: #f87171; }
+  .block.good .block-title { color: #4ade80; }
+  .block ul { list-style: none; padding: 0; }
+  .block li { font-size: 0.88rem; line-height: 1.55; color: #cbd5e1; padding: 2px 0; padding-left: 14px; position: relative; }
+  .block li::before { content: "▸"; position: absolute; left: 0; color: #64748b; }
+  .block p { font-size: 0.88rem; line-height: 1.6; color: #cbd5e1; }
+
+  .controls {
+    display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+  }
+  .btn {
+    background: #334155; color: #e2e8f0; border: none;
+    padding: 6px 14px; border-radius: 6px; cursor: pointer;
+    font-size: 0.82rem; font-weight: 600; transition: all 0.15s;
+  }
+  .btn:hover { background: #475569; }
+  .btn.primary { background: #0284c7; }
+  .btn.primary:hover { background: #0369a1; }
+
+  .legend-strip {
+    background: #1e293b; padding: 16px 22px; border-radius: 10px;
+    border: 1px solid #334155; margin-bottom: 24px; font-size: 0.85rem;
+    color: #cbd5e1; line-height: 1.7;
+  }
+  .legend-strip b { color: #38bdf8; }
+  kbd {
+    background: #334155; padding: 1px 6px; border-radius: 4px;
+    font-size: 0.75rem; font-family: ui-monospace, monospace; color: #e2e8f0;
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="sidebar">
+    <div class="brand">⚡ ECG 教學</div>
+    <div class="brand-sub">動態心電圖判讀</div>
+
+    <div class="nav-group-title">竇性節律</div>
+    <a class="nav-item" href="#sinus-tachy">Sinus Tachycardia</a>
+    <a class="nav-item" href="#sinus-brady">Sinus Bradycardia</a>
+
+    <div class="nav-group-title">心房性</div>
+    <a class="nav-item" href="#svt">Supraventricular Tachycardia</a>
+    <a class="nav-item" href="#afib">Atrial Fibrillation</a>
+    <a class="nav-item" href="#aflutter">Atrial Flutter</a>
+
+    <div class="nav-group-title">心室性</div>
+    <a class="nav-item" href="#vt">Ventricular Tachycardia</a>
+    <a class="nav-item" href="#vf">Ventricular Fibrillation</a>
+    <a class="nav-item" href="#tdp">Torsade de Pointes</a>
+
+    <div class="nav-group-title">房室阻斷</div>
+    <a class="nav-item" href="#avb1">1st Degree AV Block</a>
+    <a class="nav-item" href="#avb2a">2nd Degree (Mobitz I)</a>
+    <a class="nav-item" href="#avb2b">2nd Degree (Mobitz II)</a>
+    <a class="nav-item" href="#avb3">3rd Degree AV Block</a>
+  </nav>
+
+  <main class="main">
+    <h1 class="page-title">動態心電圖教學</h1>
+    <p class="page-sub">Dynamic ECG Teaching · 11 種常見致命性與重要心律</p>
+
+    <div class="legend-strip">
+      <b>判讀流程：</b>Rate（心率）→ Rhythm（規律性）→ P wave（P 波是否存在/形態）→ PR interval（PR 間距）→ QRS（寬窄）→ ST/T。
+      每條動態波形以標準 25 mm/s 速度移動，<kbd>暫停</kbd> 可凍結畫面方便對照細節。
+    </div>
+
+    <div id="cards"></div>
+  </main>
+</div>
+
+<script>
+/* ========================================================================
+   ECG Generators
+   時間單位：秒。電壓單位：mV（粗略）。
+   每個 rhythm 提供 sample(t) → mV。
+   ====================================================================== */
+
+const TAU = Math.PI * 2;
+const gauss = (t, c, w, a) => a * Math.exp(-((t - c) * (t - c)) / (w * w));
+
+// 一個正常心跳模板 (~0.7s 長)，可微調幅度
+function normalBeat(t, opts = {}) {
+  const pAmp = opts.pAmp ?? 0.15;
+  const qrsAmp = opts.qrsAmp ?? 1.0;
+  const tAmp = opts.tAmp ?? 0.28;
+  const prShift = opts.prShift ?? 0;       // PR 額外延長
+  const wideQrs = opts.wideQrs ?? false;
+  return (
+    gauss(t, 0.08, 0.030, pAmp) +                                 // P wave
+    gauss(t, 0.22 + prShift, 0.008, -0.10 * qrsAmp) +              // Q
+    gauss(t, 0.24 + prShift, wideQrs ? 0.022 : 0.010, qrsAmp) +    // R
+    gauss(t, 0.27 + prShift, 0.010, -0.30 * qrsAmp) +              // S
+    gauss(t, 0.42 + prShift, 0.050, tAmp)                          // T
+  );
+}
+
+// 無 P 波 + 寬 QRS 的心室波 (for VT)
+function ventricularBeat(t, phase = 0) {
+  // bizarre wide complex (~140ms)，無 P，T wave 反向
+  const c = 0.10;
+  return (
+    gauss(t, c, 0.035, 1.2) +
+    gauss(t, c + 0.05, 0.030, -0.9) +
+    gauss(t, c + 0.20, 0.060, -0.45)
+  );
+}
+
+// 心房顫動的細纖維波 baseline
+function afibFibrillation(t) {
+  return (
+    Math.sin(t * 38 + 0.7) * 0.04 +
+    Math.sin(t * 61 + 2.1) * 0.03 +
+    Math.sin(t * 91 + 5.0) * 0.025 +
+    Math.sin(t * 27 + 1.3) * 0.02
+  );
+}
+
+// 心房撲動的鋸齒波 (~300/min, 5Hz)
+function flutterWave(t) {
+  const f = 5; // Hz
+  const x = (t * f) % 1;
+  // 負向鋸齒
+  return -0.22 * (x < 0.7 ? x / 0.7 : 1 - (x - 0.7) / 0.3) + 0.05;
+}
+
+// 心室顫動：完全混沌
+function vfWave(t) {
+  return (
+    Math.sin(t * 17 + 1.0) * 0.4 +
+    Math.sin(t * 29 + 2.5) * 0.35 +
+    Math.sin(t * 43 + 0.3) * 0.28 +
+    Math.sin(t * 67 + 4.1) * 0.22 +
+    Math.sin(t * 11 + 3.7) * 0.5 +
+    Math.sin(t * 89 + 5.5) * 0.15
+  );
+}
+
+// Torsade：QRS 振幅以正弦波調變，方向繞著基線旋轉
+function tdpWave(t) {
+  // 約 250/min 寬 QRS，振幅被 0.7Hz 包絡調變
+  const envelope = Math.sin(t * 1.2 * TAU * 0.55); // 緩慢翻轉
+  const beatPeriod = 0.24;
+  const tb = t % beatPeriod;
+  const spike =
+    gauss(tb, 0.05, 0.022, 1.0) +
+    gauss(tb, 0.10, 0.022, -0.85) +
+    gauss(tb, 0.15, 0.030, 0.55);
+  return spike * envelope * 1.1;
+}
+
+/* ---- Rhythm 定義 ---- */
+const RHYTHMS = {
+  'sinus-tachy': {
+    name: '竇性心搏過速',
+    en: 'Sinus Tachycardia',
+    rate: 130,
+    severity: 'stable',
+    sample(t) {
+      const period = 60 / this.rate;
+      const phase = t % period;
+      return normalBeat(phase);
+    },
+    description: '竇房結放電速率 >100/min。P 波形態正常，每個 P 後接 QRS，PR 間距正常。',
+    features: [
+      'Rate 100–160/min（成人）',
+      'P wave 形態正常，每次 QRS 前可見',
+      'PR 0.12–0.20 s 規則',
+      'QRS 窄 (<0.12 s)',
+      'R-R 規則'
+    ],
+    causes: ['發燒、疼痛、焦慮', '低血容、低血壓、休克早期', '貧血、缺氧', '甲亢、咖啡因、擬交感藥', '肺栓塞 PE'],
+    management: [
+      '處理根本原因 (treat the cause)',
+      '補液 / 退燒 / 止痛 / 抗焦慮',
+      '通常 <b>不</b>直接給 β-blocker 壓 rate，除非排除低血容'
+    ]
+  },
+
+  'sinus-brady': {
+    name: '竇性心搏過緩',
+    en: 'Sinus Bradycardia',
+    rate: 42,
+    severity: 'urgent',
+    sample(t) {
+      const period = 60 / this.rate;
+      const phase = t % period;
+      return normalBeat(phase);
+    },
+    description: '竇房結放電速率 <60/min。常見於運動員、睡眠、迷走張力增加，或病態竇症候群。',
+    features: [
+      'Rate <60/min',
+      'P 波形態正常，每次 QRS 前可見',
+      'PR 0.12–0.20 s',
+      'QRS 窄、R-R 規則'
+    ],
+    causes: ['運動員生理性', '迷走神經興奮 (嘔吐、抽痰、Valsalva)', '藥物 (β-blocker, CCB, digoxin)', '下壁心肌梗塞', 'Sick sinus syndrome', '低體溫、甲狀腺低下、顱內壓升高'],
+    management: [
+      '<b>無症狀</b>：觀察',
+      '<b>有症狀</b> (低血壓、意識改變、休克、胸痛)：Atropine 1 mg IV，可重複至 3 mg',
+      '無效 → Transcutaneous pacing / Dopamine / Epinephrine infusion',
+      '長期：植入永久性節律器 (PPM)'
+    ]
+  },
+
+  'svt': {
+    name: '陣發性上心室心搏過速',
+    en: 'Supraventricular Tachycardia (SVT / AVNRT)',
+    rate: 180,
+    severity: 'urgent',
+    sample(t) {
+      const period = 60 / this.rate;
+      const phase = t % period;
+      // 窄 QRS、看不到 P (或埋在 QRS 後)
+      return (
+        gauss(phase, 0.10, 0.008, -0.10) +
+        gauss(phase, 0.12, 0.010, 1.0) +
+        gauss(phase, 0.15, 0.010, -0.30) +
+        gauss(phase, 0.28, 0.040, 0.25)
+      );
+    },
+    description: '突發突止的規則窄 QRS 心搏過速，常見機制為 AVNRT（房室結折返）。',
+    features: [
+      'Rate 150–250/min，<b>非常規則</b>',
+      'QRS 窄 (<0.12 s)',
+      'P 波看不到或埋在 QRS 後（pseudo-S in II, pseudo-R\' in V1）',
+      '突發突止 (paroxysmal)'
+    ],
+    causes: ['AVNRT (最常見)', 'AVRT (含 WPW)', '心房性心搏過速 AT'],
+    management: [
+      '<b>不穩定</b> (低血壓、意識改變、胸痛、心衰)：<b>同步電擊 50–100 J</b>',
+      '<b>穩定</b>：',
+      '1. Vagal maneuver（Valsalva、改良式 Valsalva、頸動脈按摩）',
+      '2. <b>Adenosine 6 mg</b> 快速 IV push + 沖洗，無效 12 mg 再給一次',
+      '3. 仍無效：β-blocker / CCB (verapamil, diltiazem)',
+      '長期：射頻電燒 (RFA)'
+    ]
+  },
+
+  'afib': {
+    name: '心房顫動',
+    en: 'Atrial Fibrillation',
+    rate: 110, // 平均，但極不規則
+    severity: 'urgent',
+    sample(t) {
+      // 不規則間距：以 base 80–140 隨機抖動
+      // 為求重現性，用 t 為種子的雜湊
+      const beats = [];
+      let acc = 0;
+      // 預先建表
+      if (!this._beats) {
+        this._beats = [];
+        let s = 0;
+        for (let i = 0; i < 400; i++) {
+          // 隨機 RR：0.40–0.85 秒
+          const rr = 0.40 + ((Math.sin(i * 12.9898) * 43758.5453) % 1 + 1) % 1 * 0.45;
+          s += rr;
+          this._beats.push(s);
+        }
+      }
+      // 找目前位於哪一個 beat
+      // 找 t mod totalCycle
+      const total = this._beats[this._beats.length - 1];
+      const tt = ((t % total) + total) % total;
+      // 找前一個 beat 時間
+      let prev = 0;
+      for (let i = 0; i < this._beats.length; i++) {
+        if (this._beats[i] > tt) { prev = i === 0 ? 0 : this._beats[i - 1]; break; }
+      }
+      const phase = tt - prev;
+      const beat = normalBeat(phase, { pAmp: 0 }); // 無 P 波
+      return beat + afibFibrillation(tt);
+    },
+    description: '心房內多處不規則放電，使心室反應「不規則中之不規則」(irregularly irregular)，無可辨識 P 波，基線為細纖維波。',
+    features: [
+      '<b>無 P 波</b>，取代為不規則 f 波 (fibrillatory waves)',
+      '<b>R-R 間距完全不規則</b>',
+      'QRS 通常窄',
+      '心室率常 100–160/min (Rapid AF, RVR)'
+    ],
+    causes: ['高血壓、心衰、瓣膜病 (二尖瓣狹窄)', '甲亢', '飲酒 (holiday heart)', '肺部疾病、PE', '心肌缺血、術後'],
+    management: [
+      '<b>不穩定</b>：<b>同步電擊 120–200 J</b>',
+      '<b>穩定 — Rate control</b>：β-blocker / Diltiazem / Verapamil（心衰者用 Digoxin 或 Amiodarone）',
+      '<b>Rhythm control</b>：Amiodarone / Flecainide / 電擊復律（<48h 內較安全）',
+      '<b>抗凝血</b>：以 <b>CHA₂DS₂-VASc</b> 評分決定，≥2 (男) / ≥3 (女) 給 DOAC 或 Warfarin',
+      '出血風險評估 HAS-BLED；考慮左心耳封堵 (LAAC)'
+    ]
+  },
+
+  'aflutter': {
+    name: '心房撲動',
+    en: 'Atrial Flutter',
+    rate: 150, // 心室率 (2:1 conduction)
+    severity: 'urgent',
+    sample(t) {
+      // 心房率 ~300，心室率 ~150 (2:1)
+      const period = 60 / this.rate;
+      const phase = t % period;
+      const beat = normalBeat(phase, { pAmp: 0 });
+      return beat + flutterWave(t);
+    },
+    description: '心房內形成單一大型折返環（多在右心房三尖瓣峽部），心房率約 250–350/min，呈典型鋸齒狀 flutter waves。',
+    features: [
+      '<b>鋸齒狀 F 波</b> (sawtooth pattern)，下壁導程 (II, III, aVF) 最明顯',
+      '心房率 250–350/min，心室率視傳導比 (常 2:1 → 150/min)',
+      'R-R 通常規則 (固定傳導比) 或規則中之不規則 (變動比)'
+    ],
+    causes: ['類似 AF 之心因性、肺因性、甲亢', '常與 AF 並存'],
+    management: [
+      '<b>不穩定</b>：<b>同步電擊 50–100 J</b>（比 AF 容易電擊復律）',
+      'Rate control：β-blocker / CCB',
+      '抗凝血策略比照 AF (CHA₂DS₂-VASc)',
+      '根治：<b>三尖瓣峽部射頻電燒 (CTI ablation)</b>，成功率高'
+    ]
+  },
+
+  'vt': {
+    name: '心室心搏過速',
+    en: 'Ventricular Tachycardia (Monomorphic VT)',
+    rate: 180,
+    severity: 'emergent',
+    sample(t) {
+      const period = 60 / this.rate;
+      const phase = t % period;
+      return ventricularBeat(phase);
+    },
+    description: '源自心室的快速規則性寬 QRS 心搏過速，連續 ≥3 個 PVC，rate >100/min。持續 >30 秒或造成血流動力不穩定即為 sustained VT。',
+    features: [
+      'Rate 100–250/min，規則',
+      '<b>QRS 寬 (>0.12 s)</b>，形態怪異',
+      'P 波無或 AV dissociation',
+      '可見 fusion / capture beats（支持 VT）',
+      '單形性 (monomorphic) — 每個 QRS 形態相同'
+    ],
+    causes: ['<b>缺血性心臟病 (最常見)</b>、心肌梗塞後疤痕', '心肌病變 (DCM, HCM, ARVC)', '電解質異常 (低 K, 低 Mg)', '長 QT、藥物中毒'],
+    management: [
+      '<b>無脈搏 VT</b> → 比照 VF：<b>立即 CPR + 去顫 (非同步) 200 J</b>',
+      '<b>有脈搏但不穩定</b>：<b>同步電擊 100 J</b>',
+      '<b>有脈搏且穩定</b>：Amiodarone 150 mg IV over 10 min，或 Procainamide / Lidocaine',
+      '矯正電解質 (K >4.0, Mg >2.0)',
+      '長期：尋找並治療結構性心臟病；考慮 <b>ICD</b> 植入'
+    ]
+  },
+
+  'vf': {
+    name: '心室顫動',
+    en: 'Ventricular Fibrillation',
+    rate: 0,
+    severity: 'emergent',
+    sample(t) {
+      return vfWave(t);
+    },
+    description: '心室肌肉雜亂無組織地顫動，無有效心輸出量，是<b>心跳停止</b>最常見的可電擊節律。',
+    features: [
+      '<b>完全混亂、無 QRS、無 P 波</b>',
+      '基線呈隨機振幅波動',
+      '粗顫 (coarse VF) 振幅 >3mm — 較易電擊成功',
+      '細顫 (fine VF) → 接近 asystole，預後差'
+    ],
+    causes: ['急性心肌梗塞 (最常見)', 'VT 退化', '電解質異常、藥物', '電擊傷、低體溫', 'Brugada / Long QT / WPW'],
+    management: [
+      '<b>立即高品質 CPR</b> (壓 100–120/min，深 5–6 cm)',
+      '<b>盡早去顫</b>（非同步）：雙相 120–200 J，單相 360 J',
+      '每 2 分鐘檢查節律 + 換手',
+      '建立 IV/IO：<b>Epinephrine 1 mg q3–5 min</b>',
+      '電擊難治：<b>Amiodarone 300 mg → 150 mg</b>，或 Lidocaine',
+      '找 5H5T 可逆原因；ROSC 後考慮 TTM 體溫管理'
+    ]
+  },
+
+  'tdp': {
+    name: '尖端扭轉型心室頻脈',
+    en: 'Torsade de Pointes (Polymorphic VT)',
+    rate: 0,
+    severity: 'emergent',
+    sample(t) {
+      return tdpWave(t);
+    },
+    description: '多形性 VT 的一種，QRS 振幅沿基線「扭轉」上下翻轉，常見於 <b>QT 間期延長</b> 的病人。可自行停止，亦可退化為 VF。',
+    features: [
+      '<b>QRS 振幅週期性放大縮小、繞基線旋轉</b>',
+      'Rate 200–250/min',
+      '常於基礎節律出現 long QT (>500 ms) 後發作',
+      '可自限或退化成 VF'
+    ],
+    causes: [
+      '<b>先天性 Long QT syndrome</b>',
+      '<b>藥物</b>：第 IA/III 類抗心律不整藥 (quinidine, sotalol, amiodarone)、macrolide、fluoroquinolone、azole、haloperidol、methadone、ondansetron',
+      '<b>電解質</b>：低 K、<b>低 Mg</b>、低 Ca',
+      '心搏過緩、bradycardia-dependent pause'
+    ],
+    management: [
+      '<b>不穩定/無脈搏</b>：<b>立即非同步去顫</b>',
+      '<b>第一線：Magnesium sulfate 1–2 g IV</b>（即使血清 Mg 正常）',
+      '矯正低 K、低 Mg、低 Ca',
+      '<b>停用所有延長 QT 的藥物</b>',
+      'Bradycardia-dependent 型 → 加速心率 (overdrive pacing 至 100/min 或 isoproterenol)',
+      '先天性 LQTS → β-blocker、ICD'
+    ]
+  },
+
+  'avb1': {
+    name: '一度房室阻斷',
+    en: 'First Degree AV Block',
+    rate: 70,
+    severity: 'stable',
+    sample(t) {
+      const period = 60 / this.rate;
+      const phase = t % period;
+      return normalBeat(phase, { prShift: 0.10 }); // 拉長 PR
+    },
+    description: '所有 P 波都能下傳，但 PR 間距固定延長 >0.20 s。本身通常無症狀，是傳導系統老化或藥物副作用的提示。',
+    features: [
+      '<b>PR 間距 >0.20 s 且固定</b>',
+      '每個 P 後都有 QRS',
+      'R-R 規則'
+    ],
+    causes: ['高張力迷走神經 (運動員)', '藥物：β-blocker, CCB, digoxin, amiodarone', '下壁心肌梗塞', '退化性傳導疾病', '萊姆病、心肌炎'],
+    management: [
+      '<b>無症狀 → 觀察</b>，停用可疑藥物',
+      '通常不需特別治療',
+      '若伴隨其他傳導異常或為新發作，需追蹤'
+    ]
+  },
+
+  'avb2a': {
+    name: '二度房室阻斷 Mobitz I (Wenckebach)',
+    en: '2nd Degree AV Block · Mobitz I (Wenckebach)',
+    rate: 60,
+    severity: 'stable',
+    sample(t) {
+      // 4:3 Wenckebach 週期：PR 漸長，第 4 個 P 漏掉 QRS
+      // 一個週期約 4 個 P 波 + 1 個漏拍
+      const pInterval = 0.85; // P-P
+      const cyclePs = 4;
+      const cycleLen = pInterval * cyclePs;
+      const tt = t % cycleLen;
+      const idx = Math.floor(tt / pInterval);
+      const phase = tt - idx * pInterval;
+      const prShifts = [0.00, 0.06, 0.14, 0.22]; // 漸長 PR
+      const prShift = prShifts[idx];
+      // P 永遠畫，但第 4 拍 (idx=3) 沒有 QRS/T
+      const pWave = gauss(phase, 0.08, 0.030, 0.15);
+      if (idx === cyclePs - 1) {
+        return pWave; // 漏拍
+      }
+      const qrsT =
+        gauss(phase, 0.22 + prShift, 0.008, -0.10) +
+        gauss(phase, 0.24 + prShift, 0.010, 1.0) +
+        gauss(phase, 0.27 + prShift, 0.010, -0.30) +
+        gauss(phase, 0.42 + prShift, 0.050, 0.28);
+      return pWave + qrsT;
+    },
+    description: 'PR 間距逐次延長，直到一個 P 波無法下傳形成「漏拍」(dropped beat)。常見於下壁心肌梗塞或藥物影響，預後較好。',
+    features: [
+      '<b>PR 漸進延長 → 漏掉一個 QRS</b>',
+      '漏拍後 PR 重置回短',
+      'R-R 漸短 → 漏拍 (group beating)',
+      '阻斷位置多在 <b>AV node</b>'
+    ],
+    causes: ['下壁 MI (right coronary)', '迷走張力增加', '藥物：β-blocker, CCB, digoxin', '心肌炎'],
+    management: [
+      '<b>無症狀 → 觀察</b>',
+      '<b>有症狀</b>：Atropine 1 mg IV',
+      '進展為三度的風險低，通常不需永久節律器',
+      '停用造成傳導阻斷之藥物'
+    ]
+  },
+
+  'avb2b': {
+    name: '二度房室阻斷 Mobitz II',
+    en: '2nd Degree AV Block · Mobitz II',
+    rate: 55,
+    severity: 'urgent',
+    sample(t) {
+      // 3:2 模式：兩個正常後第三個 P 漏掉
+      const pInterval = 0.85;
+      const cyclePs = 3;
+      const cycleLen = pInterval * cyclePs;
+      const tt = t % cycleLen;
+      const idx = Math.floor(tt / pInterval);
+      const phase = tt - idx * pInterval;
+      const pWave = gauss(phase, 0.08, 0.030, 0.15);
+      if (idx === cyclePs - 1) return pWave; // 漏拍
+      // PR 固定，QRS 略寬 (常為 infranodal)
+      const qrsT =
+        gauss(phase, 0.22, 0.008, -0.10) +
+        gauss(phase, 0.25, 0.020, 1.0) +     // 寬一點
+        gauss(phase, 0.29, 0.014, -0.35) +
+        gauss(phase, 0.46, 0.055, 0.25);
+      return pWave + qrsT;
+    },
+    description: 'PR 間距固定，但突然有 P 波無法下傳。阻斷位置多在 His-Purkinje 系統，<b>進展為完全房室阻斷風險高</b>。',
+    features: [
+      '<b>PR 固定</b>，突然漏掉一個 QRS（無預警）',
+      'QRS 常較寬 (infranodal 阻斷)',
+      '可呈 2:1, 3:1 傳導',
+      '預後比 Mobitz I 差'
+    ],
+    causes: ['<b>前壁心肌梗塞</b>', '傳導系統纖維化 (Lenègre / Lev disease)', '心肌炎、瓣膜手術後'],
+    management: [
+      '<b>不論有無症狀，皆視為高風險</b>',
+      'Atropine 效果差（阻斷位於 His 以下）',
+      '<b>準備 transcutaneous / transvenous pacing</b>',
+      '<b>幾乎都需要植入永久性節律器 (PPM)</b>'
+    ]
+  },
+
+  'avb3': {
+    name: '三度房室阻斷（完全房室阻斷）',
+    en: '3rd Degree (Complete) AV Block',
+    rate: 35,
+    severity: 'emergent',
+    sample(t) {
+      // 心房與心室完全分離
+      // 心房：80/min → P-P = 0.75s
+      // 心室 escape：35/min → R-R = 1.71s，寬 QRS
+      const pInterval = 0.75;
+      const vInterval = 60 / 35;
+      // P 波 (連續，獨立)
+      const pPhase = t % pInterval;
+      const pWave = gauss(pPhase, 0.20, 0.030, 0.15);
+      // 心室逸搏 (wide QRS)
+      const vPhase = t % vInterval;
+      const vBeat = ventricularBeat(vPhase) * 0.85;
+      return pWave + vBeat;
+    },
+    description: '心房與心室完全失去聯繫 (AV dissociation)，心房按自己節律走，心室靠下方逸搏節律 (junctional 或 ventricular escape) 維持心搏。',
+    features: [
+      '<b>P 波與 QRS 完全無關</b>（AV dissociation）',
+      'P 波頻率 > QRS 頻率，兩者各自規則',
+      'Escape rhythm：',
+      '　• Junctional escape — 窄 QRS, 40–60/min',
+      '　• Ventricular escape — 寬 QRS, 20–40/min（位置越低越慢、越不穩定）',
+      'PR 間距變化不定 (無傳導關係)'
+    ],
+    causes: ['<b>急性心肌梗塞</b>（下壁 → junctional escape；前壁 → ventricular escape）', '傳導系統退化', '萊姆病、心肌炎、心內膜炎波及瓣環', '主動脈瓣手術後'],
+    management: [
+      '<b>立即準備 transcutaneous pacing</b>',
+      'Atropine 1 mg IV（對 junctional escape 可能有效，對 ventricular escape 通常無效）',
+      'Dopamine / Epinephrine infusion 維持血壓',
+      '<b>緊急放置 transvenous pacemaker</b>',
+      '幾乎所有病人都需 <b>永久性節律器</b>'
+    ]
+  }
+};
+
+/* ========================================================================
+   渲染：sidebar + 卡片 + 動畫
+   ====================================================================== */
+
+const sevLabel = { emergent: '緊急 Emergent', urgent: '不穩定可惡化 Urgent', stable: '通常穩定 Stable' };
+
+const cardsRoot = document.getElementById('cards');
+const order = ['sinus-tachy','sinus-brady','svt','afib','aflutter','vt','vf','tdp','avb1','avb2a','avb2b','avb3'];
+
+for (const id of order) {
+  const r = RHYTHMS[id];
+  const sec = document.createElement('section');
+  sec.className = 'card';
+  sec.id = id;
+  sec.innerHTML = `
+    <div class="card-head">
+      <div>
+        <span class="card-title">${r.name}</span>
+        <span class="severity sev-${r.severity}">${sevLabel[r.severity]}</span>
+      </div>
+      <span class="card-en">${r.en}${r.rate ? ' · ~' + r.rate + ' bpm' : ''}</span>
+    </div>
+    <p style="color:#cbd5e1;font-size:0.92rem;line-height:1.65;margin:6px 0 0">${r.description}</p>
+
+    <div class="ecg-wrap">
+      <div class="ecg-meta">II <span class="rate">${r.rate ? r.rate + ' bpm' : 'n/a'}</span> · 25 mm/s · 10 mm/mV</div>
+      <canvas data-rhythm="${id}"></canvas>
+    </div>
+    <div class="controls">
+      <button class="btn pause-btn" data-target="${id}">⏸ 暫停</button>
+      <button class="btn primary speed-btn" data-target="${id}" data-speed="1">速度 1×</button>
+    </div>
+
+    <div class="grid-2">
+      <div class="block">
+        <div class="block-title">心電圖特徵</div>
+        <ul>${r.features.map(f => `<li>${f}</li>`).join('')}</ul>
+      </div>
+      <div class="block warn">
+        <div class="block-title">常見原因</div>
+        <ul>${r.causes.map(f => `<li>${f}</li>`).join('')}</ul>
+      </div>
+    </div>
+    <div class="block good" style="margin-top:14px">
+      <div class="block-title">臨床處置</div>
+      <ul>${r.management.map(f => `<li>${f}</li>`).join('')}</ul>
+    </div>
+  `;
+  cardsRoot.appendChild(sec);
+}
+
+/* ---- Canvas 動畫 ---- */
+const animators = [];
+
+function setupCanvas(canvas, rhythm) {
+  const dpr = window.devicePixelRatio || 1;
+  const resize = () => {
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+  };
+  resize();
+  window.addEventListener('resize', resize);
+
+  const ctx = canvas.getContext('2d');
+  const state = {
+    t0: performance.now() / 1000,
+    elapsed: 0,
+    paused: false,
+    speed: 1,
+    lastFrame: performance.now()
+  };
+
+  // 預先把整條歷史存起來作為環狀緩衝
+  const W = () => canvas.width;
+  const H = () => canvas.height;
+
+  // 25 mm/s, 10 mm/mV → 假設 1 mm = 6 px
+  const PX_PER_MM = 6;
+  const PX_PER_SEC = 25 * PX_PER_MM; // 150 px/sec
+  const PX_PER_MV  = 10 * PX_PER_MM; // 60 px/mV
+
+  const samplesPerSec = 500;
+  const buffer = []; // {t, v}
+
+  function drawGrid() {
+    const w = W(), h = H();
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, w, h);
+    // small grid (1mm)
+    ctx.strokeStyle = 'rgba(220, 38, 38, 0.18)';
+    ctx.lineWidth = 1 * dpr;
+    const small = PX_PER_MM * dpr;
+    ctx.beginPath();
+    for (let x = 0; x < w; x += small) { ctx.moveTo(x, 0); ctx.lineTo(x, h); }
+    for (let y = 0; y < h; y += small) { ctx.moveTo(0, y); ctx.lineTo(w, y); }
+    ctx.stroke();
+    // big grid (5mm)
+    ctx.strokeStyle = 'rgba(220, 38, 38, 0.38)';
+    ctx.lineWidth = 1.2 * dpr;
+    const big = 5 * PX_PER_MM * dpr;
+    ctx.beginPath();
+    for (let x = 0; x < w; x += big) { ctx.moveTo(x, 0); ctx.lineTo(x, h); }
+    for (let y = 0; y < h; y += big) { ctx.moveTo(0, y); ctx.lineTo(w, y); }
+    ctx.stroke();
+  }
+
+  function draw(nowSec) {
+    const w = W(), h = H();
+    drawGrid();
+    // baseline (中央偏下一點)
+    const baseY = h * 0.55;
+
+    // 視窗顯示：t 從 (nowSec - windowSec) 到 nowSec
+    const windowSec = w / (PX_PER_SEC * dpr);
+    const tStart = nowSec - windowSec;
+
+    ctx.strokeStyle = '#4ade80';
+    ctx.lineWidth = 2.2 * dpr;
+    ctx.shadowColor = 'rgba(74,222,128,0.45)';
+    ctx.shadowBlur = 6 * dpr;
+    ctx.beginPath();
+    const steps = Math.floor(w / dpr);
+    for (let i = 0; i <= steps; i++) {
+      const x = i * dpr;
+      const t = tStart + (i / steps) * windowSec;
+      const v = rhythm.sample(t);
+      const y = baseY - v * PX_PER_MV * dpr;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // 掃描線指示
+    ctx.fillStyle = 'rgba(74,222,128,0.6)';
+    ctx.beginPath();
+    ctx.arc(w - 2 * dpr, baseY - rhythm.sample(nowSec) * PX_PER_MV * dpr, 4 * dpr, 0, TAU);
+    ctx.fill();
+  }
+
+  function loop() {
+    const now = performance.now();
+    const dt = (now - state.lastFrame) / 1000;
+    state.lastFrame = now;
+    if (!state.paused) state.elapsed += dt * state.speed;
+    draw(state.elapsed);
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  return state;
+}
+
+document.querySelectorAll('canvas[data-rhythm]').forEach(c => {
+  const id = c.getAttribute('data-rhythm');
+  const state = setupCanvas(c, RHYTHMS[id]);
+  animators.push({ id, state });
+});
+
+document.querySelectorAll('.pause-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const id = btn.getAttribute('data-target');
+    const a = animators.find(x => x.id === id);
+    a.state.paused = !a.state.paused;
+    btn.textContent = a.state.paused ? '▶ 播放' : '⏸ 暫停';
+  });
+});
+
+document.querySelectorAll('.speed-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const id = btn.getAttribute('data-target');
+    const a = animators.find(x => x.id === id);
+    const speeds = [1, 0.5, 0.25, 2];
+    const cur = parseFloat(btn.getAttribute('data-speed'));
+    const next = speeds[(speeds.indexOf(cur) + 1) % speeds.length];
+    btn.setAttribute('data-speed', next);
+    a.state.speed = next;
+    btn.textContent = `速度 ${next}×`;
+  });
+});
+
+/* ---- Sidebar 滾動高亮 ---- */
+const navItems = document.querySelectorAll('.nav-item');
+const sections = order.map(id => document.getElementById(id));
+function updateActive() {
+  const y = window.scrollY + 120;
+  let idx = 0;
+  for (let i = 0; i < sections.length; i++) {
+    if (sections[i].offsetTop <= y) idx = i;
+  }
+  navItems.forEach((n, i) => n.classList.toggle('active', i === idx));
+}
+window.addEventListener('scroll', updateActive, { passive: true });
+updateActive();
+</script>
+</body>
+</html>
