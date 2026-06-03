@@ -98,7 +98,7 @@
       text-decoration: none; display: inline-block; transition: background 0.2s;
     }
     .btn-feedback:hover { background: #2b6cb0; }
-    .session-card.past .btn-feedback { background: #a0aec0; pointer-events: none; display: none; }
+    .session-card.past .btn-feedback { background: #718096; }
 
     /* ── Loading / Empty ── */
     .loading { text-align: center; padding: 60px 20px; color: #a0aec0; }
@@ -422,7 +422,7 @@
     } catch(e) {}
 
     var noteHtml = s.note ? '<div class="session-note">📝 ' + esc(s.note) + '</div>' : '';
-    var actionHtml = isPast ? '' :
+    var actionHtml =
       '<div class="session-actions">' +
         '<a href="simulation.html" class="btn-feedback">填寫回饋 →</a>' +
       '</div>';
