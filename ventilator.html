@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>虛擬呼吸器訓練系統 · RT Ventilator Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#06080c; --bg-2:#0a0e14; --surface:#0e131b; --surface-2:#121925; --surface-3:#18212f;
+  --border:#1e2733; --border-strong:#2c3744;
+  --ink:#e8eef6; --ink-2:#a4b1c4; --ink-3:#6a7686;
+  --accent:#34d4e0; --accent-deep:#7ef0f8; --accent-soft:#0c2e33;
+  --green:#3ee08a; --green-soft:#0c2e1e;
+  --amber:#f5c451; --amber-soft:#33280c;
+  --rose:#ff6b7d; --rose-soft:#331016;
+  --violet:#b08bff; --violet-soft:#1f1633;
+  --blue:#5aa6ff; --blue-soft:#0c2033;
+  --radius:12px; --radius-sm:8px; --radius-lg:18px;
+  --shadow:0 2px 8px rgba(0,0,0,.5),0 12px 32px rgba(0,0,0,.4);
+  --font:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --mono:"SF Mono",ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--font);background:var(--bg);color:var(--ink);
+  font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(ellipse 70% 50% at 50% -10%,rgba(52,212,224,.10),transparent),
+    radial-gradient(ellipse 60% 50% at 100% 110%,rgba(176,139,255,.07),transparent);
+  background-attachment:fixed;min-height:100vh;
+}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit}
+h1,h2,h3{margin:0;font-weight:700;letter-spacing:.01em}
+.mono{font-family:var(--mono)}
+
+/* ===== Top bar ===== */
+.topbar{
+  display:flex;align-items:center;gap:18px;padding:12px 22px;
+  background:rgba(14,19,27,.82);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;
+}
+.brand{display:flex;align-items:center;gap:11px;font-weight:800;font-size:16px;letter-spacing:.02em}
+.brand .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.brand small{font-weight:500;color:var(--ink-3);font-size:11.5px;letter-spacing:.06em}
+.tabs{display:flex;gap:4px;margin-left:8px}
+.tab{
+  padding:8px 16px;border-radius:var(--radius-sm);border:1px solid transparent;
+  background:transparent;color:var(--ink-2);font-size:13.5px;font-weight:600;transition:.15s;
+}
+.tab:hover{color:var(--ink);background:var(--surface-2)}
+.tab.active{background:var(--accent-soft);color:var(--accent-deep);border-color:var(--accent)}
+.topbar .spacer{flex:1}
+.who{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink-2)}
+.who .pill{padding:4px 11px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);font-weight:600;color:var(--ink)}
+.who .pill.role{color:var(--accent-deep);border-color:var(--accent-soft)}
+.btn-ghost{padding:6px 12px;border-radius:var(--radius-sm);background:transparent;border:1px solid var(--border-strong);color:var(--ink-2);font-size:12.5px;font-weight:600}
+.btn-ghost:hover{color:var(--ink);border-color:var(--ink-3)}
+
+/* ===== Views ===== */
+.view{display:none}
+.view.active{display:block}
+
+/* ===== Simulator layout ===== */
+.sim-wrap{display:grid;grid-template-columns:300px 1fr;gap:0;min-height:calc(100vh - 57px)}
+.side{background:var(--surface);border-right:1px solid var(--border);padding:18px 16px;overflow-y:auto;max-height:calc(100vh - 57px)}
+.stage{padding:16px 20px 28px;overflow-y:auto;max-height:calc(100vh - 57px)}
+
+/* Patient card */
+.card{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:14px}
+.card h3{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-3);margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.pt-name{font-size:16px;font-weight:700;margin-bottom:2px}
+.pt-sub{font-size:12.5px;color:var(--ink-2);margin-bottom:10px}
+.pt-brief{font-size:12.8px;color:var(--ink-2);line-height:1.6;background:var(--surface);border-radius:8px;padding:10px;border:1px solid var(--border)}
+.pt-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.chip{font-size:11px;padding:3px 9px;border-radius:999px;background:var(--surface);border:1px solid var(--border);color:var(--ink-2)}
+
+/* Vitals */
+.vitals{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vital{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+.vital .lbl{font-size:10.5px;color:var(--ink-3);letter-spacing:.05em}
+.vital .val{font-size:20px;font-weight:700;font-family:var(--mono);line-height:1.2}
+.vital .u{font-size:10px;color:var(--ink-3);font-weight:500}
+.vital.hr .val{color:var(--rose)}
+.vital.spo2 .val{color:var(--accent)}
+.vital.bp .val{color:var(--green)}
+.vital.rr .val{color:var(--violet)}
+
+/* ABG */
+.abg-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px}
+.abg-cell{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:7px 9px}
+.abg-cell .lbl{font-size:10px;color:var(--ink-3)}
+.abg-cell .val{font-size:16px;font-weight:700;font-family:var(--mono)}
+.abg-cell.flag .val{color:var(--rose)}
+.abg-cell.ok .val{color:var(--green)}
+.abg-stale{opacity:.4}
+.btn-draw{width:100%;margin-top:10px;padding:9px;border-radius:8px;background:linear-gradient(180deg,var(--rose),#d8424f);border:none;color:#fff;font-weight:700;font-size:13px;letter-spacing:.03em}
+.btn-draw:hover{filter:brightness(1.08)}
+.abg-time{font-size:10.5px;color:var(--ink-3);margin-top:6px;text-align:center}
+
+/* ===== Monitor (ventilator screen) ===== */
+.monitor{background:#04060a;border:1px solid var(--border-strong);border-radius:var(--radius-lg);padding:14px;box-shadow:var(--shadow);margin-bottom:16px}
+.mon-top{display:grid;grid-template-columns:repeat(8,1fr);gap:1px;background:var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px}
+.mtile{background:#070b11;padding:10px 8px;text-align:center;position:relative}
+.mtile .mlbl{font-size:10px;color:var(--ink-3);letter-spacing:.06em;text-transform:uppercase}
+.mtile .mval{font-size:25px;font-weight:800;font-family:var(--mono);line-height:1.15}
+.mtile .munit{font-size:9.5px;color:var(--ink-3)}
+.mtile.alarm{background:var(--rose-soft);animation:flash 1s steps(2) infinite}
+.mtile.alarm .mval{color:var(--rose)}
+@keyframes flash{50%{background:#1a0b0e}}
+.c-acc{color:var(--accent)} .c-grn{color:var(--green)} .c-vio{color:var(--violet)} .c-amb{color:var(--amber)} .c-blu{color:var(--blue)} .c-ink{color:var(--ink)}
+
+/* waveforms */
+.waves{display:flex;flex-direction:column;gap:0;background:#04060a;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+.wave-row{position:relative;border-bottom:1px solid var(--border)}
+.wave-row:last-child{border-bottom:none}
+.wave-row canvas{display:block;width:100%;height:96px}
+.wave-tag{position:absolute;top:6px;left:9px;font-size:10.5px;font-weight:700;letter-spacing:.05em;font-family:var(--mono)}
+
+/* ===== Settings bar ===== */
+.modes{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+.mode-btn{padding:9px 15px;border-radius:9px;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--ink-2);font-weight:700;font-size:13px;transition:.15s}
+.mode-btn:hover{color:var(--ink);border-color:var(--ink-3)}
+.mode-btn.active{background:var(--accent-soft);color:var(--accent-deep);border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.mode-btn small{display:block;font-size:10px;font-weight:500;color:var(--ink-3)}
+.mode-btn.active small{color:var(--accent)}
+
+.settings{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.setting{background:var(--surface-2);border:1px solid var(--border);border-radius:11px;padding:11px 12px;position:relative}
+.setting.locked{opacity:.4;pointer-events:none}
+.setting .s-lbl{font-size:11px;color:var(--ink-3);letter-spacing:.04em;display:flex;justify-content:space-between;align-items:center}
+.setting .s-lbl b{color:var(--ink-2);font-weight:600}
+.s-val{display:flex;align-items:baseline;gap:5px;margin:5px 0 8px}
+.s-val .num{font-size:27px;font-weight:800;font-family:var(--mono);color:var(--accent-deep);line-height:1}
+.s-val .unit{font-size:11px;color:var(--ink-3)}
+.stepper{display:flex;gap:6px}
+.stepper button{flex:1;padding:7px 0;border-radius:7px;background:var(--surface-3);border:1px solid var(--border-strong);color:var(--ink);font-size:17px;font-weight:700;line-height:1}
+.stepper button:hover{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-deep)}
+.stepper button:active{transform:translateY(1px)}
+.derived-note{font-size:10.5px;color:var(--ink-3);margin-top:6px;font-family:var(--mono)}
+
+/* alarms */
+.alarm-bar{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.alarm-item{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:9px;border:1px solid}
+.alarm-item.warn{background:var(--amber-soft);border-color:var(--amber);color:var(--amber)}
+.alarm-item.danger{background:var(--rose-soft);border-color:var(--rose);color:var(--rose)}
+.alarm-item.good{background:var(--green-soft);border-color:var(--green);color:var(--green)}
+
+.section-title{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-3);margin:18px 0 10px;font-weight:700}
+
+/* reflection / actions */
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.btn{padding:10px 18px;border-radius:9px;border:none;font-weight:700;font-size:13.5px;letter-spacing:.02em}
+.btn-primary{background:linear-gradient(180deg,var(--accent-deep),var(--accent));color:#04181b}
+.btn-primary:hover{filter:brightness(1.07)}
+.btn-sec{background:var(--surface-2);border:1px solid var(--border-strong);color:var(--ink)}
+.btn-sec:hover{border-color:var(--ink-3)}
+.btn-danger{background:var(--rose-soft);border:1px solid var(--rose);color:var(--rose)}
+textarea{width:100%;background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;color:var(--ink);padding:11px;font-size:13.5px;resize:vertical;min-height:80px}
+textarea:focus{outline:none;border-color:var(--accent)}
+
+/* ===== Modal ===== */
+.modal-bg{position:fixed;inset:0;background:rgba(3,5,8,.82);backdrop-filter:blur(6px);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-bg.show{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-lg);padding:26px;max-width:560px;width:100%;box-shadow:var(--shadow);max-height:90vh;overflow-y:auto}
+.modal h2{font-size:20px;margin-bottom:5px}
+.modal .sub{color:var(--ink-2);font-size:13.5px;margin-bottom:18px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:var(--ink-2);margin-bottom:6px;font-weight:600}
+.field input,.field select{width:100%;background:var(--surface-2);border:1px solid var(--border-strong);border-radius:9px;color:var(--ink);padding:11px;font-size:14px}
+.field input:focus,.field select:focus{outline:none;border-color:var(--accent)}
+.scen-list{display:grid;gap:9px;margin-bottom:18px}
+.scen{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--border-strong);border-radius:11px;background:var(--surface-2);transition:.15s}
+.scen:hover{border-color:var(--ink-3)}
+.scen.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);background:var(--accent-soft)}
+.scen .emo{font-size:26px;line-height:1}
+.scen .t{font-weight:700;font-size:14.5px}
+.scen .d{font-size:12px;color:var(--ink-2);line-height:1.5}
+
+/* ===== Dashboard ===== */
+.dash{padding:22px 26px;max-width:1280px;margin:0 auto}
+.dash-head{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+.dash-head h2{font-size:22px}
+.stat-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+.stat{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px}
+.stat .n{font-size:28px;font-weight:800;font-family:var(--mono)}
+.stat .l{font-size:12px;color:var(--ink-3)}
+.dash-grid{display:grid;grid-template-columns:380px 1fr;gap:16px}
+.sess-list{display:flex;flex-direction:column;gap:8px;max-height:70vh;overflow-y:auto;padding-right:4px}
+.sess-item{padding:12px 14px;border:1px solid var(--border);border-radius:11px;background:var(--surface-2);transition:.15s;cursor:pointer}
+.sess-item:hover{border-color:var(--ink-3)}
+.sess-item.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.sess-item .r1{display:flex;justify-content:space-between;align-items:center}
+.sess-item .nm{font-weight:700;font-size:14px}
+.sess-item .sc{font-size:12px;color:var(--accent-deep)}
+.sess-item .meta{font-size:11.5px;color:var(--ink-3);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap}
+.badge{font-size:10.5px;padding:2px 8px;border-radius:999px;font-weight:700}
+.badge.done{background:var(--green-soft);color:var(--green)}
+.badge.active{background:var(--accent-soft);color:var(--accent-deep)}
+.detail-empty{display:flex;align-items:center;justify-content:center;height:300px;color:var(--ink-3);font-size:14px;border:1px dashed var(--border-strong);border-radius:var(--radius)}
+.detail{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+.timeline{position:relative;margin:14px 0;padding-left:22px}
+.timeline::before{content:"";position:absolute;left:7px;top:4px;bottom:4px;width:2px;background:var(--border-strong)}
+.tl-item{position:relative;padding:7px 0 7px 4px;font-size:12.8px}
+.tl-item::before{content:"";position:absolute;left:-19px;top:12px;width:9px;height:9px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
+.tl-item.abg::before{background:var(--rose)}
+.tl-item.mode::before{background:var(--violet)}
+.tl-item.note::before{background:var(--amber)}
+.tl-t{font-family:var(--mono);color:var(--ink-3);font-size:11px}
+.tl-d{color:var(--ink-2)}
+.tl-d b{color:var(--ink)}
+.fb-box{background:var(--surface);border:1px solid var(--border-strong);border-radius:11px;padding:14px;margin-top:14px}
+.fb-box h4{font-size:13px;margin-bottom:8px;color:var(--amber)}
+.q-metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:9px;margin:12px 0}
+.qm{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px 11px}
+.qm .qv{font-size:18px;font-weight:800;font-family:var(--mono)}
+.qm .ql{font-size:10.5px;color:var(--ink-3)}
+.qm.bad{border-color:var(--rose)}.qm.bad .qv{color:var(--rose)}
+.qm.good{border-color:var(--green)}.qm.good .qv{color:var(--green)}
+canvas.traj{width:100%;height:200px;background:var(--surface);border:1px solid var(--border);border-radius:10px;display:block;margin-top:8px}
+.refl-show{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--violet);border-radius:8px;padding:11px 13px;font-size:13px;color:var(--ink-2);margin-top:6px;white-space:pre-wrap}
+.empty-hint{color:var(--ink-3);font-size:13px;padding:20px;text-align:center}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface-3);border:1px solid var(--accent);color:var(--ink);padding:11px 20px;border-radius:10px;font-size:13.5px;font-weight:600;z-index:200;box-shadow:var(--shadow);opacity:0;transition:.3s;pointer-events:none}
+.toast.show{opacity:1}
+@media(max-width:1000px){.sim-wrap{grid-template-columns:1fr}.side{max-height:none;border-right:none;border-bottom:1px solid var(--border)}.dash-grid{grid-template-columns:1fr}.mon-top{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><span class="dot"></span>虛擬呼吸器訓練系統<small>RT VENTILATOR SIM</small></div>
+  <div class="tabs">
+    <button class="tab active" data-view="sim">🫁 模擬器</button>
+    <button class="tab" data-view="dash">📊 教師後台</button>
+  </div>
+  <div class="spacer"></div>
+  <div class="who" id="whoBox" style="display:none">
+    <span class="pill" id="whoName">—</span>
+    <span class="pill role" id="whoScen">—</span>
+    <button class="btn-ghost" id="btnRestart">重新開始</button>
+  </div>
+</div>
+
+<!-- ============ SIMULATOR ============ -->
+<div class="view active" id="view-sim">
+  <div class="sim-wrap">
+    <!-- side -->
+    <aside class="side">
+      <div class="card">
+        <h3>👤 病人</h3>
+        <div class="pt-name" id="ptName">—</div>
+        <div class="pt-sub" id="ptSub">請先開始一個情境</div>
+        <div class="pt-meta" id="ptMeta"></div>
+        <div class="pt-brief" id="ptBrief">點選右上方「重新開始」或下方按鈕選擇訓練情境。</div>
+      </div>
+
+      <div class="card">
+        <h3>💓 生命徵象</h3>
+        <div class="vitals">
+          <div class="vital hr"><div class="lbl">HR</div><div class="val" id="vHR">—</div><span class="u">bpm</span></div>
+          <div class="vital spo2"><div class="lbl">SpO₂</div><div class="val" id="vSpO2">—</div><span class="u">%</span></div>
+          <div class="vital bp"><div class="lbl">BP</div><div class="val" id="vBP" style="font-size:16px">—</div><span class="u">mmHg</span></div>
+          <div class="vital rr"><div class="lbl">RR (總)</div><div class="val" id="vRR">—</div><span class="u">/min</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🩸 動脈血液氣體分析 <span id="abgStaleTag" style="margin-left:auto;font-size:10px;color:var(--ink-3)"></span></h3>
+        <div class="abg-grid" id="abgGrid">
+          <div class="abg-cell"><div class="lbl">pH</div><div class="val" id="aPH">—</div></div>
+          <div class="abg-cell"><div class="lbl">PaCO₂</div><div class="val" id="aCO2">—</div></div>
+          <div class="abg-cell"><div class="lbl">PaO₂</div><div class="val" id="aO2">—</div></div>
+          <div class="abg-cell"><div class="lbl">HCO₃⁻</div><div class="val" id="aHCO3">—</div></div>
+          <div class="abg-cell"><div class="lbl">SaO₂</div><div class="val" id="aSaO2">—</div></div>
+          <div class="abg-cell"><div class="lbl">P/F ratio</div><div class="val" id="aPF">—</div></div>
+        </div>
+        <button class="btn-draw" id="btnABG">🩸 抽動脈血氣 (ABG)</button>
+        <div class="abg-time" id="abgTime"></div>
+      </div>
+
+      <button class="btn btn-sec" id="btnStartBig" style="width:100%">＋ 選擇 / 切換訓練情境</button>
+    </aside>
+
+    <!-- stage -->
+    <main class="stage">
+      <!-- monitor -->
+      <div class="monitor">
+        <div class="mon-top">
+          <div class="mtile" id="t-pip"><div class="mlbl">PIP</div><div class="mval c-acc" id="mPIP">—</div><div class="munit">cmH₂O</div></div>
+          <div class="mtile" id="t-pplat"><div class="mlbl">Pplat</div><div class="mval c-acc" id="mPplat">—</div><div class="munit">cmH₂O</div></div>
+          <div class="mtile" id="t-map"><div class="mlbl">Pmean</div><div class="mval c-blu" id="mMAP">—</div><div class="munit">cmH₂O</div></div>
+          <div class="mtile" id="t-peep"><div class="mlbl">PEEP tot</div><div class="mval c-blu" id="mPEEPt">—</div><div class="munit">cmH₂O</div></div>
+          <div class="mtile" id="t-vte"><div class="mlbl">VTe</div><div class="mval c-vio" id="mVTe">—</div><div class="munit">mL</div></div>
+          <div class="mtile" id="t-mve"><div class="mlbl">MVe</div><div class="mval c-vio" id="mMVe">—</div><div class="munit">L/min</div></div>
+          <div class="mtile" id="t-rr"><div class="mlbl">f 總</div><div class="mval c-grn" id="mRR">—</div><div class="munit">/min</div></div>
+          <div class="mtile" id="t-fio2"><div class="mlbl">FiO₂</div><div class="mval c-amb" id="mFiO2">—</div><div class="munit">%</div></div>
+        </div>
+        <div class="waves">
+          <div class="wave-row"><span class="wave-tag c-acc">Paw (cmH₂O)</span><canvas id="wvP"></canvas></div>
+          <div class="wave-row"><span class="wave-tag c-grn">Flow (L/min)</span><canvas id="wvF"></canvas></div>
+          <div class="wave-row"><span class="wave-tag c-vio">Volume (mL)</span><canvas id="wvV"></canvas></div>
+        </div>
+      </div>
+
+      <!-- alarms -->
+      <div class="alarm-bar" id="alarmBar"></div>
+
+      <!-- modes -->
+      <div class="section-title">通氣模式</div>
+      <div class="modes" id="modeBar"></div>
+
+      <!-- settings -->
+      <div class="section-title">參數設定（即時生效並記錄）</div>
+      <div class="settings" id="settings"></div>
+
+      <!-- reflection -->
+      <div class="section-title">學習反思（質性自評）</div>
+      <div class="card" style="background:var(--surface)">
+        <textarea id="reflectInput" placeholder="說明你的調整思路：例如為何選此模式、如何達到肺保護目標、面對警報如何處置、還有什麼疑問…"></textarea>
+        <div class="actions">
+          <button class="btn btn-primary" id="btnFinish">✓ 完成並提交本次訓練</button>
+          <button class="btn btn-sec" id="btnSaveDraft">暫存反思</button>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============ DASHBOARD ============ -->
+<div class="view" id="view-dash">
+  <div class="dash">
+    <div class="dash-head">
+      <h2>📊 教師後台 · 學習軌跡與歷程</h2>
+      <button class="btn-ghost" id="btnRefresh">🔄 重新整理</button>
+      <span class="spacer" style="flex:1"></span>
+      <span id="syncState" style="font-size:12px;color:var(--ink-3)"></span>
+    </div>
+    <div class="stat-row" id="statRow"></div>
+    <div class="dash-grid">
+      <div>
+        <div class="section-title" style="margin-top:0">場次列表</div>
+        <div class="sess-list" id="sessList"><div class="empty-hint">載入中…</div></div>
+      </div>
+      <div id="detailPane"><div class="detail-empty">← 選擇一個場次以檢視學習軌跡</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ START MODAL ============ -->
+<div class="modal-bg" id="startModal">
+  <div class="modal">
+    <h2>開始呼吸器訓練</h2>
+    <div class="sub">填寫身分並選擇臨床情境，系統將記錄你的完整調整歷程。</div>
+    <div class="field"><label>姓名</label><input id="inName" placeholder="王小明" autocomplete="off"></div>
+    <div class="field"><label>學號 / 編號（選填）</label><input id="inId" placeholder="RT-001" autocomplete="off"></div>
+    <div class="field"><label>臨床情境</label></div>
+    <div class="scen-list" id="scenList"></div>
+    <div class="actions">
+      <button class="btn btn-primary" id="btnBeginSession">🫁 進入呼吸器</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TEACHER GATE MODAL ============ -->
+<div class="modal-bg" id="gateModal">
+  <div class="modal" style="max-width:380px">
+    <h2>教師後台</h2>
+    <div class="sub">請輸入教師通行碼以檢視所有學員歷程。</div>
+    <div class="field"><label>通行碼</label><input id="inGate" type="password" placeholder="••••••"></div>
+    <div class="actions">
+      <button class="btn btn-primary" id="btnGate">進入</button>
+      <button class="btn btn-sec" id="btnGateCancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, doc, updateDoc, getDocs, query, orderBy }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey:"AIzaSyBrs80vpFVe-iEh5ctzRWfYHUBb3KGvILo",
+  authDomain:"speech-to-text-2f776.firebaseapp.com",
+  projectId:"speech-to-text-2f776",
+  storageBucket:"speech-to-text-2f776.firebasestorage.app",
+  messagingSenderId:"283739023798",
+  appId:"1:283739023798:web:3091ec2bcf6262b5ecb917"
+};
+let db=null;
+try{ db = getFirestore(initializeApp(firebaseConfig)); }catch(e){ console.warn("Firebase init failed",e); }
+const COLL = "ventilator_sessions";
+const TEACHER_CODE = "rt2026";
+
+/* ============================================================
+   情境定義（病人隱藏生理參數）
+   C = 順應性 mL/cmH2O, R = 阻力 cmH2O/L/s
+   shuntBase = 基礎肺內分流, optimalPeep = 最佳 PEEP
+   ============================================================ */
+const SCENARIOS = [
+  { id:"ards", emoji:"🫁", name:"中重度 ARDS",
+    desc:"58歲男性，社區型肺炎併發 ARDS。P/F<150、雙側浸潤、低順應性、高分流。",
+    patient:"58 歲男性 · 肺炎併發 ARDS", pbw:70, height:"175cm", hb:11.0,
+    brief:"重度低血氧。目標：肺保護通氣 VT 6 mL/kg、Pplat<30、driving pressure<15、SpO₂ 88–95%，逐步以 PEEP 改善氧合並降 FiO₂。",
+    mech:{C:28,R:9}, shuntBase:0.42, optimalPeep:14, vco2:210, hco3:20, spontDrive:0,
+    baseHR:106, baseSBP:116, baseDBP:68,
+    init:{mode:"VC-AC", fio2:100, vt:520, rr:18, peep:8, flow:60, ie:0.5, pinsp:16, psup:12} },
+
+  { id:"copd", emoji:"🌬️", name:"COPD 急性惡化",
+    desc:"71歲，COPD 急性惡化插管。高氣道阻力、易產生 auto-PEEP、慢性二氧化碳滯留。",
+    patient:"71 歲男性 · COPD 急性惡化", pbw:65, height:"170cm", hb:15.5,
+    brief:"高阻力、動態過度充氣風險。目標：降低 RR、增加吐氣時間（高流速/低 I:E）避免 auto-PEEP，採允許性高碳酸（pH>7.25 即可），勿過度通氣。",
+    mech:{C:55,R:24}, shuntBase:0.14, optimalPeep:6, vco2:240, hco3:32, spontDrive:0,
+    baseHR:104, baseSBP:138, baseDBP:80,
+    init:{mode:"VC-AC", fio2:50, vt:480, rr:20, peep:5, flow:42, ie:0.5, pinsp:18, psup:12} },
+
+  { id:"asthma", emoji:"😮‍💨", name:"重度氣喘發作",
+    desc:"34歲，致命性氣喘插管。極高阻力、嚴重氣體滯留、auto-PEEP 與氣壓傷風險高。",
+    patient:"34 歲女性 · 重度氣喘 (status asthmaticus)", pbw:55, height:"165cm", hb:13.5,
+    brief:"極高阻力。策略：低 RR、低 VT、高吸氣流速延長吐氣、可接受高 PaCO₂，嚴防 auto-PEEP 與高 PIP 造成氣壓傷／低血壓。",
+    mech:{C:48,R:34}, shuntBase:0.10, optimalPeep:5, vco2:250, hco3:18, spontDrive:0,
+    baseHR:124, baseSBP:128, baseDBP:74,
+    init:{mode:"VC-AC", fio2:60, vt:450, rr:22, peep:5, flow:40, ie:0.5, pinsp:20, psup:12} },
+
+  { id:"edema", emoji:"💧", name:"心因性肺水腫",
+    desc:"66歲，急性心衰竭併肺水腫。中度低氧、分流對 PEEP 反應佳，但對血壓敏感。",
+    patient:"66 歲女性 · 急性心因性肺水腫", pbw:58, height:"160cm", hb:12.5,
+    brief:"分流型低血氧、對 PEEP 反應良好。目標：適當 PEEP 改善氧合並降 FiO₂，但留意 PEEP 過高使前負荷下降、血壓下滑。",
+    mech:{C:34,R:11}, shuntBase:0.26, optimalPeep:12, vco2:200, hco3:22, spontDrive:0,
+    baseHR:98, baseSBP:150, baseDBP:88,
+    init:{mode:"VC-AC", fio2:80, vt:450, rr:18, peep:6, flow:55, ie:0.5, pinsp:15, psup:12} },
+
+  { id:"wean", emoji:"🌤️", name:"術後脫離準備",
+    desc:"52歲，腹部術後麻醉恢復、肺部接近正常。練習由控制模式轉為自發 / PSV 脫離。",
+    patient:"52 歲男性 · 術後待脫離", pbw:68, height:"172cm", hb:13.0,
+    brief:"肺部接近正常、有自發呼吸驅動。目標：轉至 PSV/CPAP，給予適當壓力支持，確認 VT、RR、氧合穩定後評估脫離。",
+    mech:{C:52,R:10}, shuntBase:0.07, optimalPeep:5, vco2:200, hco3:24, spontDrive:16,
+    baseHR:84, baseSBP:128, baseDBP:76,
+    init:{mode:"VC-AC", fio2:40, vt:480, rr:14, peep:5, flow:50, ie:0.5, pinsp:14, psup:10} },
+];
+
+/* ============================================================
+   模式與參數定義
+   ============================================================ */
+const MODES = [
+  { id:"VC-AC",  name:"VC-AC",  sub:"容積控制" },
+  { id:"PC-AC",  name:"PC-AC",  sub:"壓力控制" },
+  { id:"SIMV",   name:"SIMV-VC",sub:"間歇強制" },
+  { id:"PSV",    name:"PSV",    sub:"壓力支持" },
+  { id:"CPAP",   name:"CPAP",   sub:"持續氣道正壓" },
+];
+// 各模式啟用的參數
+const PARAM_DEFS = {
+  fio2:{lbl:"FiO₂", unit:"%", min:21, max:100, step:5},
+  vt:  {lbl:"潮氣容積 VT", unit:"mL", min:200, max:800, step:10},
+  rr:  {lbl:"呼吸次數 f", unit:"/min", min:4, max:40, step:1},
+  peep:{lbl:"PEEP", unit:"cmH₂O", min:0, max:24, step:1},
+  pinsp:{lbl:"吸氣壓 Pinsp", unit:"cmH₂O", min:5, max:40, step:1},
+  psup:{lbl:"壓力支持 PS", unit:"cmH₂O", min:0, max:30, step:1},
+  flow:{lbl:"吸氣流速", unit:"L/min", min:30, max:90, step:5},
+  ie:  {lbl:"I:E", unit:"", min:0.25, max:1.5, step:0.05, fmt:v=>"1:"+(1/v).toFixed(1)},
+};
+const MODE_PARAMS = {
+  "VC-AC":["fio2","vt","rr","peep","flow"],
+  "PC-AC":["fio2","pinsp","rr","peep","ie"],
+  "SIMV":["fio2","vt","rr","peep","flow","psup"],
+  "PSV":["fio2","psup","peep"],
+  "CPAP":["fio2","peep"],
+};
+
+/* ============================================================
+   生理引擎
+   ============================================================ */
+function severinghausSat(po2){ // fraction
+  if(po2<=0) return 0;
+  const s = 1/((23400/(Math.pow(po2,3)+150*po2))+1);
+  return Math.min(1,Math.max(0,s));
+}
+function inverseContent(caO2, Hb){ // arterial O2 content (mL/dL) -> PaO2 (mmHg)
+  let lo=5, hi=700;
+  for(let i=0;i<50;i++){
+    const mid=(lo+hi)/2;
+    const c=1.34*Hb*severinghausSat(mid)+0.003*mid;
+    (c<caO2)?lo=mid:hi=mid;
+  }
+  return (lo+hi)/2;
+}
+
+function computeState(P, pt){
+  const C = pt.mech.C, R = pt.mech.R;          // mechanics
+  const tauSec = (C/1000)*R;                    // time constant (s)
+  let mode = P.mode;
+  let totalRR, setRR = P.rr, vtDeliv, Ti, Te, inspFlow, pip, pplat, autoPeep=0;
+
+  // spontaneous overbreathing
+  const spont = pt.spontDrive || 0;
+
+  if(mode==="VC-AC" || mode==="SIMV"){
+    totalRR = Math.max(setRR, spont>setRR?spont:setRR);
+    if(spont>setRR && mode==="SIMV") totalRR = spont;
+    vtDeliv = P.vt;
+    inspFlow = P.flow/60;                        // L/s
+    Ti = (P.vt/1000)/inspFlow;
+    const Tcyc = 60/totalRR; Te = Math.max(0.15, Tcyc - Ti);
+    pplat = P.peep + P.vt/C;
+    pip = pplat + inspFlow*R;
+    autoPeep = (vtDeliv/C)*Math.exp(-Te/tauSec);
+    if(autoPeep<0.4) autoPeep=0;
+  }
+  else if(mode==="PC-AC"){
+    totalRR = Math.max(setRR, spont);
+    const Tcyc = 60/totalRR; Ti = Tcyc*(P.ie/(1+P.ie)); Te=Tcyc-Ti;
+    vtDeliv = P.pinsp*C*(1-Math.exp(-Ti/tauSec));
+    pip = P.peep + P.pinsp;
+    pplat = pip;
+    inspFlow = (P.pinsp/R);                       // peak decel flow
+    autoPeep = (vtDeliv/C)*Math.exp(-Te/tauSec);
+    if(autoPeep<0.4) autoPeep=0;
+  }
+  else if(mode==="PSV"){
+    totalRR = spont>0? spont : 12;                // patient-driven
+    Ti = 0.9; const Tcyc=60/totalRR; Te=Math.max(0.2,Tcyc-Ti);
+    vtDeliv = P.psup*C*(1-Math.exp(-Ti/tauSec));
+    pip = P.peep + P.psup;
+    pplat = pip; inspFlow=(P.psup/R); autoPeep=0;
+  }
+  else { // CPAP
+    totalRR = spont>0? spont : 14;
+    Ti=0.9; Te=60/totalRR-Ti;
+    vtDeliv = 6*C*(1-Math.exp(-Ti/tauSec));       // weak spontaneous ~ small swing
+    pip=P.peep; pplat=P.peep; inspFlow=0.4; autoPeep=0;
+  }
+
+  vtDeliv = Math.max(0, vtDeliv);
+  const peepTot = P.peep + autoPeep;
+  const Tcyc = 60/totalRR;
+  const mve = totalRR*vtDeliv/1000;
+  const drivingP = pplat - peepTot;
+  const Pmean = peepTot + (pip-peepTot)*(Ti/Tcyc)*(mode==="PC-AC"||mode==="PSV"?0.85:0.55);
+
+  // ---- gas exchange ----
+  const VD = 2.2*pt.pbw;                          // anatomic deadspace mL
+  let VA = Math.max(0.2,(vtDeliv-VD))*totalRR/1000; // L/min alveolar
+  let paco2 = 0.863*pt.vco2/VA;
+  paco2 = Math.min(120, Math.max(18, paco2));
+
+  // PEEP effect on shunt (recruitment up to optimal, overdistension beyond)
+  let shunt = pt.shuntBase;
+  const op = pt.optimalPeep;
+  const recruit = Math.min(peepTot, op)/op;       // 0..1
+  shunt = pt.shuntBase*(1 - 0.5*recruit);         // recruit lowers shunt
+  if(peepTot>op+3) shunt += pt.shuntBase*0.12*(peepTot-(op+3))/4; // overdistension penalty
+  shunt = Math.min(0.6, Math.max(0.03, shunt));
+
+  const PAO2 = (P.fio2/100)*(760-47) - paco2/0.8; // alveolar O2
+  const Hb = pt.hb;
+  const Sc = severinghausSat(Math.max(0,PAO2));
+  const CcO2 = 1.34*Hb*Sc + 0.003*PAO2;           // end-capillary O2 content
+  const CvO2 = 1.34*Hb*0.70 + 0.003*40;           // assumed mixed venous
+  let CaO2 = Math.max(0.5, CcO2 - shunt*(CcO2-CvO2));
+  let pao2 = inverseContent(CaO2, Hb);            // solve PaO2 from arterial content
+  let spo2 = Math.round(severinghausSat(pao2)*100);
+  const pf = Math.round(pao2/(P.fio2/100));
+
+  const ph = 6.1 + Math.log10( pt.hco3 / (0.03*paco2) );
+
+  // ---- hemodynamics ----
+  let hr = pt.baseHR, sbp=pt.baseSBP, dbp=pt.baseDBP;
+  if(spo2<90) hr += (90-spo2)*1.8;
+  if(spo2<90) sbp -= (90-spo2)*0.6;
+  if(ph<7.2){ hr += (7.2-ph)*40; sbp -= (7.2-ph)*30; }
+  if(Pmean>14){ sbp -= (Pmean-14)*2.6; dbp -= (Pmean-14)*1.6; hr += (Pmean-14)*1.2; } // venous return ↓
+  if(autoPeep>5){ sbp -= (autoPeep-5)*2.2; }
+  hr=Math.round(Math.min(170,Math.max(40,hr)));
+  sbp=Math.round(Math.min(200,Math.max(55,sbp)));
+  dbp=Math.round(Math.min(120,Math.max(30,dbp)));
+
+  return {
+    mode, totalRR:Math.round(totalRR), vtDeliv:Math.round(vtDeliv), Ti, Te, tauSec, inspFlow,
+    pip:Math.round(pip*10)/10, pplat:Math.round(pplat*10)/10, autoPeep:Math.round(autoPeep*10)/10,
+    peepTot:Math.round(peepTot*10)/10, Pmean:Math.round(Pmean*10)/10, mve:Math.round(mve*10)/10,
+    drivingP:Math.round(drivingP*10)/10, vtkg:Math.round(vtDeliv/pt.pbw*10)/10,
+    abg:{ ph:Math.round(ph*100)/100, paco2:Math.round(paco2), pao2:Math.round(pao2), hco3:pt.hco3,
+          sao2:spo2, pf }, spo2, hr, sbp, dbp, shunt:Math.round(shunt*100)
+  };
+}
+
+/* alarms / quality flags */
+function evalFlags(P, S, pt){
+  const out=[];
+  if(S.pip>40) out.push({lvl:"danger",txt:`高氣道壓 PIP ${S.pip}`});
+  if(S.pplat>30) out.push({lvl:"danger",txt:`Pplat ${S.pplat} >30（氣壓傷風險）`});
+  else if(S.pplat>28) out.push({lvl:"warn",txt:`Pplat ${S.pplat} 接近上限`});
+  if(S.autoPeep>=3) out.push({lvl:"warn",txt:`auto-PEEP ${S.autoPeep}（氣體滯留）`});
+  if(S.vtkg>8) out.push({lvl:"warn",txt:`VT ${S.vtkg} mL/kg 偏高`});
+  if(S.drivingP>15) out.push({lvl:"warn",txt:`driving pressure ${S.drivingP} >15`});
+  if(S.spo2<88) out.push({lvl:"danger",txt:`SpO₂ ${S.spo2}% 過低`});
+  if(S.sbp<85) out.push({lvl:"danger",txt:`低血壓 SBP ${S.sbp}`});
+  if(S.abg.ph<7.25) out.push({lvl:"warn",txt:`酸血症 pH ${S.abg.ph}`});
+  if(P.fio2>60 && S.spo2>95) out.push({lvl:"warn",txt:`FiO₂ ${P.fio2}% 偏高可下調`});
+  if(out.length===0) out.push({lvl:"good",txt:"參數在安全範圍 ✓"});
+  return out;
+}
+
+/* ============================================================
+   應用狀態
+   ============================================================ */
+let session=null;   // {name,id,scenario,params,events,startISO,docId,reflection}
+let pt=null, S=null;
+let selScenId = SCENARIOS[0].id;
+let abgLast=null, abgTimeStr="";
+let saveTimer=null;
+
+const $=id=>document.getElementById(id);
+function toast(m){ const t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),2200); }
+function nowISO(){ return new Date().toISOString(); }
+function fmtTime(iso){ const d=new Date(iso); return d.toLocaleString("zh-TW",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}); }
+
+/* ---------- 開始情境 ---------- */
+function renderScenList(){
+  const el=$("scenList"); el.innerHTML="";
+  SCENARIOS.forEach(s=>{
+    const d=document.createElement("div");
+    d.className="scen"+(s.id===selScenId?" sel":"");
+    d.innerHTML=`<div class="emo">${s.emoji}</div><div><div class="t">${s.name}</div><div class="d">${s.desc}</div></div>`;
+    d.onclick=()=>{ selScenId=s.id; renderScenList(); };
+    el.appendChild(d);
+  });
+}
+function openStart(){ renderScenList(); $("inName").value=session?.name||""; $("inId").value=session?.id||""; $("startModal").classList.add("show"); }
+function beginSession(){
+  const name=$("inName").value.trim();
+  if(!name){ toast("請輸入姓名"); return; }
+  const sc=SCENARIOS.find(s=>s.id===selScenId);
+  pt=sc;
+  session={
+    name, id:$("inId").value.trim(), scenarioId:sc.id, scenarioName:sc.name,
+    params:{...sc.init}, events:[], startISO:nowISO(), reflection:"", docId:null
+  };
+  abgLast=null; abgTimeStr="";
+  logEvent("session_start",{scenario:sc.name});
+  $("startModal").classList.remove("show");
+  $("whoBox").style.display="flex"; $("whoName").textContent=name; $("whoScen").textContent=sc.name;
+  renderPatient(); renderModes(); renderSettings(); recompute(); createDoc();
+  toast(`已進入「${sc.name}」情境`);
+}
+
+/* ---------- 病人面板 ---------- */
+function renderPatient(){
+  $("ptName").textContent=pt.patient;
+  $("ptSub").textContent=`PBW ${pt.pbw} kg · ${pt.height} · Hb ${pt.hb}`;
+  $("ptMeta").innerHTML=`<span class="chip">目標 ABG/氧合依情境</span>`;
+  $("ptBrief").textContent=pt.brief;
+}
+
+/* ---------- 模式列 ---------- */
+function renderModes(){
+  const bar=$("modeBar"); bar.innerHTML="";
+  MODES.forEach(m=>{
+    const b=document.createElement("button");
+    b.className="mode-btn"+(m.id===session.params.mode?" active":"");
+    b.innerHTML=`${m.name}<small>${m.sub}</small>`;
+    b.onclick=()=>{
+      if(m.id===session.params.mode) return;
+      const from=session.params.mode; session.params.mode=m.id;
+      logEvent("mode_change",{from,to:m.id});
+      renderModes(); renderSettings(); recompute();
+    };
+    bar.appendChild(b);
+  });
+}
+
+/* ---------- 參數設定 ---------- */
+function renderSettings(){
+  const wrap=$("settings"); wrap.innerHTML="";
+  const keys=MODE_PARAMS[session.params.mode];
+  keys.forEach(k=>{
+    const def=PARAM_DEFS[k], P=session.params;
+    const card=document.createElement("div"); card.className="setting";
+    const disp = def.fmt? def.fmt(P[k]) : P[k];
+    card.innerHTML=`
+      <div class="s-lbl"><b>${def.lbl}</b></div>
+      <div class="s-val"><span class="num" id="num-${k}">${disp}</span><span class="unit">${def.unit}</span></div>
+      <div class="stepper"><button data-k="${k}" data-d="-1">−</button><button data-k="${k}" data-d="1">+</button></div>`;
+    wrap.appendChild(card);
+  });
+  wrap.querySelectorAll("button").forEach(b=>{
+    b.onclick=()=>changeParam(b.dataset.k, parseInt(b.dataset.d));
+  });
+}
+function changeParam(k,dir){
+  const def=PARAM_DEFS[k], P=session.params;
+  const from=P[k];
+  let v = +(from + dir*def.step).toFixed(2);
+  v=Math.min(def.max,Math.max(def.min,v));
+  if(v===from) return;
+  P[k]=v;
+  const disp=def.fmt?def.fmt(v):v;
+  $("num-"+k).textContent=disp;
+  logEvent("param_change",{key:k,label:def.lbl,from,to:v});
+  recompute();
+}
+
+/* ---------- 重新計算 + 渲染監測 ---------- */
+function recompute(){
+  S=computeState(session.params,pt);
+  // monitor tiles
+  $("mPIP").textContent=S.pip; $("mPplat").textContent=S.pplat; $("mMAP").textContent=S.Pmean;
+  $("mPEEPt").textContent=S.peepTot; $("mVTe").textContent=S.vtDeliv; $("mMVe").textContent=S.mve;
+  $("mRR").textContent=S.totalRR; $("mFiO2").textContent=session.params.fio2;
+  setAlarmTile("t-pip",S.pip>40); setAlarmTile("t-pplat",S.pplat>30);
+  // vitals
+  $("vHR").textContent=S.hr; $("vSpO2").textContent=S.spo2;
+  $("vBP").textContent=S.sbp+"/"+S.dbp; $("vRR").textContent=S.totalRR;
+  // alarms
+  const flags=evalFlags(session.params,S,pt);
+  $("alarmBar").innerHTML=flags.map(f=>`<div class="alarm-item ${f.lvl}">${f.lvl==="danger"?"⛔":f.lvl==="warn"?"⚠️":"✓"} ${f.txt}</div>`).join("");
+  // staleness of ABG
+  if(abgLast){ $("abgStaleTag").textContent="（與目前設定可能不同步）"; $("abgGrid").classList.add("abg-stale"); }
+  resetWaves();
+  scheduleSave();
+}
+function setAlarmTile(id,on){ $(id).classList.toggle("alarm",on); }
+
+/* ---------- ABG ---------- */
+function drawABG(){
+  if(!session){ toast("請先開始情境"); return; }
+  abgLast=S.abg; abgTimeStr=new Date().toLocaleTimeString("zh-TW");
+  const a=S.abg;
+  $("aPH").textContent=a.ph.toFixed(2);
+  $("aCO2").textContent=a.paco2;
+  $("aO2").textContent=a.pao2;
+  $("aHCO3").textContent=a.hco3;
+  $("aSaO2").textContent=a.sao2+"%";
+  $("aPF").textContent=a.pf;
+  flagCell("aPH", a.ph>=7.35&&a.ph<=7.45);
+  flagCell("aCO2", a.paco2>=35&&a.paco2<=48);
+  flagCell("aO2", a.pao2>=60);
+  flagCell("aSaO2", a.sao2>=90);
+  flagCell("aPF", a.pf>=300);
+  $("abgGrid").classList.remove("abg-stale");
+  $("abgStaleTag").textContent="";
+  $("abgTime").textContent="抽血時間 "+abgTimeStr;
+  logEvent("abg",{...a, params:{...session.params}});
+  toast("ABG 已更新並記錄");
+}
+function flagCell(id,ok){
+  const c=$(id).parentElement; c.classList.remove("ok","flag");
+  c.classList.add(ok?"ok":"flag");
+}
+
+/* ============================================================
+   波形動畫
+   ============================================================ */
+let waveBuf={p:[],f:[],v:[]}, waveT=0, rafId=null, lastTs=null;
+const WAVE_SECONDS=8, FPS_DT=1/60;
+function instBreath(t){
+  if(!S) return {p:0,f:0,v:0};
+  const P=session.params, C=pt.mech.C, R=pt.mech.R, tau=S.tauSec;
+  const Tcyc=60/S.totalRR; const ph=t%Tcyc;
+  let p=S.peepTot,f=0,v=0;
+  const mode=P.mode;
+  if(mode==="VC-AC"||mode==="SIMV"){
+    const Ti=S.Ti, fl=S.inspFlow;
+    if(ph<Ti){ f=fl*60; v=fl*ph*1000; p=S.peepTot+(ph/Ti)*(S.vtDeliv/C)+fl*R; }
+    else{ const te=ph-Ti; f=-(S.vtDeliv/1000/tau)*Math.exp(-te/tau)*60; v=S.vtDeliv*Math.exp(-te/tau); p=S.peepTot+(S.vtDeliv/C)*Math.exp(-te/tau)*0.6; }
+  } else if(mode==="PC-AC"||mode==="PSV"){
+    const Ti=S.Ti, pdrive=(mode==="PC-AC"?P.pinsp:P.psup);
+    if(ph<Ti){ f=(pdrive/R)*Math.exp(-ph/tau)*60; v=pdrive*C*(1-Math.exp(-ph/tau)); p=S.peepTot+pdrive; }
+    else{ const te=ph-Ti; f=-(S.vtDeliv/1000/tau)*Math.exp(-te/tau)*60; v=S.vtDeliv*Math.exp(-te/tau); p=S.peepTot+(S.vtDeliv/C)*Math.exp(-te/tau)*0.5; }
+  } else { // CPAP small
+    f=Math.sin(ph/Tcyc*2*Math.PI)*10; v=Math.max(0,Math.sin(ph/Tcyc*Math.PI))*S.vtDeliv; p=S.peepTot+Math.sin(ph/Tcyc*2*Math.PI)*1.2;
+  }
+  return {p,f,v};
+}
+function resetWaves(){ /* keep scrolling; values update live via instBreath */ }
+function sizeCanvas(cv){ const r=cv.getBoundingClientRect(); const dpr=window.devicePixelRatio||1; cv.width=r.width*dpr; cv.height=r.height*dpr; const ctx=cv.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0); return ctx; }
+let ctxP,ctxF,ctxV;
+function initCanvas(){ ctxP=sizeCanvas($("wvP")); ctxF=sizeCanvas($("wvF")); ctxV=sizeCanvas($("wvV")); }
+function drawWave(ctx,cv,data,color,zeroFrac,scale){
+  const w=cv.getBoundingClientRect().width, h=cv.getBoundingClientRect().height;
+  ctx.clearRect(0,0,w,h);
+  // baseline grid
+  ctx.strokeStyle="rgba(255,255,255,0.05)"; ctx.lineWidth=1;
+  for(let gx=0;gx<w;gx+=w/8){ ctx.beginPath(); ctx.moveTo(gx,0); ctx.lineTo(gx,h); ctx.stroke(); }
+  const zeroY=h*zeroFrac;
+  ctx.strokeStyle="rgba(255,255,255,0.12)"; ctx.beginPath(); ctx.moveTo(0,zeroY); ctx.lineTo(w,zeroY); ctx.stroke();
+  ctx.strokeStyle=color; ctx.lineWidth=2; ctx.beginPath();
+  const n=data.length;
+  for(let i=0;i<n;i++){ const x=i/(n-1)*w; const y=zeroY-data[i]*scale; (i===0)?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+  ctx.stroke();
+  ctx.shadowColor=color; ctx.shadowBlur=6; ctx.stroke(); ctx.shadowBlur=0;
+}
+function animate(ts){
+  rafId=requestAnimationFrame(animate);
+  if(!S||!session){ return; }
+  if(lastTs==null) lastTs=ts;
+  let dt=(ts-lastTs)/1000; lastTs=ts; if(dt>0.1)dt=0.1;
+  waveT+=dt;
+  const N=Math.round(WAVE_SECONDS*60);
+  const b=instBreath(waveT);
+  waveBuf.p.push(b.p); waveBuf.f.push(b.f); waveBuf.v.push(b.v);
+  while(waveBuf.p.length>N){ waveBuf.p.shift(); waveBuf.f.shift(); waveBuf.v.shift(); }
+  const hP=$("wvP").getBoundingClientRect().height;
+  drawWave(ctxP,$("wvP"),waveBuf.p,"#34d4e0",0.92, (hP*0.8)/Math.max(35,S.pip*1.15));
+  const hF=$("wvF").getBoundingClientRect().height;
+  drawWave(ctxF,$("wvF"),waveBuf.f,"#3ee08a",0.5, (hF*0.42)/Math.max(60,S.inspFlow*60*1.2));
+  const hV=$("wvV").getBoundingClientRect().height;
+  drawWave(ctxV,$("wvV"),waveBuf.v,"#b08bff",0.92, (hV*0.8)/Math.max(300,S.vtDeliv*1.15));
+}
+
+/* ============================================================
+   事件記錄 + Firestore
+   ============================================================ */
+function logEvent(type,data){
+  if(!session) return;
+  const ev={ t:nowISO(), type, ...data };
+  if(S && type!=="session_start"){ ev.snapshot={pip:S.pip,pplat:S.pplat,peepTot:S.peepTot,vt:S.vtDeliv,rr:S.totalRR,mve:S.mve,spo2:S.spo2,fio2:session.params.fio2}; }
+  session.events.push(ev);
+}
+async function createDoc(){
+  if(!db) return;
+  try{
+    const ref=await addDoc(collection(db,COLL),baseDoc("active"));
+    session.docId=ref.id;
+  }catch(e){ console.warn("createDoc",e); persistLocal(); }
+}
+function baseDoc(status){
+  return {
+    learnerName:session.name, learnerId:session.id||"",
+    scenarioId:session.scenarioId, scenarioName:session.scenarioName,
+    startedAt:session.startISO, updatedAt:nowISO(),
+    status, finalParams:{...session.params}, events:session.events.slice(-400),
+    reflection:session.reflection||"", metrics:computeMetrics(),
+    instructorFeedback:session._fb||""
+  };
+}
+function scheduleSave(){ clearTimeout(saveTimer); saveTimer=setTimeout(()=>saveDoc(),1200); }
+async function saveDoc(status){
+  const st = status || (session && session.completed ? "completed" : "active");
+  persistLocal();
+  if(!db||!session?.docId) return;
+  try{ await updateDoc(doc(db,COLL,session.docId), baseDoc(st)); }
+  catch(e){ console.warn("saveDoc",e); }
+}
+function persistLocal(){
+  try{ const arr=JSON.parse(localStorage.getItem("vent_local")||"[]");
+    const st = session.completed ? "completed" : "active";
+    const rec={...baseDoc(st), _local:true, _ts:session.startISO};
+    const i=arr.findIndex(r=>r._ts===session.startISO);
+    if(i>=0)arr[i]=rec; else arr.push(rec);
+    localStorage.setItem("vent_local",JSON.stringify(arr.slice(-50)));
+  }catch(e){}
+}
+
+/* 品質指標 */
+function computeMetrics(){
+  const evs=session.events;
+  const changes=evs.filter(e=>e.type==="param_change").length;
+  const abgs=evs.filter(e=>e.type==="abg").length;
+  const modeCh=evs.filter(e=>e.type==="mode_change").length;
+  const cur=S||computeState(session.params,pt);
+  const durMin=Math.round((Date.now()-new Date(session.startISO).getTime())/60000);
+  return {
+    paramChanges:changes, abgCount:abgs, modeChanges:modeCh, durationMin:durMin,
+    finalVTkg:cur.vtkg, finalPplat:cur.pplat, finalDriving:cur.drivingP,
+    finalSpO2:cur.spo2, finalFiO2:session.params.fio2, finalPF:cur.abg.pf,
+    finalPEEPtot:cur.peepTot, finalAutoPeep:cur.autoPeep, finalPH:cur.abg.ph,
+    lungProtective: cur.vtkg<=8 && cur.pplat<=30 && cur.drivingP<=15,
+    oxyTarget: cur.spo2>=88 && cur.spo2<=97
+  };
+}
+
+/* 完成 / 反思 */
+async function finishSession(){
+  if(!session){ toast("尚未開始"); return; }
+  clearTimeout(saveTimer);                       // 取消待寫入的 active 存檔，避免覆蓋完成狀態
+  session.reflection=$("reflectInput").value.trim();
+  logEvent("reflection",{text:session.reflection});
+  session.endedAt=nowISO();
+  session.completed=true;
+  persistLocal();
+  if(db&&session.docId){
+    try{ await updateDoc(doc(db,COLL,session.docId),{...baseDoc("completed"),endedAt:session.endedAt}); }catch(e){}
+  }
+  toast("✓ 已提交本次訓練，教師後台可檢視");
+}
+function saveDraft(){ if(!session)return; session.reflection=$("reflectInput").value.trim(); scheduleSave(); toast("反思已暫存"); }
+
+/* ============================================================
+   教師後台
+   ============================================================ */
+let sessionsCache=[], selSess=null;
+async function loadSessions(){
+  $("syncState").textContent="同步中…";
+  let docs=[];
+  if(db){
+    try{
+      const q=query(collection(db,COLL),orderBy("startedAt","desc"));
+      const snap=await getDocs(q);
+      snap.forEach(d=>docs.push({id:d.id,...d.data()}));
+    }catch(e){ console.warn(e); }
+  }
+  // merge local-only
+  try{ const loc=JSON.parse(localStorage.getItem("vent_local")||"[]");
+    loc.forEach(r=>{ if(!docs.find(d=>d.startedAt===r.startedAt&&d.learnerName===r.learnerName)) docs.push({id:"local-"+r._ts,...r}); });
+  }catch(e){}
+  docs.sort((a,b)=>(b.startedAt||"").localeCompare(a.startedAt||""));
+  sessionsCache=docs;
+  $("syncState").textContent = db? `已載入 ${docs.length} 筆` : "離線模式（僅本機）";
+  renderStats(); renderSessList();
+}
+function renderStats(){
+  const n=sessionsCache.length;
+  const learners=new Set(sessionsCache.map(s=>s.learnerName)).size;
+  const done=sessionsCache.filter(s=>s.status==="completed").length;
+  const lp=sessionsCache.filter(s=>s.metrics?.lungProtective).length;
+  const lpRate=n?Math.round(lp/n*100):0;
+  $("statRow").innerHTML=`
+    <div class="stat"><div class="n">${n}</div><div class="l">總場次</div></div>
+    <div class="stat"><div class="n">${learners}</div><div class="l">學員人數</div></div>
+    <div class="stat"><div class="n">${done}</div><div class="l">已完成</div></div>
+    <div class="stat"><div class="n">${lpRate}%</div><div class="l">達肺保護目標</div></div>`;
+}
+function renderSessList(){
+  const el=$("sessList");
+  if(!sessionsCache.length){ el.innerHTML='<div class="empty-hint">尚無學員紀錄。請先在模擬器完成一次訓練。</div>'; return; }
+  el.innerHTML="";
+  sessionsCache.forEach(s=>{
+    const d=document.createElement("div");
+    d.className="sess-item"+(selSess?.id===s.id?" sel":"");
+    const badge=s.status==="completed"?'<span class="badge done">已完成</span>':'<span class="badge active">進行中</span>';
+    d.innerHTML=`<div class="r1"><span class="nm">${esc(s.learnerName||"匿名")}</span>${badge}</div>
+      <div class="sc">${esc(s.scenarioName||"")}</div>
+      <div class="meta"><span>${fmtTime(s.startedAt)}</span><span>調整 ${s.metrics?.paramChanges??0} 次</span><span>ABG ${s.metrics?.abgCount??0}</span></div>`;
+    d.onclick=()=>{ selSess=s; renderSessList(); renderDetail(s); };
+    el.appendChild(d);
+  });
+}
+function renderDetail(s){
+  const m=s.metrics||{};
+  const pane=$("detailPane");
+  const fb = (v,good)=>`<div class="qm ${v===undefined?'':(good?'good':'bad')}">`;
+  pane.innerHTML=`<div class="detail">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div><h3 style="font-size:18px">${esc(s.learnerName)} <span style="color:var(--ink-3);font-size:13px">${esc(s.learnerId||"")}</span></h3>
+      <div style="color:var(--accent-deep);font-size:13.5px">${esc(s.scenarioName)} · ${fmtTime(s.startedAt)}</div></div>
+      <div>${s.status==="completed"?'<span class="badge done">已完成</span>':'<span class="badge active">進行中</span>'}</div>
+    </div>
+
+    <div class="section-title">最終品質指標</div>
+    <div class="q-metrics">
+      ${qm("VT (mL/kg)",m.finalVTkg,m.finalVTkg<=8)}
+      ${qm("Pplat",m.finalPplat,m.finalPplat<=30)}
+      ${qm("driving P",m.finalDriving,m.finalDriving<=15)}
+      ${qm("PEEP tot",m.finalPEEPtot,true)}
+      ${qm("auto-PEEP",m.finalAutoPeep,m.finalAutoPeep<3)}
+      ${qm("SpO₂ %",m.finalSpO2,m.finalSpO2>=88&&m.finalSpO2<=97)}
+      ${qm("FiO₂ %",m.finalFiO2,m.finalFiO2<=60)}
+      ${qm("pH",m.finalPH,m.finalPH>=7.25)}
+      ${qm("P/F",m.finalPF,m.finalPF>=200)}
+      ${qm("調整次數",m.paramChanges,true)}
+      ${qm("ABG 次數",m.abgCount,true)}
+      ${qm("時長(分)",m.durationMin,true)}
+    </div>
+
+    <div class="section-title">參數調整軌跡</div>
+    <canvas class="traj" id="trajCanvas"></canvas>
+
+    <div class="section-title">學習歷程時間軸</div>
+    <div class="timeline" id="tlBox"></div>
+
+    <div class="section-title">學員自評反思</div>
+    <div class="refl-show">${s.reflection?esc(s.reflection):'<span style="color:var(--ink-3)">（無）</span>'}</div>
+
+    <div class="fb-box">
+      <h4>📝 教師質性回饋</h4>
+      <textarea id="fbInput" placeholder="針對此學員的調整決策、肺保護策略、警報處置、臨床推理給予具體回饋…">${esc(s.instructorFeedback||"")}</textarea>
+      <div class="actions"><button class="btn btn-primary" id="btnSaveFb">儲存回饋</button>
+      <span id="fbName" style="font-size:12px;color:var(--ink-3);align-self:center"></span></div>
+    </div>
+  </div>`;
+  renderTimeline(s); drawTrajectory(s);
+  $("btnSaveFb").onclick=()=>saveFeedback(s);
+}
+function qm(label,val,good){
+  if(val===undefined||val===null) val="—";
+  const cls = (val==="—")?"":(good?"good":"bad");
+  return `<div class="qm ${cls}"><div class="qv">${val}</div><div class="ql">${label}</div></div>`;
+}
+function renderTimeline(s){
+  const box=$("tlBox"); const evs=(s.events||[]).filter(e=>e.type!=="session_start");
+  if(!evs.length){ box.innerHTML='<div class="empty-hint">無事件紀錄</div>'; return; }
+  box.innerHTML=evs.map(e=>{
+    const t=new Date(e.t).toLocaleTimeString("zh-TW");
+    let cls="",d="";
+    if(e.type==="param_change"){ d=`調整 <b>${esc(e.label)}</b>：${e.from} → <b>${e.to}</b>`; }
+    else if(e.type==="mode_change"){ cls="mode"; d=`切換模式 ${esc(e.from)} → <b>${esc(e.to)}</b>`; }
+    else if(e.type==="abg"){ cls="abg"; d=`抽血氣 — pH <b>${e.ph}</b>, PaCO₂ ${e.paco2}, PaO₂ ${e.pao2}, P/F ${e.pf}, SaO₂ ${e.sao2}%`; }
+    else if(e.type==="reflection"){ cls="note"; d=`提交反思`; }
+    else d=esc(e.type);
+    const snap=e.snapshot?` <span style="color:var(--ink-3)">[SpO₂ ${e.snapshot.spo2}, Pplat ${e.snapshot.pplat}]</span>`:"";
+    return `<div class="tl-item ${cls}"><span class="tl-t">${t}</span> <span class="tl-d">${d}${snap}</span></div>`;
+  }).join("");
+}
+function drawTrajectory(s){
+  const cv=$("trajCanvas"); if(!cv)return;
+  const r=cv.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
+  cv.width=r.width*dpr; cv.height=r.height*dpr; const ctx=cv.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
+  const W=r.width,H=r.height;
+  ctx.clearRect(0,0,W,H);
+  const evs=(s.events||[]).filter(e=>e.snapshot);
+  if(evs.length<2){ ctx.fillStyle="#6a7686"; ctx.font="13px sans-serif"; ctx.fillText("資料點不足以繪製軌跡",16,H/2); return; }
+  const t0=new Date(evs[0].t).getTime(), t1=new Date(evs[evs.length-1].t).getTime();
+  const span=Math.max(1,t1-t0);
+  const series=[
+    {key:"spo2",color:"#34d4e0",min:70,max:100,lbl:"SpO₂"},
+    {key:"pplat",color:"#ff6b7d",min:0,max:45,lbl:"Pplat"},
+    {key:"fio2",color:"#f5c451",min:20,max:100,lbl:"FiO₂"},
+    {key:"peepTot",color:"#5aa6ff",min:0,max:25,lbl:"PEEP"},
+  ];
+  // grid
+  ctx.strokeStyle="rgba(255,255,255,.06)";
+  for(let i=0;i<=4;i++){ const y=10+(H-30)*i/4; ctx.beginPath();ctx.moveTo(40,y);ctx.lineTo(W-10,y);ctx.stroke(); }
+  series.forEach((ser,si)=>{
+    ctx.strokeStyle=ser.color; ctx.lineWidth=2; ctx.beginPath();
+    evs.forEach((e,i)=>{
+      const x=40+(W-50)*((new Date(e.t).getTime()-t0)/span);
+      const val=e.snapshot[ser.key]??ser.min;
+      const y=10+(H-30)*(1-(val-ser.min)/(ser.max-ser.min));
+      (i===0)?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    // legend
+    ctx.fillStyle=ser.color; ctx.font="11px monospace";
+    ctx.fillText(ser.lbl, 44+si*70, H-6);
+  });
+}
+async function saveFeedback(s){
+  const txt=$("fbInput").value.trim();
+  s.instructorFeedback=txt;
+  if(db && !String(s.id).startsWith("local-")){
+    try{ await updateDoc(doc(db,COLL,s.id),{instructorFeedback:txt, feedbackAt:nowISO()}); toast("✓ 回饋已儲存"); }
+    catch(e){ toast("儲存失敗，請稍後再試"); }
+  } else { toast("此為本機紀錄，回饋僅暫存於記憶體"); }
+}
+function esc(s){ return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+/* ============================================================
+   導覽 / 初始化
+   ============================================================ */
+function switchView(v){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.view===v));
+  $("view-sim").classList.toggle("active",v==="sim");
+  $("view-dash").classList.toggle("active",v==="dash");
+}
+document.querySelectorAll(".tab").forEach(t=>{
+  t.onclick=()=>{
+    if(t.dataset.view==="dash"){ $("gateModal").classList.add("show"); }
+    else switchView("sim");
+  };
+});
+$("btnGate").onclick=()=>{
+  if($("inGate").value===TEACHER_CODE){ $("gateModal").classList.remove("show"); switchView("dash"); loadSessions(); }
+  else toast("通行碼錯誤");
+};
+$("btnGateCancel").onclick=()=>$("gateModal").classList.remove("show");
+$("inGate").onkeydown=e=>{ if(e.key==="Enter")$("btnGate").click(); };
+
+$("btnStartBig").onclick=openStart;
+$("btnRestart").onclick=openStart;
+$("btnBeginSession").onclick=beginSession;
+$("btnABG").onclick=drawABG;
+$("btnFinish").onclick=finishSession;
+$("btnSaveDraft").onclick=saveDraft;
+$("btnRefresh").onclick=loadSessions;
+
+window.addEventListener("resize",()=>{ initCanvas(); });
+initCanvas();
+requestAnimationFrame(animate);
+// 自動開啟開始視窗
+openStart();
+</script>
+</body>
+</html>
