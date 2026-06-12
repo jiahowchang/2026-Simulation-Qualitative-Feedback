@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>SimMonitor - 模擬生理監視器</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; background:#000; color:#fff; font-family:-apple-system,"SF Pro Display","Helvetica Neue",Arial,"PingFang TC",sans-serif; overflow:hidden; user-select:none; -webkit-user-select:none; }
+
+  :root {
+    --green:#30e050; --red:#ff4545; --yellow:#ffd60a; --white:#fff;
+    --temp:#3ddc66; --panel:#3a3a3c; --panel2:#2c2c2e;
+  }
+
+  .screen { position:absolute; inset:0; display:none; flex-direction:column; }
+  .screen.active { display:flex; }
+
+  /* ===== Top bar ===== */
+  #topbar { height:52px; flex:0 0 52px; display:flex; align-items:stretch; gap:2px; background:#000; }
+  .tb-icons { display:flex; align-items:center; gap:4px; background:#2c2c2e; padding:0 10px; border-radius:0 0 8px 0; }
+  .tb-icons button { background:none; border:none; color:#fff; font-size:20px; width:40px; height:40px; border-radius:8px; cursor:pointer; }
+  .tb-icons button:active { background:#48484a; }
+  .tb-brand { flex:1; display:flex; align-items:center; justify-content:center; background:#2c2c2e; font-size:22px; font-weight:600; letter-spacing:.5px; }
+  .tb-brand .b1 { color:#ddd; } .tb-brand .b2 { color:#5ac8fa; }
+  .tb-brand .hearticon { color:#5ac8fa; margin-left:6px; font-size:18px; }
+  .tb-right { display:flex; align-items:center; gap:0; background:#2c2c2e; border-radius:0 0 0 8px; }
+  #tbPatient { display:flex; align-items:center; gap:8px; padding:0 18px; font-size:17px; font-weight:600; border-right:1px solid #48484a; height:60%; cursor:pointer; }
+  #tbClock { padding:0 18px; font-size:18px; font-weight:600; font-variant-numeric:tabular-nums; }
+
+  /* ===== Start screen ===== */
+  #startScreen { background:#000; align-items:center; justify-content:center; }
+  #startInner { display:flex; flex-direction:column; gap:16px; width:min(440px,86vw); }
+  .age-btn { padding:18px 10px; border-radius:14px; border:none; background:#3a3a3c; color:#fff; font-size:21px; font-weight:600; cursor:pointer; }
+  .age-btn.selected { background:#6fbf4a; }
+  #startBtn { margin-top:36px; display:flex; align-items:center; justify-content:center; gap:22px; padding:22px; border-radius:16px; border:none; background:#3a3a3c; color:#fff; font-size:34px; font-weight:700; letter-spacing:2px; cursor:pointer; }
+  #startBtn .pwr { color:#39ff14; font-size:44px; text-shadow:0 0 18px #39ff14, 0 0 36px #39ff14; line-height:1; }
+
+  /* ===== Monitor main ===== */
+  #monMain { flex:1; display:grid; grid-template-columns:1fr 340px; grid-template-rows:1fr 118px; min-height:0; }
+  #waveArea { grid-column:1; grid-row:1; display:flex; flex-direction:column; min-height:0; min-width:0; padding:4px 0 0 6px; }
+  .wave-row { flex:1; position:relative; min-height:0; }
+  .wave-row canvas { position:absolute; inset:0; width:100%; height:100%; }
+  .wave-label { position:absolute; top:2px; left:4px; font-size:13px; color:#bbb; z-index:2; }
+  .wave-scale { position:absolute; left:4px; font-size:11px; color:#999; z-index:2; }
+
+  #numArea { grid-column:2; grid-row:1; display:flex; flex-direction:column; min-height:0; padding:2px 10px 0 6px; }
+  .num-block { flex:1; display:flex; flex-direction:column; min-height:0; padding-top:2px; }
+  .num-head { display:flex; align-items:flex-start; justify-content:space-between; }
+  .num-name { font-size:17px; font-weight:700; }
+  .num-limits { font-size:12px; line-height:1.25; margin-top:2px; opacity:.95; }
+  .num-sub { font-size:13px; font-weight:600; text-align:right; }
+  .num-val { flex:1; display:flex; align-items:center; justify-content:flex-end; font-weight:700; font-variant-numeric:tabular-nums; line-height:.9; }
+  .num-unit { text-align:right; font-size:12px; opacity:.9; }
+  .c-green { color:var(--green); } .c-red { color:var(--red); } .c-yellow { color:var(--yellow); } .c-white { color:#fff; } .c-temp { color:var(--temp); }
+
+  #hrVal { font-size:64px; } #bpVal { font-size:54px; } #spo2Val { font-size:74px; } #etco2Val { font-size:74px; }
+  #bpMap { font-size:30px; font-weight:700; text-align:right; }
+
+  /* bottom strip */
+  #bottomStrip { grid-column:1 / 3; grid-row:2; display:grid; grid-template-columns:1.3fr 1fr .9fr; padding:0 10px 4px 10px; gap:8px; }
+  .bs-block { display:flex; flex-direction:column; }
+  .bs-head { display:flex; gap:14px; align-items:flex-start; }
+  .bs-name { font-size:17px; font-weight:700; }
+  .bs-limits { font-size:12px; line-height:1.25; }
+  .bs-val { flex:1; display:flex; align-items:center; font-size:44px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .bs-unit { font-size:12px; }
+  #nibpBlock .bs-val { justify-content:center; }
+  #tempBlock { align-items:flex-start; }
+  #rrBlock { align-items:flex-end; } #rrBlock .bs-val { justify-content:flex-end; } #rrBlock .bs-head{ align-self:stretch; justify-content:space-between; }
+
+  /* alarm flash */
+  @keyframes blinkA { 0%,49%{opacity:1} 50%,100%{opacity:.15} }
+  .flashing { animation: blinkA 1s steps(1) infinite; }
+
+  /* ===== Alarm banner ===== */
+  #alarmBanner { position:absolute; top:58px; right:8px; min-width:380px; max-width:46vw; display:none; align-items:center; gap:10px; background:var(--yellow); color:#000; font-size:19px; font-weight:700; padding:8px 16px; border-radius:6px; z-index:30; }
+  #alarmBanner.red { background:#ff3b30; color:#fff; }
+  #alarmBanner .bellic { font-size:20px; }
+
+  /* ===== Toolbar ===== */
+  #toolbar { flex:0 0 74px; display:flex; gap:6px; padding:6px 8px 10px 8px; }
+  .tool-btn { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; background:#3a3a3c; color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; }
+  .tool-btn .ic { font-size:18px; line-height:1; }
+  .tool-btn:active { background:#545456; }
+  .tool-btn.danger { background:#ff3b30; }
+  .tool-btn.activeT { background:#0a84ff; }
+
+  /* ===== Modals ===== */
+  .modal-bg { position:absolute; inset:0; background:rgba(0,0,0,.55); display:none; z-index:50; }
+  .modal-bg.open { display:flex; align-items:center; justify-content:center; }
+  .modal { background:#1c1c1e; border:1px solid #3a3a3c; border-radius:14px; max-width:92vw; max-height:90vh; overflow:auto; }
+  .modal-head { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; font-size:19px; font-weight:700; position:sticky; top:0; background:#1c1c1e; z-index:2; }
+  .modal-x { background:none; border:none; color:#fff; font-size:24px; cursor:pointer; padding:2px 10px; }
+  .modal-body { padding:0 18px 18px 18px; }
+
+  /* instructor panel */
+  #instModal .modal { width:760px; }
+  .inst-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px 22px; }
+  .inst-field label { display:flex; justify-content:space-between; font-size:14px; color:#bbb; margin-bottom:4px; }
+  .inst-field label b { color:#fff; font-size:15px; }
+  .inst-field input[type=range] { width:100%; }
+  .inst-field select, .inst-field input[type=number] { width:100%; background:#2c2c2e; border:1px solid #48484a; color:#fff; font-size:16px; padding:8px; border-radius:8px; }
+  .inst-sec { margin:16px 0 8px 0; font-size:15px; font-weight:700; color:#5ac8fa; border-bottom:1px solid #3a3a3c; padding-bottom:4px; }
+  .preset-row { display:flex; flex-wrap:wrap; gap:8px; }
+  .preset-btn { background:#2c2c2e; border:1px solid #48484a; color:#fff; padding:8px 12px; border-radius:8px; font-size:14px; cursor:pointer; }
+  .preset-btn:active { background:#0a84ff; }
+  .toggle-row { display:flex; flex-wrap:wrap; gap:14px; }
+  .toggle-row label { display:flex; align-items:center; gap:6px; font-size:15px; }
+  #applyBtn { width:100%; margin-top:16px; padding:13px; background:#0a84ff; color:#fff; border:none; border-radius:10px; font-size:17px; font-weight:700; cursor:pointer; }
+
+  /* alarms modal */
+  #alarmsModal .modal { width:560px; }
+  .lim-table { width:100%; border-collapse:collapse; }
+  .lim-table th, .lim-table td { padding:8px 6px; border-bottom:1px solid #3a3a3c; font-size:15px; text-align:center; }
+  .lim-table input { width:84px; background:#2c2c2e; border:1px solid #48484a; color:#fff; font-size:16px; padding:6px; border-radius:8px; text-align:center; }
+
+  /* 12-lead modal */
+  #ecg12Modal .modal { width:min(1180px,94vw); }
+  #ecg12Modal .tabline { text-align:center; padding:6px 0 8px 0; font-size:17px; border-bottom:2px solid #0a84ff; margin-bottom:12px; }
+  #ecg12Wrap { background:#000; padding:10px; }
+  #ecg12cv { width:100%; display:block; }
+
+  /* defib / pacer */
+  #defibModal .modal, #pacerModal .modal { width:640px; }
+  .energy-row { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
+  .energy-btn { background:#2c2c2e; border:1px solid #48484a; color:#fff; padding:10px 16px; border-radius:8px; font-size:16px; cursor:pointer; }
+  .energy-btn.sel { background:#ff9500; color:#000; font-weight:700; }
+  .defib-actions { display:flex; gap:10px; margin-top:14px; }
+  .big-act { flex:1; padding:18px; border:none; border-radius:12px; font-size:20px; font-weight:800; cursor:pointer; }
+  #chargeBtn { background:#ff9500; color:#000; }
+  #shockBtn { background:#555; color:#999; }
+  #shockBtn.armed { background:#ff3b30; color:#fff; animation:blinkA .6s steps(1) infinite; }
+  #defibStatus { font-size:16px; margin-top:10px; color:#ffd60a; min-height:22px; }
+  .quick-rhythm { margin-top:14px; }
+  #shockFlash { position:absolute; inset:0; background:#fff; z-index:200; display:none; }
+
+  /* NIBP measuring text */
+  .measuring { font-size:24px !important; color:var(--red); }
+
+  /* big numbers layout */
+  #monScreen.bigNum #waveArea { display:none; }
+  #monScreen.bigNum #monMain { grid-template-columns:1fr; }
+  #monScreen.bigNum #numArea { grid-column:1; flex-direction:row; flex-wrap:wrap; }
+  #monScreen.bigNum .num-block { flex:1 1 40%; padding:10px 20px; }
+  #monScreen.bigNum #hrVal,#monScreen.bigNum #spo2Val,#monScreen.bigNum #etco2Val { font-size:150px; }
+  #monScreen.bigNum #bpVal { font-size:110px; }
+
+  @media (max-width:760px){
+    #monMain { grid-template-columns:1fr 200px; }
+    #hrVal{font-size:44px} #bpVal{font-size:36px} #spo2Val,#etco2Val{font-size:48px}
+    .tool-btn{font-size:11px}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ START SCREEN ============ -->
+<div id="startScreen" class="screen active">
+  <div style="position:absolute;top:0;left:0;right:0;height:46px;display:flex;align-items:center;background:#1c1c1e;">
+    <div style="flex:1;text-align:center;font-size:19px;font-weight:600;"><span class="b1" style="color:#ccc">si</span><span style="color:#9ad">m</span><span style="color:#ccc">monitor</span> <span style="color:#5ac8fa">♥</span></div>
+    <div style="position:absolute;right:14px;display:flex;gap:16px;font-size:15px;font-weight:600;"><span id="startAgeLabel">Adult</span><span id="startClock"></span></div>
+  </div>
+  <div id="startInner">
+    <button class="age-btn selected" data-age="adult">Adult</button>
+    <button class="age-btn" data-age="school">School Age (6-11)</button>
+    <button class="age-btn" data-age="preschool">Preschool (3-5)</button>
+    <button class="age-btn" data-age="toddler">Toddler (1-2)</button>
+    <button class="age-btn" data-age="neonate">Neonate</button>
+    <button id="startBtn"><span class="pwr">&#x23FB;</span> START</button>
+  </div>
+</div>
+
+<!-- ============ MONITOR SCREEN ============ -->
+<div id="monScreen" class="screen">
+  <div id="topbar">
+    <div class="tb-icons">
+      <button id="exitBtn" title="返回">&#x2386;</button>
+      <button id="soundBtn" title="音效">&#x1F50A;</button>
+      <button id="instBtn" title="教師控制">&#x1F4CB;</button>
+    </div>
+    <div class="tb-brand"><span class="b1">si</span><span class="b2">m</span><span class="b1">monitor</span><span class="hearticon">&#x2764;&#xFE0E;</span></div>
+    <div class="tb-right">
+      <div id="tbPatient"><span>&#x1F6B9;</span><span id="tbAgeLabel">Adult</span></div>
+      <div id="tbClock">--:--:--</div>
+    </div>
+  </div>
+
+  <div id="alarmBanner"><span class="bellic">&#x1F514;</span><span id="alarmText"></span></div>
+
+  <div id="monMain">
+    <div id="waveArea">
+      <div class="wave-row"><span class="wave-label" id="ecgLeadLabel">II</span><canvas id="cvEcg"></canvas></div>
+      <div class="wave-row">
+        <span class="wave-scale" style="top:2px">150</span><span class="wave-scale" style="top:48%">75</span><span class="wave-scale" style="bottom:2px">0</span>
+        <canvas id="cvArt"></canvas>
+      </div>
+      <div class="wave-row"><canvas id="cvPleth"></canvas></div>
+      <div class="wave-row">
+        <span class="wave-scale" style="top:2px">60</span><span class="wave-scale" style="top:46%">30</span><span class="wave-scale" style="bottom:2px">0</span>
+        <canvas id="cvCo2"></canvas>
+      </div>
+    </div>
+
+    <div id="numArea">
+      <div class="num-block c-green" id="hrBlock">
+        <div class="num-head">
+          <div><div class="num-name">HR</div><div class="num-limits"><span id="limHrHi">110</span><br><span id="limHrLo">50</span></div></div>
+          <div class="num-sub">PR <span id="prVal">(--)</span> <span style="font-size:11px">bpm</span></div>
+        </div>
+        <div class="num-val" id="hrVal">--</div>
+      </div>
+      <div class="num-block c-red" id="bpBlock">
+        <div class="num-head">
+          <div><div class="num-name">BP</div><div class="num-limits"><span id="limBpHi">180/100</span><br><span id="limBpLo">90/50</span></div></div>
+        </div>
+        <div class="num-val" id="bpVal">--/--</div>
+        <div id="bpMap">(--)</div>
+        <div class="num-unit">mmHg</div>
+      </div>
+      <div class="num-block c-yellow" id="spo2Block">
+        <div class="num-head">
+          <div><div class="num-name">SPO2</div><div class="num-limits"><span id="limSpHi">100</span><br><span id="limSpLo">92</span></div></div>
+        </div>
+        <div class="num-val" id="spo2Val">--</div>
+        <div class="num-unit">%</div>
+      </div>
+      <div class="num-block c-white" id="etco2Block">
+        <div class="num-head">
+          <div><div class="num-name">ETCO2</div><div class="num-limits"><span id="limEtHi">45</span><br><span id="limEtLo">35</span></div></div>
+        </div>
+        <div class="num-val" id="etco2Val">--</div>
+        <div class="num-unit">mmHg</div>
+      </div>
+    </div>
+
+    <div id="bottomStrip">
+      <div class="bs-block c-red" id="nibpBlock">
+        <div class="bs-head">
+          <div class="bs-name">NIBP</div>
+          <div class="bs-limits"><span id="limNibpHi">180/100</span><br><span id="limNibpLo">90/50</span></div>
+        </div>
+        <div class="bs-val" id="nibpVal">--/-- (--)</div>
+        <div class="bs-unit" style="text-align:center">mmHg <span id="nibpTime" style="margin-left:10px;color:#bbb"></span></div>
+      </div>
+      <div class="bs-block c-temp" id="tempBlock">
+        <div class="bs-head">
+          <div class="bs-name">TEMP</div>
+          <div class="bs-limits"><span id="limTpHi">38.5</span><br><span id="limTpLo">36.0</span></div>
+        </div>
+        <div class="bs-val" id="tempVal">--</div>
+        <div class="bs-unit">&deg;C</div>
+      </div>
+      <div class="bs-block c-white" id="rrBlock">
+        <div class="bs-head">
+          <div class="bs-name">RR</div>
+          <div class="bs-limits" style="text-align:right"><span id="limRrHi">20</span><br><span id="limRrLo">10</span></div>
+        </div>
+        <div class="bs-val" id="rrVal">--</div>
+        <div class="bs-unit">/min</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toolbar">
+    <button class="tool-btn" id="btnLayout"><span class="ic">&#x25A6;</span>Layout</button>
+    <button class="tool-btn" id="btn12Lead"><span class="ic">&#x1F4C8;</span>12 Lead</button>
+    <button class="tool-btn" id="btnLeads"><span class="ic">&#x301C;</span>Leads</button>
+    <button class="tool-btn" id="btnDefib"><span class="ic">&#x26A1;</span>Defib</button>
+    <button class="tool-btn" id="btnPacer"><span class="ic">&#x2764;&#xFE0E;</span>Pacer</button>
+    <button class="tool-btn" id="btnNibp"><span class="ic">&#x2764;&#xFE0E;</span>Start NIBP</button>
+    <button class="tool-btn" id="btnAutoNibp"><span class="ic">&#x2764;&#xFE0E;</span>Auto NIBP</button>
+    <button class="tool-btn" id="btnAlarms"><span class="ic">&#x1F514;</span>Alarms</button>
+    <button class="tool-btn danger" id="btnSilence"><span class="ic">&#x1F507;</span>Silence</button>
+  </div>
+</div>
+
+<div id="shockFlash"></div>
+
+<!-- ============ INSTRUCTOR PANEL ============ -->
+<div class="modal-bg" id="instModal">
+  <div class="modal">
+    <div class="modal-head"><span>教師控制台 Instructor</span><button class="modal-x" data-close="instModal">&#x2715;</button></div>
+    <div class="modal-body">
+      <div class="inst-sec">情境快速鍵</div>
+      <div class="preset-row" id="presetRow"></div>
+
+      <div class="inst-sec">心律與生命徵象</div>
+      <div class="inst-grid">
+        <div class="inst-field">
+          <label><b>心律 Rhythm</b></label>
+          <select id="iRhythm">
+            <option value="sinus">竇性心律 Sinus</option>
+            <option value="afib">心房顫動 AFib</option>
+            <option value="aflutter">心房撲動 AFlutter</option>
+            <option value="svt">SVT</option>
+            <option value="vtp">VT（有脈）</option>
+            <option value="vt">VT（無脈）</option>
+            <option value="vfc">VF（粗）</option>
+            <option value="vff">VF（細）</option>
+            <option value="pea">PEA</option>
+            <option value="asystole">Asystole</option>
+            <option value="avb3">三度房室傳導阻滯</option>
+          </select>
+        </div>
+        <div class="inst-field">
+          <label><b>變化時間</b></label>
+          <select id="iTrend">
+            <option value="0">立即</option>
+            <option value="10">10 秒</option>
+            <option value="30">30 秒</option>
+            <option value="60">1 分鐘</option>
+            <option value="180">3 分鐘</option>
+          </select>
+        </div>
+        <div class="inst-field"><label><b>HR</b><span id="iHrV"></span></label><input type="range" id="iHr" min="20" max="220" step="1"></div>
+        <div class="inst-field"><label><b>SpO2</b><span id="iSpV"></span></label><input type="range" id="iSp" min="50" max="100" step="1"></div>
+        <div class="inst-field"><label><b>收縮壓 SBP</b><span id="iSysV"></span></label><input type="range" id="iSys" min="30" max="250" step="1"></div>
+        <div class="inst-field"><label><b>舒張壓 DBP</b><span id="iDiaV"></span></label><input type="range" id="iDia" min="15" max="150" step="1"></div>
+        <div class="inst-field"><label><b>RR</b><span id="iRrV"></span></label><input type="range" id="iRr" min="0" max="60" step="1"></div>
+        <div class="inst-field"><label><b>EtCO2</b><span id="iEtV"></span></label><input type="range" id="iEt" min="0" max="90" step="1"></div>
+        <div class="inst-field"><label><b>體溫 Temp</b><span id="iTpV"></span></label><input type="range" id="iTp" min="32" max="42" step="0.1"></div>
+        <div class="inst-field">
+          <label><b>12 導程病理</b></label>
+          <select id="iEcg12">
+            <option value="normal">正常</option>
+            <option value="antstemi">前壁 STEMI</option>
+            <option value="infstemi">下壁 STEMI</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="inst-sec">感測器連接</div>
+      <div class="toggle-row">
+        <label><input type="checkbox" id="sEcg" checked> ECG 導極</label>
+        <label><input type="checkbox" id="sSp" checked> SpO2 探頭</label>
+        <label><input type="checkbox" id="sArt" checked> 動脈導管</label>
+        <label><input type="checkbox" id="sEt" checked> EtCO2</label>
+        <label><input type="checkbox" id="sTp" checked> 體溫</label>
+      </div>
+      <button id="applyBtn">套用 Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ALARMS MODAL ============ -->
+<div class="modal-bg" id="alarmsModal">
+  <div class="modal">
+    <div class="modal-head"><span>Alarm Limits 警報界限</span><button class="modal-x" data-close="alarmsModal">&#x2715;</button></div>
+    <div class="modal-body">
+      <table class="lim-table">
+        <tr><th></th><th>下限</th><th>上限</th></tr>
+        <tr><td>HR (bpm)</td><td><input type="number" id="aHrLo"></td><td><input type="number" id="aHrHi"></td></tr>
+        <tr><td>SpO2 (%)</td><td><input type="number" id="aSpLo"></td><td><input type="number" id="aSpHi"></td></tr>
+        <tr><td>SBP (mmHg)</td><td><input type="number" id="aSysLo"></td><td><input type="number" id="aSysHi"></td></tr>
+        <tr><td>DBP (mmHg)</td><td><input type="number" id="aDiaLo"></td><td><input type="number" id="aDiaHi"></td></tr>
+        <tr><td>RR (/min)</td><td><input type="number" id="aRrLo"></td><td><input type="number" id="aRrHi"></td></tr>
+        <tr><td>EtCO2 (mmHg)</td><td><input type="number" id="aEtLo"></td><td><input type="number" id="aEtHi"></td></tr>
+        <tr><td>Temp (&deg;C)</td><td><input type="number" id="aTpLo" step="0.1"></td><td><input type="number" id="aTpHi" step="0.1"></td></tr>
+      </table>
+      <button id="alarmSaveBtn" style="width:100%;margin-top:14px;padding:12px;background:#0a84ff;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 12 LEAD MODAL ============ -->
+<div class="modal-bg" id="ecg12Modal">
+  <div class="modal">
+    <div class="modal-head"><span>Investigations</span><button class="modal-x" data-close="ecg12Modal">&#x2715;</button></div>
+    <div class="modal-body">
+      <div class="tabline">12 Lead ECG</div>
+      <div id="ecg12Wrap"><canvas id="ecg12cv"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ DEFIB MODAL ============ -->
+<div class="modal-bg" id="defibModal">
+  <div class="modal">
+    <div class="modal-head"><span>&#x26A1; Defibrillator</span><button class="modal-x" data-close="defibModal">&#x2715;</button></div>
+    <div class="modal-body">
+      <div style="font-size:15px;color:#bbb">Energy 能量選擇 (J)</div>
+      <div class="energy-row" id="energyRow"></div>
+      <label style="font-size:15px;display:flex;align-items:center;gap:8px"><input type="checkbox" id="syncChk"> Sync 同步電擊</label>
+      <div class="defib-actions">
+        <button class="big-act" id="chargeBtn">CHARGE 充電</button>
+        <button class="big-act" id="shockBtn" disabled>SHOCK 電擊</button>
+      </div>
+      <div id="defibStatus"></div>
+      <div class="quick-rhythm">
+        <div style="font-size:14px;color:#bbb;margin-bottom:6px">電擊後心律（教師設定）</div>
+        <div class="preset-row">
+          <button class="preset-btn" data-post="nochange">不變</button>
+          <button class="preset-btn" data-post="sinus">竇性（ROSC）</button>
+          <button class="preset-btn" data-post="vff">細 VF</button>
+          <button class="preset-btn" data-post="asystole">Asystole</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PACER MODAL ============ -->
+<div class="modal-bg" id="pacerModal">
+  <div class="modal">
+    <div class="modal-head"><span>&#x2764;&#xFE0E; Pacer 經皮節律器</span><button class="modal-x" data-close="pacerModal">&#x2715;</button></div>
+    <div class="modal-body">
+      <label style="font-size:17px;display:flex;align-items:center;gap:10px;margin-bottom:14px"><input type="checkbox" id="pacerOn" style="transform:scale(1.4)"> 啟動 Pacing</label>
+      <div class="inst-field" style="margin-bottom:14px"><label><b>Rate</b><span id="pRateV">70 ppm</span></label><input type="range" id="pRate" min="40" max="180" step="5" value="70"></div>
+      <div class="inst-field"><label><b>Output</b><span id="pOutV">30 mA</span></label><input type="range" id="pOut" min="5" max="200" step="5" value="30"></div>
+      <div style="font-size:13px;color:#888;margin-top:10px">擷獲閾值 60 mA（output &ge; 60 mA 才有電氣擷獲）</div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ================================================================
+   SimMonitor — 模擬生理監視器（教學用）
+   原創實作，介面風格參考常見臨床監視器。
+   ================================================================ */
+
+// ---------- 年齡層預設 ----------
+const AGE_GROUPS = {
+  adult:     { label:'Adult',             vitals:{hr:75, sys:118,dia:78, spo2:97, rr:14, etco2:38, temp:36.8}, limits:{hrLo:50,hrHi:110, spLo:92,spHi:100, sysLo:90,sysHi:180, diaLo:50,diaHi:100, rrLo:10,rrHi:20, etLo:35,etHi:45, tpLo:36,tpHi:38.5} },
+  school:    { label:'School Age (6-11)', vitals:{hr:90, sys:105,dia:65, spo2:98, rr:20, etco2:38, temp:36.8}, limits:{hrLo:60,hrHi:130, spLo:92,spHi:100, sysLo:85,sysHi:140, diaLo:45,diaHi:90,  rrLo:14,rrHi:26, etLo:35,etHi:45, tpLo:36,tpHi:38.5} },
+  preschool: { label:'Preschool (3-5)',   vitals:{hr:105,sys:100,dia:60, spo2:98, rr:24, etco2:38, temp:36.9}, limits:{hrLo:70,hrHi:140, spLo:92,spHi:100, sysLo:80,sysHi:130, diaLo:40,diaHi:85,  rrLo:18,rrHi:30, etLo:35,etHi:45, tpLo:36,tpHi:38.5} },
+  toddler:   { label:'Toddler (1-2)',     vitals:{hr:120,sys:95, dia:55, spo2:98, rr:28, etco2:38, temp:37.0}, limits:{hrLo:80,hrHi:160, spLo:92,spHi:100, sysLo:75,sysHi:120, diaLo:38,diaHi:80,  rrLo:20,rrHi:36, etLo:35,etHi:45, tpLo:36,tpHi:38.5} },
+  neonate:   { label:'Neonate',           vitals:{hr:140,sys:70, dia:40, spo2:96, rr:45, etco2:38, temp:37.0}, limits:{hrLo:100,hrHi:180,spLo:90,spHi:100, sysLo:55,sysHi:95,  diaLo:30,diaHi:65,  rrLo:30,rrHi:60, etLo:35,etHi:45, tpLo:36.3,tpHi:38} },
+};
+
+// ---------- 全域狀態 ----------
+const state = {
+  age:'adult',
+  rhythm:'sinus',
+  cur:{hr:75,sys:118,dia:78,spo2:97,rr:14,etco2:38,temp:36.8},
+  from:null, target:null, trendT0:0, trendT1:0,
+  limits:Object.assign({}, AGE_GROUPS.adult.limits),
+  sensors:{ecg:true,spo2:true,art:true,etco2:true,temp:true},
+  ecg12:'normal',
+  ecgLead:1, // 0=I 1=II 2=III
+  nibp:{sys:null,dia:null,map:null,timeStr:'',measuring:false,measureEnd:0,autoMin:0,nextAuto:0},
+  pacer:{on:false,rate:70,out:30},
+  defib:{energy:200,charged:false,charging:false},
+  silencedUntil:0, soundOn:true,
+  running:false, bigNum:false,
+};
+const PULSELESS = r => (r==='vt'||r==='vfc'||r==='vff'||r==='pea'||r==='asystole');
+const CONTINUOUS = r => (r==='vfc'||r==='vff'||r==='asystole');
+function pacerCapturing(){ return state.pacer.on && state.pacer.out>=60; }
+
+// ---------- 模擬時鐘 ----------
+let simT = 0, lastFrame = null;
+
+// ---------- 心搏排程 ----------
+const eng = { beats:[], lastSched:0, beeped:0, spikes:[], lastSpike:0, breathT0:0 };
+function effHR(){
+  const r = state.rhythm;
+  if (pacerCapturing()) return state.pacer.rate;
+  if (r==='avb3') return 38;
+  return state.cur.hr;
+}
+function scheduleBeats(t){
+  if (CONTINUOUS(state.rhythm)) { eng.beats.length=0; eng.lastSched=t; return; }
+  if (eng.lastSched < t-1) eng.lastSched = t;
+  while (eng.lastSched < t+1.5){
+    const hr = Math.max(10, effHR());
+    let iv = 60/hr;
+    if (state.rhythm==='afib') iv *= (0.72+0.56*Math.random());
+    else if (!pacerCapturing()) iv *= (0.985+0.03*Math.random());
+    eng.lastSched += iv;
+    eng.beats.push(eng.lastSched);
+  }
+  while (eng.beats.length && eng.beats[0] < t-2.5) eng.beats.shift();
+}
+
+// ---------- 波形樣板 ----------
+const g = (t,a,mu,s)=> a*Math.exp(-((t-mu)*(t-mu))/(2*s*s));
+function qrsTemplate(dt){
+  const r = state.rhythm;
+  if (pacerCapturing()){
+    // pacing spike + 寬 QRS
+    let v = g(dt,0.9,0.02,0.028) + g(dt,-0.5,0.1,0.04) + g(dt,-0.3,0.32,0.09);
+    if (dt>-0.004 && dt<0.004) v += 1.6; // spike
+    return v;
+  }
+  switch(r){
+    case 'vt': case 'vtp':
+      return g(dt,1.0,0,0.045) + g(dt,-0.8,0.08,0.05) + g(dt,-0.45,0.28,0.09);
+    case 'svt':
+      return g(dt,-0.07,-0.028,0.009)+g(dt,0.95,0,0.012)+g(dt,-0.18,0.026,0.01)+g(dt,0.25,0.2,0.05);
+    case 'afib':
+      return g(dt,-0.08,-0.028,0.009)+g(dt,1.0,0,0.012)+g(dt,-0.2,0.027,0.01)+g(dt,0.3,0.23,0.06);
+    case 'aflutter':
+      return g(dt,1.0,0,0.012)+g(dt,-0.2,0.027,0.01)+g(dt,0.28,0.23,0.06);
+    case 'pea':
+      return g(dt,0.55,0,0.02)+g(dt,-0.15,0.05,0.02)+g(dt,0.12,0.3,0.08);
+    case 'avb3':
+      return g(dt,0.85,0,0.035)+g(dt,-0.4,0.07,0.04)+g(dt,0.25,0.3,0.08);
+    default: // sinus
+      return g(dt,0.15,-0.17,0.025)+g(dt,-0.08,-0.03,0.009)+g(dt,1.05,0,0.012)+g(dt,-0.22,0.028,0.01)+g(dt,0.32,0.24,0.06);
+  }
+}
+function vfWave(t, amp){
+  return amp*( Math.sin(6.28*4.6*t + 3*Math.sin(6.28*0.33*t))
+             + 0.55*Math.sin(6.28*7.1*t + 2*Math.sin(6.28*0.21*t)) )
+         * (0.75+0.25*Math.sin(6.28*0.11*t));
+}
+const LEAD_FACTOR = [0.65, 1.0, 0.5]; // I II III
+function ecgGen(t){
+  if (!state.sensors.ecg) return null;
+  const r = state.rhythm;
+  let v = 0;
+  if (r==='vfc') v = vfWave(t,0.55);
+  else if (r==='vff') v = vfWave(t,0.13);
+  else if (r==='asystole') v = 0.02*Math.sin(6.28*0.35*t);
+  else {
+    for (let i=eng.beats.length-1;i>=0;i--){
+      const dt = t-eng.beats[i];
+      if (dt>0.8) break;
+      if (dt>-0.35) v += qrsTemplate(dt);
+    }
+    // 心房撲動鋸齒波
+    if (r==='aflutter') v += 0.18*Math.abs(((t*5)%1)-0.5)*2-0.09;
+    // AFib 細顫基線
+    if (r==='afib') v += 0.04*Math.sin(6.28*7.3*t)+0.03*Math.sin(6.28*9.7*t+1);
+    // 三度阻滯：獨立 P 波 (75/min)
+    if (r==='avb3') v += g((t*1.25)%1, 0.14, 0.5, 0.035);
+    v *= LEAD_FACTOR[state.ecgLead];
+  }
+  // 非擷獲 pacing spikes
+  if (state.pacer.on && !pacerCapturing()){
+    for (let i=eng.spikes.length-1;i>=0;i--){
+      const dt=t-eng.spikes[i]; if(dt>0.05) break;
+      if (dt>=0 && dt<0.006) v += 1.6;
+    }
+  }
+  return v + 0.012*Math.sin(6.28*0.25*t) + (Math.random()-0.5)*0.012;
+}
+function pulseShape(x){ // x = 距脈搏起點秒數
+  if (x<0) return 0;
+  return Math.min(1.05, g(x,1.0,0.13,0.055)+g(x,0.30,0.38,0.085))/1.05;
+}
+function lastPulseTime(t){
+  for (let i=eng.beats.length-1;i>=0;i--){
+    if (eng.beats[i]+0.18 <= t) return eng.beats[i]+0.18;
+  }
+  return -10;
+}
+function hasPulse(){ return !PULSELESS(state.rhythm) || pacerCapturing(); }
+function artGen(t){
+  if (!state.sensors.art) return null;
+  if (!hasPulse()) return 7 + (Math.random()-0.5)*1.5;
+  const pt = lastPulseTime(t);
+  return state.cur.dia + (state.cur.sys-state.cur.dia)*pulseShape(t-pt);
+}
+function plethGen(t){
+  if (!state.sensors.spo2) return null;
+  if (!hasPulse()) return 0.04+(Math.random()-0.5)*0.01;
+  const pt = lastPulseTime(t);
+  return 0.12 + 0.75*pulseShape(t-pt);
+}
+function co2Gen(t){
+  if (!state.sensors.etco2) return null;
+  const rr = state.cur.rr;
+  if (rr<=0 || state.cur.etco2<=0) return 0.5;
+  const T = 60/rr;
+  const ph = ((t-eng.breathT0)%T)/T;
+  let f = 0;
+  if (ph<0.07) f = ph/0.07*0.92;
+  else if (ph<0.52) f = 0.92+0.08*((ph-0.07)/0.45);
+  else if (ph<0.60) f = (1-(ph-0.52)/0.08);
+  else f = 0;
+  return state.cur.etco2*Math.max(0,f) + (Math.random()-0.5)*0.4;
+}
+
+// ---------- 波形渲染 ----------
+const SAMPLE_DT = 1/240, GAP = 26;
+class Channel {
+  constructor(cvId, opts){
+    this.cv = document.getElementById(cvId);
+    this.ctx = this.cv.getContext('2d');
+    Object.assign(this, opts); // color, yMin, yMax, gen, pxPerSec(fn), fill
+    this.x = 0; this.prevY = null; this.lastT = null;
+  }
+  resize(){
+    const r = this.cv.getBoundingClientRect();
+    const dpr = window.devicePixelRatio||1;
+    this.w = Math.max(50, r.width); this.h = Math.max(30, r.height);
+    this.cv.width = this.w*dpr; this.cv.height = this.h*dpr;
+    this.ctx.setTransform(dpr,0,0,dpr,0,0);
+    this.x = 0; this.prevY = null;
+  }
+  yOf(v){
+    const m = 6;
+    const f = (v-this.yMin)/(this.yMax-this.yMin);
+    return this.h-m - f*(this.h-2*m);
+  }
+  reset(){ this.ctx.clearRect(0,0,this.w,this.h); this.x=0; this.prevY=null; this.lastT=null; }
+  render(tNow){
+    if (this.lastT===null){ this.lastT = tNow; return; }
+    let steps = Math.floor((tNow-this.lastT)/SAMPLE_DT);
+    if (steps<=0) return;
+    if (steps>300){ this.lastT = tNow-300*SAMPLE_DT; steps=300; }
+    const ctx = this.ctx, px = this.pxPerSec();
+    ctx.lineWidth = 2; ctx.lineJoin='round'; ctx.lineCap='round';
+    ctx.strokeStyle = this.color; ctx.fillStyle = this.color;
+    for (let i=0;i<steps;i++){
+      const t = this.lastT+SAMPLE_DT;
+      const v = this.gen(t);
+      let nx = this.x + px*SAMPLE_DT;
+      if (nx>=this.w){ this.x=0; nx=px*SAMPLE_DT; this.prevY=null; }
+      ctx.clearRect(nx, 0, GAP, this.h);
+      if (v!==null && v!==undefined){
+        const y = this.yOf(v);
+        if (this.fill){
+          ctx.fillRect(this.x, y, nx-this.x+0.8, this.h-6-y>0 ? this.h-6-y : 0);
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(this.x, this.prevY===null? y : this.prevY);
+          ctx.lineTo(nx, y);
+          ctx.stroke();
+        }
+        this.prevY = y;
+      } else this.prevY = null;
+      this.x = nx; this.lastT = t;
+    }
+  }
+}
+let channels = [];
+function setupChannels(){
+  channels = [
+    new Channel('cvEcg',  { color:'#30e050', yMin:-1.4, yMax:2.2, gen:ecgGen,  pxPerSec:()=>channels[0].w/6 }),
+    new Channel('cvArt',  { color:'#ff4545', yMin:0,    yMax:150, gen:artGen,  pxPerSec:()=>channels[1].w/6 }),
+    new Channel('cvPleth',{ color:'#ffd60a', yMin:0,    yMax:1,   gen:plethGen,pxPerSec:()=>channels[2].w/6 }),
+    new Channel('cvCo2',  { color:'#ffffff', yMin:0,    yMax:60,  gen:co2Gen,  pxPerSec:()=>channels[3].w/15, fill:true }),
+  ];
+  channels.forEach(c=>c.resize());
+}
+window.addEventListener('resize', ()=> channels.forEach(c=>{c.resize();}));
+
+// ---------- 音效 ----------
+let AC = null;
+function audio(){ if(!AC) AC = new (window.AudioContext||window.webkitAudioContext)(); if(AC.state==='suspended')AC.resume(); return AC; }
+function beep(freq, dur=0.06, vol=0.18, type='square'){
+  if (!state.soundOn) return;
+  try{
+    const ac = audio(), o = ac.createOscillator(), gn = ac.createGain();
+    o.type = type; o.frequency.value = freq;
+    gn.gain.setValueAtTime(vol, ac.currentTime);
+    gn.gain.exponentialRampToValueAtTime(0.001, ac.currentTime+dur);
+    o.connect(gn); gn.connect(ac.destination);
+    o.start(); o.stop(ac.currentTime+dur+0.02);
+  }catch(e){}
+}
+function qrsBeep(){
+  const sp = (hasPulse() && state.sensors.spo2) ? state.cur.spo2 : null;
+  const f = sp===null ? 660 : 330 + (sp-50)*10.6; // SpO2 越低音調越低
+  beep(Math.max(280,Math.min(880,f)), 0.05, 0.12, 'sine');
+}
+let chargeOsc = null;
+function chargeSound(on){
+  try{
+    const ac = audio();
+    if (on){
+      chargeOsc = ac.createOscillator(); const gn = ac.createGain();
+      chargeOsc.type='sawtooth'; gn.gain.value=0.06;
+      chargeOsc.frequency.setValueAtTime(250, ac.currentTime);
+      chargeOsc.frequency.linearRampToValueAtTime(1300, ac.currentTime+2);
+      chargeOsc.connect(gn); gn.connect(ac.destination); chargeOsc.start();
+    } else if (chargeOsc){ chargeOsc.stop(); chargeOsc=null; }
+  }catch(e){}
+}
+
+// ---------- 趨勢引擎 ----------
+function applyTargets(t, durS){
+  state.from = Object.assign({}, state.cur);
+  state.target = t;
+  state.trendT0 = simT; state.trendT1 = simT + Math.max(0.01, durS);
+}
+function tickTrend(){
+  if (!state.target) return;
+  const f = Math.min(1, (simT-state.trendT0)/(state.trendT1-state.trendT0));
+  for (const k in state.target){
+    state.cur[k] = state.from[k] + (state.target[k]-state.from[k])*f;
+  }
+  if (f>=1){ state.target=null; state.from=null; }
+}
+
+// ---------- 顯示值 ----------
+function fmt(v,d=0){ return v===null||v===undefined||isNaN(v) ? '--' : v.toFixed(d); }
+function dispHR(){
+  const r = state.rhythm;
+  if (!state.sensors.ecg) return null;
+  if (r==='vfc'||r==='vff'||r==='asystole') return null;
+  return Math.round(effHR());
+}
+function updateNumerics(){
+  const hr = dispHR();
+  el.hrVal.textContent = hr===null?'--':hr;
+  el.prVal.textContent = (hasPulse()&&state.sensors.spo2) ? '('+Math.round(effHR())+')' : '(--)';
+  // BP（動脈）
+  if (!state.sensors.art){ el.bpVal.textContent='--/--'; el.bpMap.textContent='(--)'; }
+  else if (!hasPulse()){
+    el.bpVal.textContent='8/6'; el.bpMap.textContent='(7)';
+  } else {
+    const s=Math.round(state.cur.sys), d=Math.round(state.cur.dia);
+    el.bpVal.textContent=s+'/'+d;
+    el.bpMap.textContent='('+Math.round(d+(s-d)/3)+')';
+  }
+  el.spo2Val.textContent = (state.sensors.spo2&&hasPulse()) ? Math.round(state.cur.spo2) : '--';
+  el.etco2Val.textContent = state.sensors.etco2 ? Math.round(state.cur.etco2) : '--';
+  el.rrVal.textContent = state.sensors.etco2 ? Math.round(state.cur.rr) : '--';
+  el.tempVal.textContent = state.sensors.temp ? state.cur.temp.toFixed(1) : '--';
+  // NIBP
+  if (state.nibp.measuring){
+    el.nibpVal.textContent = '量測中…'; el.nibpVal.classList.add('measuring');
+  } else {
+    el.nibpVal.classList.remove('measuring');
+    el.nibpVal.textContent = state.nibp.sys===null ? '--/-- (--)' :
+      state.nibp.sys+'/'+state.nibp.dia+' ('+state.nibp.map+')';
+    el.nibpTime.textContent = state.nibp.timeStr;
+  }
+}
+function updateLimitLabels(){
+  const L = state.limits;
+  el.limHrHi.textContent=L.hrHi; el.limHrLo.textContent=L.hrLo;
+  el.limSpHi.textContent=L.spHi; el.limSpLo.textContent=L.spLo;
+  el.limBpHi.textContent=L.sysHi+'/'+L.diaHi; el.limBpLo.textContent=L.sysLo+'/'+L.diaLo;
+  el.limNibpHi.textContent=L.sysHi+'/'+L.diaHi; el.limNibpLo.textContent=L.sysLo+'/'+L.diaLo;
+  el.limRrHi.textContent=L.rrHi; el.limRrLo.textContent=L.rrLo;
+  el.limEtHi.textContent=L.etHi; el.limEtLo.textContent=L.etLo;
+  el.limTpHi.textContent=L.tpHi; el.limTpLo.textContent=L.tpLo;
+}
+
+// ---------- 警報 ----------
+let alarmState = { active:false, crisis:false, text:'' , lastTone:0 };
+function evalAlarms(){
+  const L = state.limits, c = state.cur;
+  let crisis = null, warn = null;
+  const r = state.rhythm;
+  if (r==='asystole') crisis = 'Asystole';
+  else if (r==='vfc'||r==='vff'||r==='vt') crisis = 'No Pulse Detected';
+  else if (r==='pea') crisis = 'No Pulse Detected';
+  if (!crisis){
+    const hr = dispHR();
+    const flags = [];
+    if (hr!==null){ if(hr>L.hrHi) flags.push('HR High'); else if(hr<L.hrLo) flags.push('HR Low'); }
+    if (state.sensors.spo2 && hasPulse() && c.spo2<L.spLo) flags.push('SpO2 Low');
+    if (state.sensors.art && hasPulse()){
+      if (c.sys>L.sysHi) flags.push('BP High'); else if (c.sys<L.sysLo) flags.push('BP Low');
+    }
+    if (state.sensors.etco2){
+      if (c.rr>L.rrHi) flags.push('RR High'); else if (c.rr<L.rrLo&&c.rr>0) flags.push('RR Low');
+      if (c.etco2>L.etHi) flags.push('EtCO2 High'); else if (c.etco2<L.etLo&&c.etco2>2) flags.push('EtCO2 Low');
+    }
+    if (state.sensors.temp){ if(c.temp>L.tpHi) flags.push('Temp High'); else if(c.temp<L.tpLo) flags.push('Temp Low'); }
+    if (flags.length) warn = flags.join(' · ');
+  }
+  alarmState.crisis = !!crisis;
+  alarmState.text = crisis||warn||'';
+  alarmState.active = !!(crisis||warn);
+  // banner
+  if (alarmState.active){
+    el.alarmBanner.style.display='flex';
+    el.alarmBanner.classList.toggle('red', alarmState.crisis && state.rhythm==='asystole');
+    el.alarmText.textContent = alarmState.text;
+  } else el.alarmBanner.style.display='none';
+  // 數值閃爍
+  el.hrBlock.classList.toggle('flashing', alarmState.active && /HR|Pulse|Asystole/.test(alarmState.text));
+  el.spo2Block.classList.toggle('flashing', /SpO2/.test(alarmState.text));
+  el.bpBlock.classList.toggle('flashing', /BP/.test(alarmState.text) || (alarmState.crisis&&state.sensors.art));
+  // 警報音
+  const now = simT;
+  if (alarmState.active && state.soundOn && now>state.silencedUntil){
+    const iv = alarmState.crisis ? 1.0 : 4.0;
+    if (now-alarmState.lastTone > iv){
+      alarmState.lastTone = now;
+      if (alarmState.crisis){ beep(880,.12,.22); setTimeout(()=>beep(880,.12,.22),180); setTimeout(()=>beep(880,.2,.22),360); }
+      else { beep(660,.1,.16); setTimeout(()=>beep(660,.1,.16),200); }
+    }
+  }
+}
+
+// ---------- NIBP ----------
+function startNibp(){
+  if (state.nibp.measuring) return;
+  state.nibp.measuring = true;
+  state.nibp.measureEnd = simT+10;
+  beep(520,.08,.1);
+}
+function finishNibp(){
+  state.nibp.measuring = false;
+  if (hasPulse()){
+    const s = Math.round(state.cur.sys + (Math.random()*6-3));
+    const d = Math.round(state.cur.dia + (Math.random()*6-3));
+    state.nibp.sys=s; state.nibp.dia=d; state.nibp.map=Math.round(d+(s-d)/3);
+  } else { state.nibp.sys=null; state.nibp.dia=null; state.nibp.map=null; }
+  const dnow = new Date();
+  state.nibp.timeStr = String(dnow.getHours()).padStart(2,'0')+':'+String(dnow.getMinutes()).padStart(2,'0');
+  beep(760,.1,.12);
+}
+
+// ---------- 主迴圈 ----------
+// rAF 為主；分頁隱藏時 rAF 會暫停，由 setInterval 備援驅動
+let lastStep = 0;
+function frame(ts){
+  if (!state.running){ lastFrame=null; return; }
+  step(ts);
+  requestAnimationFrame(frame);
+}
+setInterval(()=>{
+  if (state.running && performance.now()-lastStep > 120) step(performance.now());
+}, 33);
+function step(ts){
+  lastStep = performance.now();
+  if (lastFrame===null) lastFrame=ts;
+  const dt = Math.min(0.25,(ts-lastFrame)/1000);
+  lastFrame = ts; simT += dt;
+  scheduleBeats(simT);
+  // 非擷獲 pacing spike 排程
+  if (state.pacer.on && !pacerCapturing()){
+    if (eng.lastSpike < simT) eng.lastSpike = simT;
+    while (eng.lastSpike < simT+1){ eng.lastSpike += 60/state.pacer.rate; eng.spikes.push(eng.lastSpike); }
+    while (eng.spikes.length && eng.spikes[0]<simT-1) eng.spikes.shift();
+  }
+  tickTrend();
+  channels.forEach(c=>c.render(simT));
+  // QRS 嗶聲
+  for (const bt of eng.beats){
+    if (bt<=simT && bt>eng.beeped){ eng.beeped=bt; if(hasPulse()) qrsBeep(); }
+  }
+  // NIBP
+  if (state.nibp.measuring && simT>=state.nibp.measureEnd) finishNibp();
+  if (state.nibp.autoMin>0 && simT>=state.nibp.nextAuto){
+    state.nibp.nextAuto = simT + state.nibp.autoMin*60;
+    startNibp();
+  }
+}
+setInterval(()=>{ if(state.running){ updateNumerics(); evalAlarms(); } }, 450);
+setInterval(()=>{
+  const d=new Date();
+  const s = String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');
+  el.tbClock.textContent = s;
+  document.getElementById('startClock').textContent = s.slice(0,5);
+}, 1000);
+
+// ---------- 12 導程 ----------
+const LEADS12 = ['I','aVR','V1','V4','II','aVL','V2','V5','III','aVF','V3','V6'];
+const LEAD_MORPH = { // [p, q, r, s, t] 振幅倍率
+  'I':  {p:.12,q:-.05,r:.7, s:-.1, t:.25}, 'II': {p:.15,q:-.08,r:1.0,s:-.15,t:.32},
+  'III':{p:.06,q:-.06,r:.4, s:-.12,t:.12}, 'aVR':{p:-.12,q:.05,r:-.75,s:.1,t:-.25},
+  'aVL':{p:.05,q:-.03,r:.3, s:-.15,t:.1},  'aVF':{p:.1, q:-.07,r:.7, s:-.12,t:.22},
+  'V1': {p:.08,q:0,   r:.2, s:-.9, t:-.1}, 'V2': {p:.08,q:0,   r:.35,s:-.85,t:.35},
+  'V3': {p:.08,q:0,   r:.5, s:-.6, t:.3},  'V4': {p:.1, q:-.04,r:.95,s:-.3, t:.32},
+  'V5': {p:.1, q:-.05,r:.85,s:-.2, t:.3},  'V6': {p:.1, q:-.05,r:.7, s:-.12,t:.26},
+};
+const ST_MAP = {
+  normal:   {},
+  antstemi: {'V1':.18,'V2':.3,'V3':.32,'V4':.25,'I':.06,'aVL':.1,'II':-.06,'III':-.1,'aVF':-.08},
+  infstemi: {'II':.22,'III':.3,'aVF':.25,'I':-.1,'aVL':-.15,'V2':-.08},
+};
+function lead12Sample(lead, t, hrIv){
+  const r = state.rhythm;
+  if (r==='vfc') return vfWave(t,0.5);
+  if (r==='vff') return vfWave(t,0.12);
+  if (r==='asystole') return 0.02*Math.sin(6.28*0.3*t);
+  const m = LEAD_MORPH[lead], st = (ST_MAP[state.ecg12]||{})[lead]||0;
+  const phase = ((t%hrIv)+hrIv)%hrIv, dt = phase - hrIv*0.45;
+  let v;
+  if (r==='vt'||r==='vtp'){
+    v = m.r*( g(dt,1.3,0,0.05)+g(dt,-1.0,0.09,0.055)+g(dt,-0.6,0.3,0.1) );
+  } else {
+    v = g(dt,m.p,-0.17,0.025)+g(dt,m.q*1.2,-0.03,0.01)+g(dt,m.r*1.15,0,0.014)+g(dt,m.s*1.1,0.03,0.012)+g(dt,m.t*1.2,0.26,0.065);
+    if (st) v += st*( 1/(1+Math.exp(-(dt-0.05)/0.012)) )*( 1/(1+Math.exp((dt-0.32)/0.05)) );
+  }
+  return v;
+}
+function draw12Lead(){
+  const cv = document.getElementById('ecg12cv');
+  const W = 1100, H = 640;
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  // 粉紅心電圖紙
+  ctx.fillStyle = '#f9dada'; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle = 'rgba(220,120,120,.45)'; ctx.lineWidth = 0.5;
+  for(let x=0;x<=W;x+=5){ ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke(); }
+  for(let y=0;y<=H;y+=5){ ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke(); }
+  ctx.strokeStyle = 'rgba(210,90,90,.7)'; ctx.lineWidth = 0.8;
+  for(let x=0;x<=W;x+=25){ ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke(); }
+  for(let y=0;y<=H;y+=25){ ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke(); }
+  // 12 leads：4 欄 x 3 列 + 底部節律帶
+  const colW = W/4, rowH = (H-130)/3;
+  const hrIv = 60/Math.max(30,effHR()||72);
+  const pxPerSec = 90, mvPx = 55;
+  ctx.fillStyle='#222'; ctx.font='bold 15px monospace';
+  ctx.lineWidth = 1.4; ctx.strokeStyle = '#3a2222';
+  for (let i=0;i<12;i++){
+    const col = i%4, row = Math.floor(i/4);
+    const lead = LEADS12[row*4+col];
+    const x0 = col*colW+8, yMid = row*rowH + rowH/2 + 10;
+    ctx.fillText(lead, x0+6, yMid-rowH/2+18);
+    ctx.beginPath();
+    const dur = colW/pxPerSec;
+    for (let px=0;px<colW-16;px++){
+      const t = col*dur + px/pxPerSec;
+      const v = lead12Sample(lead, t, hrIv);
+      const y = yMid - v*mvPx;
+      px===0 ? ctx.moveTo(x0+px,y) : ctx.lineTo(x0+px,y);
+    }
+    ctx.stroke();
+  }
+  // 節律帶 (II)
+  const yR = H-65;
+  ctx.fillText('II', 14, yR-40);
+  ctx.beginPath();
+  for (let px=0;px<W-20;px++){
+    const t = px/pxPerSec;
+    const v = lead12Sample('II', t, hrIv);
+    const y = yR - v*mvPx;
+    px===0 ? ctx.moveTo(10+px,y) : ctx.lineTo(10+px,y);
+  }
+  ctx.stroke();
+}
+
+// ---------- 教師控制 ----------
+const PRESETS = [
+  { name:'恢復正常', f:()=>({rhythm:'sinus', v:Object.assign({},AGE_GROUPS[state.age].vitals)}) },
+  { name:'低血氧', f:()=>({rhythm:'sinus', v:{hr:118,spo2:82,rr:30,etco2:30}}) },
+  { name:'低血壓休克', f:()=>({rhythm:'sinus', v:{hr:132,sys:78,dia:45,spo2:94,rr:26}}) },
+  { name:'敗血性休克', f:()=>({rhythm:'sinus', v:{hr:128,sys:82,dia:40,spo2:93,rr:28,temp:39.2}}) },
+  { name:'過敏性休克', f:()=>({rhythm:'sinus', v:{hr:135,sys:72,dia:40,spo2:88,rr:32}}) },
+  { name:'心搏過緩', f:()=>({rhythm:'avb3', v:{hr:38,sys:85,dia:50,spo2:93}}) },
+  { name:'SVT', f:()=>({rhythm:'svt', v:{hr:185,sys:95,dia:60,spo2:95}}) },
+  { name:'VT（有脈）', f:()=>({rhythm:'vtp', v:{hr:170,sys:85,dia:55,spo2:92}}) },
+  { name:'VT（無脈）', f:()=>({rhythm:'vt', v:{hr:190,etco2:12}}) },
+  { name:'VF', f:()=>({rhythm:'vfc', v:{etco2:10}}) },
+  { name:'PEA', f:()=>({rhythm:'pea', v:{hr:65,etco2:10}}) },
+  { name:'Asystole', f:()=>({rhythm:'asystole', v:{etco2:5}}) },
+  { name:'ROSC', f:()=>({rhythm:'sinus', v:{hr:108,sys:98,dia:60,spo2:94,rr:0,etco2:42}}) },
+];
+function syncInstUI(){
+  el.iRhythm.value = state.rhythm;
+  el.iHr.value = Math.round(state.cur.hr); el.iSp.value = Math.round(state.cur.spo2);
+  el.iSys.value = Math.round(state.cur.sys); el.iDia.value = Math.round(state.cur.dia);
+  el.iRr.value = Math.round(state.cur.rr); el.iEt.value = Math.round(state.cur.etco2);
+  el.iTp.value = state.cur.temp.toFixed(1);
+  el.iEcg12.value = state.ecg12;
+  el.sEcg.checked=state.sensors.ecg; el.sSp.checked=state.sensors.spo2;
+  el.sArt.checked=state.sensors.art; el.sEt.checked=state.sensors.etco2; el.sTp.checked=state.sensors.temp;
+  instSliderLabels();
+}
+function instSliderLabels(){
+  el.iHrV.textContent = el.iHr.value+' bpm'; el.iSpV.textContent = el.iSp.value+' %';
+  el.iSysV.textContent = el.iSys.value+' mmHg'; el.iDiaV.textContent = el.iDia.value+' mmHg';
+  el.iRrV.textContent = el.iRr.value+' /min'; el.iEtV.textContent = el.iEt.value+' mmHg';
+  el.iTpV.textContent = (+el.iTp.value).toFixed(1)+' °C';
+}
+function setRhythm(r){
+  if (state.rhythm===r) return;
+  state.rhythm = r;
+  eng.lastSched = simT+0.2; // 重新排程
+}
+function applyInstructor(){
+  setRhythm(el.iRhythm.value);
+  state.ecg12 = el.iEcg12.value;
+  state.sensors.ecg=el.sEcg.checked; state.sensors.spo2=el.sSp.checked;
+  state.sensors.art=el.sArt.checked; state.sensors.etco2=el.sEt.checked; state.sensors.temp=el.sTp.checked;
+  applyTargets({
+    hr:+el.iHr.value, spo2:+el.iSp.value, sys:+el.iSys.value, dia:+el.iDia.value,
+    rr:+el.iRr.value, etco2:+el.iEt.value, temp:+el.iTp.value,
+  }, +el.iTrend.value);
+  closeModal('instModal');
+}
+
+// ---------- UI 綁定 ----------
+const el = {};
+['hrVal','prVal','bpVal','bpMap','spo2Val','etco2Val','rrVal','tempVal','nibpVal','nibpTime','tbClock','tbAgeLabel',
+ 'alarmBanner','alarmText','hrBlock','spo2Block','bpBlock',
+ 'limHrHi','limHrLo','limSpHi','limSpLo','limBpHi','limBpLo','limNibpHi','limNibpLo','limRrHi','limRrLo','limEtHi','limEtLo','limTpHi','limTpLo',
+ 'iRhythm','iTrend','iHr','iSp','iSys','iDia','iRr','iEt','iTp','iEcg12','sEcg','sSp','sArt','sEt','sTp',
+ 'iHrV','iSpV','iSysV','iDiaV','iRrV','iEtV','iTpV','ecgLeadLabel',
+].forEach(id=> el[id]=document.getElementById(id));
+
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-x').forEach(b=> b.onclick = ()=> closeModal(b.dataset.close));
+document.querySelectorAll('.modal-bg').forEach(m=> m.addEventListener('click', e=>{ if(e.target===m) m.classList.remove('open'); }));
+
+// 開始畫面
+document.querySelectorAll('.age-btn').forEach(b=>{
+  b.onclick = ()=>{
+    document.querySelectorAll('.age-btn').forEach(x=>x.classList.remove('selected'));
+    b.classList.add('selected');
+    state.age = b.dataset.age;
+    document.getElementById('startAgeLabel').textContent = AGE_GROUPS[state.age].label;
+  };
+});
+document.getElementById('startBtn').onclick = ()=>{
+  audio();
+  const ag = AGE_GROUPS[state.age];
+  state.cur = Object.assign({}, ag.vitals);
+  state.limits = Object.assign({}, ag.limits);
+  state.target = null; state.rhythm='sinus';
+  state.nibp = {sys:null,dia:null,map:null,timeStr:'',measuring:false,measureEnd:0,autoMin:0,nextAuto:0};
+  state.pacer={on:false,rate:70,out:30}; state.silencedUntil=0;
+  el.tbAgeLabel.textContent = ag.label.split(' (')[0];
+  document.getElementById('startScreen').classList.remove('active');
+  document.getElementById('monScreen').classList.add('active');
+  state.running = true;
+  updateLimitLabels();
+  setTimeout(()=>{ setupChannels(); eng.beats.length=0; eng.lastSched=simT; requestAnimationFrame(frame); }, 30);
+};
+document.getElementById('exitBtn').onclick = ()=>{
+  if (!confirm('結束監測並回到開始畫面？')) return;
+  state.running = false;
+  document.getElementById('monScreen').classList.remove('active');
+  document.getElementById('startScreen').classList.add('active');
+};
+document.getElementById('soundBtn').onclick = function(){
+  state.soundOn = !state.soundOn;
+  this.innerHTML = state.soundOn ? '&#x1F50A;' : '&#x1F507;';
+};
+document.getElementById('instBtn').onclick = ()=>{ syncInstUI(); openModal('instModal'); };
+document.addEventListener('keydown', e=>{ if(e.key==='i'&&state.running){ syncInstUI(); openModal('instModal'); } });
+
+['iHr','iSp','iSys','iDia','iRr','iEt','iTp'].forEach(id=> el[id].addEventListener('input', instSliderLabels));
+document.getElementById('applyBtn').onclick = applyInstructor;
+
+// 情境快速鍵
+const presetRow = document.getElementById('presetRow');
+PRESETS.forEach(p=>{
+  const b = document.createElement('button');
+  b.className='preset-btn'; b.textContent=p.name;
+  b.onclick = ()=>{
+    const r = p.f();
+    setRhythm(r.rhythm);
+    const tgt = Object.assign({}, state.cur, r.v);
+    applyTargets(tgt, +el.iTrend.value);
+    syncInstUI();
+    closeModal('instModal');
+  };
+  presetRow.appendChild(b);
+});
+
+// 工具列
+document.getElementById('btnLayout').onclick = ()=>{
+  state.bigNum = !state.bigNum;
+  document.getElementById('monScreen').classList.toggle('bigNum', state.bigNum);
+  if (!state.bigNum) setTimeout(()=> channels.forEach(c=>c.resize()), 30);
+};
+document.getElementById('btn12Lead').onclick = ()=>{ draw12Lead(); openModal('ecg12Modal'); };
+document.getElementById('btnLeads').onclick = ()=>{
+  state.ecgLead = (state.ecgLead+1)%3;
+  el.ecgLeadLabel.textContent = ['I','II','III'][state.ecgLead];
+};
+document.getElementById('btnNibp').onclick = startNibp;
+document.getElementById('btnAutoNibp').onclick = function(){
+  const opts = [0,1,2,5,10];
+  const i = opts.indexOf(state.nibp.autoMin);
+  state.nibp.autoMin = opts[(i+1)%opts.length];
+  if (state.nibp.autoMin>0){
+    state.nibp.nextAuto = simT;
+    this.classList.add('activeT');
+    this.firstElementChild.nextSibling.textContent='';
+    this.innerHTML = '<span class="ic">&#x2764;&#xFE0E;</span>Auto '+state.nibp.autoMin+'min';
+  } else { this.classList.remove('activeT'); this.innerHTML='<span class="ic">&#x2764;&#xFE0E;</span>Auto NIBP'; }
+};
+document.getElementById('btnAlarms').onclick = ()=>{
+  const L = state.limits;
+  const map = {aHrLo:'hrLo',aHrHi:'hrHi',aSpLo:'spLo',aSpHi:'spHi',aSysLo:'sysLo',aSysHi:'sysHi',aDiaLo:'diaLo',aDiaHi:'diaHi',aRrLo:'rrLo',aRrHi:'rrHi',aEtLo:'etLo',aEtHi:'etHi',aTpLo:'tpLo',aTpHi:'tpHi'};
+  for (const id in map) document.getElementById(id).value = L[map[id]];
+  openModal('alarmsModal');
+};
+document.getElementById('alarmSaveBtn').onclick = ()=>{
+  const map = {aHrLo:'hrLo',aHrHi:'hrHi',aSpLo:'spLo',aSpHi:'spHi',aSysLo:'sysLo',aSysHi:'sysHi',aDiaLo:'diaLo',aDiaHi:'diaHi',aRrLo:'rrLo',aRrHi:'rrHi',aEtLo:'etLo',aEtHi:'etHi',aTpLo:'tpLo',aTpHi:'tpHi'};
+  for (const id in map) state.limits[map[id]] = +document.getElementById(id).value;
+  updateLimitLabels();
+  closeModal('alarmsModal');
+};
+document.getElementById('btnSilence').onclick = ()=>{
+  state.silencedUntil = simT + 120;
+  beep(440,.08,.1);
+};
+
+// Defib
+const ENERGIES = [50,70,100,120,150,200,300,360];
+const energyRow = document.getElementById('energyRow');
+ENERGIES.forEach(e=>{
+  const b = document.createElement('button');
+  b.className='energy-btn'+(e===200?' sel':''); b.textContent=e;
+  b.onclick = ()=>{
+    energyRow.querySelectorAll('.energy-btn').forEach(x=>x.classList.remove('sel'));
+    b.classList.add('sel'); state.defib.energy=e;
+    state.defib.charged=false; updateDefibUI('');
+  };
+  energyRow.appendChild(b);
+});
+let postShock = 'nochange';
+document.querySelectorAll('[data-post]').forEach(b=>{
+  b.onclick = ()=>{
+    document.querySelectorAll('[data-post]').forEach(x=>x.style.background='');
+    b.style.background='#0a84ff'; postShock=b.dataset.post;
+  };
+});
+function updateDefibUI(msg){
+  const sb = document.getElementById('shockBtn');
+  sb.disabled = !state.defib.charged;
+  sb.classList.toggle('armed', state.defib.charged);
+  document.getElementById('defibStatus').textContent = msg;
+}
+document.getElementById('btnDefib').onclick = ()=>{ openModal('defibModal'); };
+document.getElementById('chargeBtn').onclick = ()=>{
+  if (state.defib.charging) return;
+  state.defib.charging = true; state.defib.charged=false;
+  updateDefibUI('充電中… '+state.defib.energy+' J');
+  chargeSound(true);
+  setTimeout(()=>{
+    chargeSound(false);
+    state.defib.charging=false; state.defib.charged=true;
+    updateDefibUI('已充電 '+state.defib.energy+' J — READY');
+    beep(1100,.4,.18);
+  }, 2000);
+};
+document.getElementById('shockBtn').onclick = ()=>{
+  if (!state.defib.charged) return;
+  state.defib.charged = false;
+  updateDefibUI('已電擊 '+state.defib.energy+' J');
+  const fl = document.getElementById('shockFlash');
+  fl.style.display='block'; setTimeout(()=>fl.style.display='none', 120);
+  beep(120,.25,.3,'sawtooth');
+  if (postShock!=='nochange'){
+    setRhythm(postShock);
+    if (postShock==='sinus') applyTargets(Object.assign({},state.cur,{hr:105,sys:95,dia:58,spo2:93,etco2:40}), 10);
+  }
+};
+
+// Pacer
+document.getElementById('btnPacer').onclick = ()=> openModal('pacerModal');
+document.getElementById('pacerOn').onchange = function(){ state.pacer.on = this.checked; eng.lastSched=simT+0.1; };
+document.getElementById('pRate').oninput = function(){ state.pacer.rate=+this.value; document.getElementById('pRateV').textContent=this.value+' ppm'; };
+document.getElementById('pOut').oninput = function(){ state.pacer.out=+this.value; document.getElementById('pOutV').textContent=this.value+' mA'; };
+</script>
+</body>
+</html>
