@@ -18,6 +18,16 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // 模擬生理監視器：教師後台事件標記（debriefing 用）
+    match /monitor_events/{document} {
+      allow read, write: if true;
+    }
+
+    // 模擬生理監視器：媒體庫（jpg/png 影像，base64 存放）
+    match /monitor_media/{document} {
+      allow read, write: if true;
+    }
+
     // 其他集合預設禁止存取
     match /{document=**} {
       allow read, write: if false;

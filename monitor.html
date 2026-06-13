@@ -117,11 +117,16 @@
   .lim-table th, .lim-table td { padding:8px 6px; border-bottom:1px solid #3a3a3c; font-size:15px; text-align:center; }
   .lim-table input { width:84px; background:#2c2c2e; border:1px solid #48484a; color:#fff; font-size:16px; padding:6px; border-radius:8px; text-align:center; }
 
-  /* 12-lead modal */
+  /* Investigations modal（12導程 + 推送影像）*/
   #ecg12Modal .modal { width:min(1180px,94vw); }
   #ecg12Modal .tabline { text-align:center; padding:6px 0 8px 0; font-size:17px; border-bottom:2px solid #0a84ff; margin-bottom:12px; }
   #ecg12Wrap { background:#000; padding:10px; }
   #ecg12cv { width:100%; display:block; }
+  #invImg { width:100%; display:none; border-radius:4px; }
+  #invThumbs { flex:0 0 130px; display:flex; flex-direction:column; gap:8px; overflow-y:auto; max-height:72vh; }
+  .inv-thumb { border:2px solid transparent; border-radius:9px; background:#2c2c2e; padding:5px; font-size:12px; text-align:center; cursor:pointer; color:#ccc; }
+  .inv-thumb.sel { border-color:#0a84ff; }
+  .inv-thumb img { width:100%; border-radius:5px; display:block; margin-bottom:3px; }
 
   /* defib / pacer */
   #defibModal .modal, #pacerModal .modal { width:640px; }
@@ -507,8 +512,13 @@
   <div class="modal">
     <div class="modal-head"><span>Investigations</span><button class="modal-x" data-close="ecg12Modal">&#x2715;</button></div>
     <div class="modal-body">
-      <div class="tabline">12 Lead ECG</div>
-      <div id="ecg12Wrap"><canvas id="ecg12cv"></canvas></div>
+      <div style="display:flex;gap:12px;">
+        <div id="invThumbs"></div>
+        <div style="flex:1;min-width:0">
+          <div class="tabline" id="invTitle">12 Lead ECG</div>
+          <div id="ecg12Wrap"><canvas id="ecg12cv"></canvas><img id="invImg" alt=""></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1188,7 +1198,46 @@ document.getElementById('btnLayout').onclick = ()=>{
   document.getElementById('monScreen').classList.toggle('bigNum', state.bigNum);
   if (!state.bigNum) setTimeout(()=> channels.forEach(c=>c.resize()), 30);
 };
-document.getElementById('btn12Lead').onclick = ()=>{ draw12Lead(); openModal('ecg12Modal'); };
+// Investigations：12 導程 + 後台推送的影像
+const investigations = []; // {id, name, dataUrl}
+let invSel = 'ecg12';
+function renderInvThumbs(){
+  const wrap = document.getElementById('invThumbs');
+  wrap.innerHTML = '';
+  const mk = (id, label, imgSrc)=>{
+    const d = document.createElement('div');
+    d.className = 'inv-thumb' + (invSel===id ? ' sel' : '');
+    if (imgSrc){ const im = document.createElement('img'); im.src = imgSrc; d.appendChild(im); }
+    const s = document.createElement('div'); s.textContent = label; d.appendChild(s);
+    d.onclick = ()=> selectInv(id);
+    wrap.appendChild(d);
+  };
+  mk('ecg12', '12 Lead ECG', null);
+  investigations.forEach(m=> mk(m.id, m.name, m.dataUrl));
+}
+function selectInv(id){
+  invSel = id;
+  const cv = document.getElementById('ecg12cv'), im = document.getElementById('invImg'), ti = document.getElementById('invTitle');
+  if (id==='ecg12'){
+    draw12Lead();
+    cv.style.display='block'; im.style.display='none';
+    ti.textContent = '12 Lead ECG';
+  } else {
+    const m = investigations.find(x=>x.id===id);
+    if (!m) return;
+    im.src = m.dataUrl;
+    cv.style.display='none'; im.style.display='block';
+    ti.textContent = m.name;
+  }
+  renderInvThumbs();
+}
+window.addInvestigation = function(m){
+  if (!investigations.find(x=>x.id===m.id)) investigations.push(m);
+  selectInv(m.id);
+  openModal('ecg12Modal');
+  beep(880,.15,.15); // 提示學員有新檢查結果
+};
+document.getElementById('btn12Lead').onclick = ()=>{ selectInv('ecg12'); openModal('ecg12Modal'); };
 document.getElementById('btnLeads').onclick = ()=>{
   state.ecgLead = (state.ecgLead+1)%3;
   el.ecgLeadLabel.textContent = ['I','II','III'][state.ecgLead];
@@ -1305,7 +1354,7 @@ const SESS = "monitor_sessions";
 const $ = id => document.getElementById(id);
 
 // ========== 監視器端 ==========
-const remote = { code:null, unsub:null, lastSeq:0, lastNibp:0, lastSilence:0, pubTimer:null };
+const remote = { code:null, unsub:null, lastSeq:0, lastNibp:0, lastSilence:0, lastMedia:0, pubTimer:null };
 
 function snapshotStatus(){
   const hr = dispHR();
@@ -1333,6 +1382,17 @@ function applyRemoteCtrl(c){
   }
   if (c.nibpSeq && c.nibpSeq > remote.lastNibp){ remote.lastNibp = c.nibpSeq; startNibp(); }
   if (c.silenceSeq && c.silenceSeq > remote.lastSilence){ remote.lastSilence = c.silenceSeq; state.silencedUntil = simT+120; }
+  if (c.mediaSeq && c.mediaSeq > remote.lastMedia){
+    remote.lastMedia = c.mediaSeq;
+    if (c.mediaId){
+      getDoc(doc(db,"monitor_media",c.mediaId)).then(s=>{
+        if (s.exists()){
+          const m = s.data();
+          window.addInvestigation({ id:c.mediaId, name:c.mediaName||m.name||"Image", dataUrl:m.dataUrl });
+        }
+      }).catch(()=>{});
+    }
+  }
 }
 async function createSession(){
   if (!db) return;

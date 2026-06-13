@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>SimMonitor 教師後台</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { background:#000; color:#fff; font-family:-apple-system,"Helvetica Neue",Arial,"PingFang TC",sans-serif; min-height:100vh; }
+  #wrap { max-width:880px; margin:0 auto; padding:0 14px 80px 14px; }
+
+  header { position:sticky; top:0; z-index:20; background:#000; padding:14px 0 10px 0; border-bottom:1px solid #2c2c2e; }
+  .head-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  header h1 { font-size:20px; flex:1; }
+  header h1 span { color:#5ac8fa; }
+  .conn-box { display:flex; align-items:center; gap:8px; }
+  #codeInput { width:90px; font-size:18px; letter-spacing:4px; text-align:center; background:#2c2c2e; border:1px solid #48484a; color:#fff; padding:7px; border-radius:8px; }
+  #connectBtn { padding:8px 14px; background:#0a84ff; color:#fff; border:none; border-radius:8px; font-size:15px; font-weight:700; cursor:pointer; }
+  .conn-dot { width:11px; height:11px; border-radius:50%; background:#666; }
+  .conn-dot.on { background:#30e050; box-shadow:0 0 8px #30e050; }
+  #connLabel { font-size:13px; color:#999; }
+
+  .tabs { display:flex; gap:8px; margin-top:12px; }
+  .tab { flex:1; padding:11px; text-align:center; background:#1c1c1e; border:1px solid #3a3a3c; border-radius:10px; font-size:16px; font-weight:700; cursor:pointer; color:#999; }
+  .tab.sel { background:#0a84ff; border-color:#0a84ff; color:#fff; }
+
+  .page { display:none; padding-top:14px; }
+  .page.sel { display:block; }
+  .card { background:#1c1c1e; border:1px solid #3a3a3c; border-radius:14px; padding:14px; margin-bottom:14px; }
+  .card h2 { font-size:14px; color:#5ac8fa; margin-bottom:10px; font-weight:700; }
+
+  /* ===== 事件記錄 ===== */
+  .timer-row { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  #timerVal { font-size:46px; font-weight:800; font-variant-numeric:tabular-nums; color:#30e050; }
+  #sessBtn { padding:12px 18px; background:#30d158; color:#000; border:none; border-radius:10px; font-size:16px; font-weight:800; cursor:pointer; }
+  #sessBtn.running { background:#ff453a; color:#fff; }
+  #sessInfo { font-size:13px; color:#999; }
+  .evt-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:8px; }
+  .evt-btn { padding:13px 6px; background:#2c2c2e; border:1px solid #48484a; color:#fff; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; }
+  .evt-btn:active { background:#0a84ff; }
+  .custom-row { display:flex; gap:8px; margin-top:10px; }
+  #customEvt { flex:1; background:#2c2c2e; border:1px solid #48484a; color:#fff; font-size:16px; padding:10px; border-radius:10px; }
+  #customAdd { padding:10px 16px; background:#3a3a3c; color:#fff; border:none; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; }
+  #evtList { list-style:none; }
+  #evtList li { display:flex; align-items:center; gap:10px; padding:9px 4px; border-bottom:1px solid #2c2c2e; font-size:15px; }
+  #evtList .el { font-variant-numeric:tabular-nums; color:#30e050; font-weight:700; width:62px; }
+  #evtList .ck { color:#888; font-size:12px; width:60px; }
+  #evtList .lb { flex:1; }
+  #evtList .del { background:none; border:none; color:#ff453a; font-size:17px; cursor:pointer; padding:2px 8px; }
+  .muted { color:#777; font-size:14px; text-align:center; padding:10px; }
+  .hist-item { display:flex; gap:10px; align-items:center; padding:10px 4px; border-bottom:1px solid #2c2c2e; font-size:15px; cursor:pointer; }
+  .hist-item:hover { background:#222; }
+  .ghost-btn { padding:9px 14px; background:none; border:1px solid #48484a; color:#5ac8fa; border-radius:9px; font-size:14px; font-weight:600; cursor:pointer; }
+
+  /* ===== 媒體庫 ===== */
+  #dropZone { border:2px dashed #48484a; border-radius:14px; padding:26px 10px; text-align:center; color:#999; font-size:15px; cursor:pointer; }
+  #dropZone.over { border-color:#0a84ff; color:#0a84ff; background:rgba(10,132,255,.08); }
+  #mediaGrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px; margin-top:14px; }
+  .media-card { background:#1c1c1e; border:1px solid #3a3a3c; border-radius:12px; overflow:hidden; display:flex; flex-direction:column; }
+  .media-card img { width:100%; height:110px; object-fit:cover; background:#111; cursor:pointer; }
+  .media-card input { background:none; border:none; color:#fff; font-size:13px; padding:7px 8px 2px 8px; width:100%; }
+  .media-acts { display:flex; gap:6px; padding:7px 8px 9px 8px; }
+  .media-acts button { flex:1; padding:7px 4px; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; }
+  .m-push { background:#0a84ff; color:#fff; }
+  .m-push:disabled { background:#3a3a3c; color:#777; }
+  .m-del { background:#3a3a3c; color:#ff453a; flex:0 0 40px !important; }
+
+  /* lightbox */
+  #lightbox { position:fixed; inset:0; background:rgba(0,0,0,.92); display:none; align-items:center; justify-content:center; z-index:50; cursor:zoom-out; }
+  #lightbox img { max-width:94vw; max-height:92vh; border-radius:8px; }
+
+  #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#30d158; color:#000; font-weight:700; padding:10px 22px; border-radius:24px; font-size:15px; display:none; z-index:60; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <header>
+    <div class="head-row">
+      <h1>Sim<span>Monitor</span> 教師後台</h1>
+      <div class="conn-box">
+        <input id="codeInput" type="tel" inputmode="numeric" maxlength="4" placeholder="代碼">
+        <button id="connectBtn">連線</button>
+        <span id="connLabel">未連線</span>
+        <span class="conn-dot" id="connDot"></span>
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab sel" data-page="evtPage">&#x1F4DD; 事件記錄</div>
+      <div class="tab" data-page="mediaPage">&#x1F5BC; 媒體庫</div>
+    </div>
+  </header>
+
+  <!-- ============ 事件記錄 ============ -->
+  <div class="page sel" id="evtPage">
+    <div class="card">
+      <div class="timer-row">
+        <div id="timerVal">00:00</div>
+        <button id="sessBtn">&#x25B6; 開始場次</button>
+        <div id="sessInfo">尚未開始 — 按「開始場次」或直接點事件即自動開始</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>快速事件（點擊即記錄）</h2>
+      <div class="evt-grid" id="evtGrid"></div>
+      <div class="custom-row">
+        <input id="customEvt" placeholder="自訂事件，例如：家屬到場詢問病情">
+        <button id="customAdd">記錄</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>本場次事件 <button class="ghost-btn" id="copyBtn" style="float:right;margin-top:-6px">複製文字</button></h2>
+      <ul id="evtList"></ul>
+      <div class="muted" id="evtEmpty">尚無事件</div>
+    </div>
+
+    <div class="card">
+      <h2>歷史場次 <button class="ghost-btn" id="histLoadBtn" style="float:right;margin-top:-6px">載入</button></h2>
+      <div id="histList"><div class="muted">按「載入」查看過去場次</div></div>
+    </div>
+  </div>
+
+  <!-- ============ 媒體庫 ============ -->
+  <div class="page" id="mediaPage">
+    <div class="card">
+      <h2>上傳影像（JPG / PNG，自動壓縮）</h2>
+      <div id="dropZone">點擊選擇檔案，或將圖片拖曳到這裡<br><span style="font-size:12px">X 光、檢驗報告、傷口照片、心電圖⋯⋯可推送到學生監視器</span></div>
+      <input type="file" id="fileInput" accept="image/jpeg,image/png" multiple style="display:none">
+      <div id="mediaGrid"></div>
+      <div class="muted" id="mediaEmpty" style="display:none">媒體庫是空的，上傳第一張圖片吧</div>
+    </div>
+  </div>
+</div>
+
+<div id="lightbox"><img id="lightImg" alt=""></div>
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, doc, addDoc, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
+         query, orderBy, limit, arrayUnion }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey:"AIzaSyBrs80vpFVe-iEh5ctzRWfYHUBb3KGvILo",
+  authDomain:"speech-to-text-2f776.firebaseapp.com",
+  projectId:"speech-to-text-2f776",
+  storageBucket:"speech-to-text-2f776.firebasestorage.app",
+  messagingSenderId:"283739023798",
+  appId:"1:283739023798:web:3091ec2bcf6262b5ecb917"
+};
+let db = null;
+try{ db = getFirestore(initializeApp(firebaseConfig)); }catch(e){ console.warn("Firebase init failed", e); }
+const $ = id => document.getElementById(id);
+const SESS = "monitor_sessions", EVTS = "monitor_events", MEDIA = "monitor_media";
+
+function toast(msg, bad){
+  const t = $("toast");
+  t.textContent = msg;
+  t.style.background = bad ? "#ff453a" : "#30d158";
+  t.style.color = bad ? "#fff" : "#000";
+  t.style.display = "block";
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=> t.style.display="none", 2200);
+}
+
+// ---------- 分頁 ----------
+document.querySelectorAll(".tab").forEach(tb=>{
+  tb.onclick = ()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("sel"));
+    document.querySelectorAll(".page").forEach(x=>x.classList.remove("sel"));
+    tb.classList.add("sel");
+    $(tb.dataset.page).classList.add("sel");
+    if (tb.dataset.page==="mediaPage" && !mediaLoaded) loadMedia();
+  };
+});
+
+// ---------- 監視器連線（推送媒體用，事件記錄不強制）----------
+const conn = { code:null };
+$("connectBtn").onclick = async ()=>{
+  const code = $("codeInput").value.trim();
+  if (!/^\d{4}$/.test(code)){ toast("請輸入 4 位數代碼", true); return; }
+  if (!db){ toast("Firebase 無法連線", true); return; }
+  try{
+    const s = await getDoc(doc(db,SESS,code));
+    if (!s.exists()){ toast("找不到代碼，請確認監視器已 START", true); return; }
+    conn.code = code;
+    $("connDot").classList.add("on");
+    $("connLabel").textContent = "已連線 "+code;
+    document.querySelectorAll(".m-push").forEach(b=> b.disabled=false);
+    toast("已連線監視器 "+code);
+  }catch(e){ toast("連線失敗", true); }
+};
+
+// ========== 事件記錄 ==========
+const QUICK_EVENTS = [
+  "評估意識","呼叫求救","開始 CPR","電擊 Defib","Epinephrine","Amiodarone",
+  "其他給藥","建立氣道","插管","IV/IO","換手 CPR","檢查脈搏",
+  "ROSC","停止急救","呼叫家屬","團隊溝通良好 \u{1F44D}","待改進 ⚠"
+];
+const sess = { docId:null, startedAt:null, events:[], timer:null };
+
+QUICK_EVENTS.forEach(name=>{
+  const b = document.createElement("button");
+  b.className = "evt-btn"; b.textContent = name;
+  b.onclick = ()=> addEvent(name);
+  $("evtGrid").appendChild(b);
+});
+$("customAdd").onclick = ()=>{
+  const v = $("customEvt").value.trim();
+  if (!v) return;
+  addEvent(v);
+  $("customEvt").value = "";
+};
+$("customEvt").addEventListener("keydown", e=>{ if(e.key==="Enter") $("customAdd").click(); });
+
+function fmtElapsed(s){
+  const m = Math.floor(s/60), ss = s%60;
+  return String(m).padStart(2,"0")+":"+String(ss).padStart(2,"0");
+}
+function tickTimer(){
+  if (!sess.startedAt) return;
+  $("timerVal").textContent = fmtElapsed(Math.floor((Date.now()-sess.startedAt)/1000));
+}
+function startSession(){
+  sess.startedAt = Date.now();
+  sess.events = [];
+  renderEvents();
+  sess.timer = setInterval(tickTimer, 500);
+  $("sessBtn").textContent = "■ 結束場次";
+  $("sessBtn").classList.add("running");
+  const d = new Date();
+  $("sessInfo").textContent = "場次進行中 — "+d.toLocaleString("zh-TW",{hour12:false});
+  if (db){
+    // 不等待網路，計時與事件記錄即刻可用；建立完成後補同步已累積的事件
+    addDoc(collection(db,EVTS), {
+      code: conn.code||"", startedAt: sess.startedAt,
+      startedAtStr: d.toLocaleString("zh-TW",{hour12:false}),
+      events: [],
+    }).then(ref=>{
+      sess.docId = ref.id;
+      if (sess.events.length) updateDoc(doc(db,EVTS,ref.id), { events: sess.events }).catch(()=>{});
+    }).catch(()=>{ toast("無法建立雲端紀錄（事件僅保留在本機）", true); });
+  }
+}
+function endSessionLocal(){
+  clearInterval(sess.timer);
+  sess.startedAt = null; sess.docId = null;
+  $("sessBtn").textContent = "▶ 開始場次";
+  $("sessBtn").classList.remove("running");
+  $("sessInfo").textContent = "場次已結束，事件已儲存。再按一次開始新場次。";
+}
+$("sessBtn").onclick = ()=>{
+  if (sess.startedAt){
+    if (confirm("結束本場次？")) endSessionLocal();
+  } else startSession();
+};
+async function addEvent(label){
+  if (!sess.startedAt) startSession();
+  const ev = {
+    t: Date.now(),
+    clock: new Date().toLocaleTimeString("zh-TW",{hour12:false}),
+    elapsed: Math.floor((Date.now()-sess.startedAt)/1000),
+    label,
+  };
+  sess.events.push(ev);
+  renderEvents();
+  if (db && sess.docId){
+    try{ await updateDoc(doc(db,EVTS,sess.docId), { events: arrayUnion(ev) }); }
+    catch(e){ toast("事件雲端同步失敗", true); }
+  }
+}
+async function delEvent(i){
+  sess.events.splice(i,1);
+  renderEvents();
+  if (db && sess.docId){
+    try{ await updateDoc(doc(db,EVTS,sess.docId), { events: sess.events }); }catch(e){}
+  }
+}
+function renderEvents(){
+  const ul = $("evtList");
+  ul.innerHTML = "";
+  $("evtEmpty").style.display = sess.events.length ? "none" : "block";
+  [...sess.events].reverse().forEach((ev, ri)=>{
+    const i = sess.events.length-1-ri;
+    const li = document.createElement("li");
+    li.innerHTML = `<span class="el">${fmtElapsed(ev.elapsed)}</span><span class="ck">${ev.clock}</span><span class="lb"></span>`;
+    li.querySelector(".lb").textContent = ev.label;
+    const del = document.createElement("button");
+    del.className = "del"; del.textContent = "✕";
+    del.onclick = ()=> delEvent(i);
+    li.appendChild(del);
+    ul.appendChild(li);
+  });
+}
+function eventsToText(meta, events){
+  const lines = [meta];
+  events.forEach(ev=> lines.push(`${fmtElapsed(ev.elapsed)}\t${ev.clock}\t${ev.label}`));
+  return lines.join("\n");
+}
+$("copyBtn").onclick = async ()=>{
+  if (!sess.events.length){ toast("沒有事件可複製", true); return; }
+  try{
+    await navigator.clipboard.writeText(eventsToText("SimMonitor 事件紀錄 "+new Date().toLocaleString("zh-TW",{hour12:false}), sess.events));
+    toast("已複製到剪貼簿");
+  }catch(e){ toast("複製失敗", true); }
+};
+
+// 歷史場次
+$("histLoadBtn").onclick = async ()=>{
+  if (!db){ toast("Firebase 無法連線", true); return; }
+  $("histList").innerHTML = '<div class="muted">載入中…</div>';
+  try{
+    const qs = await getDocs(query(collection(db,EVTS), orderBy("startedAt","desc"), limit(25)));
+    const box = $("histList");
+    box.innerHTML = "";
+    if (qs.empty){ box.innerHTML = '<div class="muted">沒有歷史場次</div>'; return; }
+    qs.forEach(d=>{
+      const v = d.data();
+      const row = document.createElement("div");
+      row.className = "hist-item";
+      row.innerHTML = `<span style="color:#5ac8fa">${v.startedAtStr||"?"}</span>
+        <span style="color:#999">${v.code?("遙控 "+v.code):"未連線"}</span>
+        <span style="flex:1;text-align:right">${(v.events||[]).length} 個事件</span>`;
+      row.onclick = ()=>{
+        const txt = eventsToText("場次 "+(v.startedAtStr||""), v.events||[]);
+        if (confirm(txt+"\n\n—— 複製這份紀錄？")){
+          navigator.clipboard.writeText(txt).then(()=>toast("已複製")).catch(()=>{});
+        }
+      };
+      box.appendChild(row);
+    });
+  }catch(e){ $("histList").innerHTML = '<div class="muted">載入失敗</div>'; }
+};
+
+// ========== 媒體庫 ==========
+let mediaLoaded = false;
+
+function readFileAsDataURL(file){
+  return new Promise((res,rej)=>{
+    const r = new FileReader();
+    r.onload = ()=>res(r.result); r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+function loadImage(src){
+  return new Promise((res,rej)=>{
+    const im = new Image();
+    im.onload = ()=>res(im); im.onerror = rej;
+    im.src = src;
+  });
+}
+// 壓縮影像：長邊 ≤1400px、JPEG 品質遞減直到 <900KB（Firestore 文件上限 1MB）
+async function processImage(file){
+  const raw = await readFileAsDataURL(file);
+  if (raw.length < 350000) return raw;
+  const img = await loadImage(raw);
+  const MAX = 1400;
+  const scale = Math.min(1, MAX/Math.max(img.width, img.height));
+  const cv = document.createElement("canvas");
+  cv.width = Math.round(img.width*scale); cv.height = Math.round(img.height*scale);
+  const ctx = cv.getContext("2d");
+  ctx.fillStyle = "#fff"; ctx.fillRect(0,0,cv.width,cv.height); // PNG 透明背景補白
+  ctx.drawImage(img, 0, 0, cv.width, cv.height);
+  let q = 0.85, out = cv.toDataURL("image/jpeg", q);
+  while (out.length > 900000 && q > 0.35){ q -= 0.1; out = cv.toDataURL("image/jpeg", q); }
+  return out;
+}
+async function uploadFiles(files){
+  if (!db){ toast("Firebase 無法連線", true); return; }
+  for (const f of files){
+    if (!/^image\/(jpeg|png)$/.test(f.type)){ toast(f.name+" 不是 JPG/PNG", true); continue; }
+    toast("處理中："+f.name);
+    try{
+      const dataUrl = await processImage(f);
+      if (dataUrl.length > 980000){ toast(f.name+" 壓縮後仍太大", true); continue; }
+      const ref = await addDoc(collection(db,MEDIA), {
+        name: f.name.replace(/\.(jpe?g|png)$/i,""),
+        dataUrl, created: Date.now(),
+      });
+      addMediaCard({ id:ref.id, name:f.name.replace(/\.(jpe?g|png)$/i,""), dataUrl }, true);
+      toast("已上傳 "+f.name);
+    }catch(e){ toast(f.name+" 上傳失敗", true); }
+  }
+  $("mediaEmpty").style.display = $("mediaGrid").children.length ? "none" : "block";
+}
+$("dropZone").onclick = ()=> $("fileInput").click();
+$("fileInput").onchange = e=>{ uploadFiles([...e.target.files]); e.target.value=""; };
+["dragover","dragenter"].forEach(t=> $("dropZone").addEventListener(t, e=>{ e.preventDefault(); $("dropZone").classList.add("over"); }));
+["dragleave","drop"].forEach(t=> $("dropZone").addEventListener(t, e=>{ e.preventDefault(); $("dropZone").classList.remove("over"); }));
+$("dropZone").addEventListener("drop", e=> uploadFiles([...e.dataTransfer.files]));
+
+function addMediaCard(m, prepend){
+  if ($("mediaGrid").querySelector('[data-id="'+m.id+'"]')) return; // 防止 query 與上傳 race 造成重複
+  const card = document.createElement("div");
+  card.className = "media-card";
+  card.dataset.id = m.id;
+  const img = document.createElement("img");
+  img.src = m.dataUrl; img.alt = m.name;
+  img.onclick = ()=>{ $("lightImg").src = m.dataUrl; $("lightbox").style.display = "flex"; };
+  const nameIn = document.createElement("input");
+  nameIn.value = m.name;
+  nameIn.onchange = async ()=>{
+    try{ await updateDoc(doc(db,MEDIA,m.id), { name: nameIn.value }); toast("已更名"); }catch(e){}
+  };
+  const acts = document.createElement("div");
+  acts.className = "media-acts";
+  const push = document.createElement("button");
+  push.className = "m-push"; push.textContent = "推送到監視器";
+  push.disabled = !conn.code;
+  push.onclick = async ()=>{
+    if (!conn.code){ toast("請先連線監視器代碼", true); return; }
+    try{
+      await updateDoc(doc(db,SESS,conn.code), {
+        "ctrl.mediaSeq": Date.now(), "ctrl.mediaId": m.id, "ctrl.mediaName": nameIn.value,
+      });
+      toast("已推送到監視器");
+    }catch(e){ toast("推送失敗（監視器可能已離線）", true); }
+  };
+  const del = document.createElement("button");
+  del.className = "m-del"; del.textContent = "\u{1F5D1}";
+  del.onclick = async ()=>{
+    if (!confirm("刪除「"+nameIn.value+"」？")) return;
+    try{ await deleteDoc(doc(db,MEDIA,m.id)); card.remove(); toast("已刪除");
+      $("mediaEmpty").style.display = $("mediaGrid").children.length ? "none" : "block";
+    }catch(e){ toast("刪除失敗", true); }
+  };
+  acts.appendChild(push); acts.appendChild(del);
+  card.appendChild(img); card.appendChild(nameIn); card.appendChild(acts);
+  if (prepend) $("mediaGrid").prepend(card); else $("mediaGrid").appendChild(card);
+}
+async function loadMedia(){
+  if (!db) return;
+  mediaLoaded = true;
+  try{
+    const qs = await getDocs(query(collection(db,MEDIA), orderBy("created","desc")));
+    $("mediaGrid").innerHTML = "";
+    qs.forEach(d=> addMediaCard(Object.assign({id:d.id}, d.data())));
+    $("mediaEmpty").style.display = qs.empty ? "block" : "none";
+  }catch(e){ toast("媒體庫載入失敗", true); }
+}
+$("lightbox").onclick = ()=> $("lightbox").style.display = "none";
+
+// URL 參數 ?code=1234 自動連線
+const usp = new URLSearchParams(location.search);
+if (usp.has("code") && /^\d{4}$/.test(usp.get("code"))){
+  $("codeInput").value = usp.get("code");
+  $("connectBtn").click();
+}
+</script>
+</body>
+</html>
