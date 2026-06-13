@@ -68,7 +68,13 @@
 
   /* lightbox */
   #lightbox { position:fixed; inset:0; background:rgba(0,0,0,.92); display:none; align-items:center; justify-content:center; z-index:50; cursor:zoom-out; }
-  #lightbox img { max-width:94vw; max-height:92vh; border-radius:8px; }
+  #lightbox img, #lightbox video { max-width:94vw; max-height:92vh; border-radius:8px; }
+  #lightbox audio { width:min(560px,90vw); }
+  #lightbox iframe { width:94vw; height:92vh; border:none; border-radius:8px; background:#fff; }
+  .media-icon { width:100%; height:110px; display:flex; align-items:center; justify-content:center; font-size:44px; background:#111; cursor:pointer; }
+  .media-kind { position:absolute; top:6px; left:6px; background:rgba(10,132,255,.85); color:#fff; font-size:10px; font-weight:700; padding:2px 7px; border-radius:6px; letter-spacing:1px; }
+  .media-card { position:relative; }
+  .up-progress { position:fixed; bottom:70px; left:50%; transform:translateX(-50%); background:#0a84ff; color:#fff; font-weight:700; padding:8px 18px; border-radius:20px; font-size:14px; display:none; z-index:55; }
 
   #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#30d158; color:#000; font-weight:700; padding:10px 22px; border-radius:24px; font-size:15px; display:none; z-index:60; }
 </style>
@@ -125,17 +131,18 @@
   <!-- ============ 媒體庫 ============ -->
   <div class="page" id="mediaPage">
     <div class="card">
-      <h2>上傳影像（JPG / PNG，自動壓縮）</h2>
-      <div id="dropZone">點擊選擇檔案，或將圖片拖曳到這裡<br><span style="font-size:12px">X 光、檢驗報告、傷口照片、心電圖⋯⋯可推送到學生監視器</span></div>
-      <input type="file" id="fileInput" accept="image/jpeg,image/png" multiple style="display:none">
+      <h2>上傳媒體（JPG / PNG / GIF / MP4 / MP3 / WAV / PDF，單檔 &le; 20MB）</h2>
+      <div id="dropZone">點擊選擇檔案，或將檔案拖曳到這裡<br><span style="font-size:12px">CT、X 光、ECG、超音波短片、檢驗報告 PDF、病人聲音（呼吸音/心音）⋯⋯可推送到學生監視器</span></div>
+      <input type="file" id="fileInput" accept="image/jpeg,image/png,image/gif,video/mp4,audio/mpeg,audio/wav,audio/x-wav,application/pdf" multiple style="display:none">
       <div id="mediaGrid"></div>
-      <div class="muted" id="mediaEmpty" style="display:none">媒體庫是空的，上傳第一張圖片吧</div>
+      <div class="muted" id="mediaEmpty" style="display:none">媒體庫是空的，上傳第一個檔案吧</div>
     </div>
   </div>
 </div>
 
-<div id="lightbox"><img id="lightImg" alt=""></div>
+<div id="lightbox"><div id="lightContent"></div></div>
 <div id="toast"></div>
+<div class="up-progress" id="upProgress"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -336,7 +343,18 @@ $("histLoadBtn").onclick = async ()=>{
 };
 
 // ========== 媒體庫 ==========
+// 支援 image(jpg/png)、gif、video(mp4)、audio(mp3/wav)、pdf。
+// Firestore 單文件上限 1MB，大檔以 base64 分塊存於 monitor_media_chunks，meta 存縮圖。
 let mediaLoaded = false;
+const CHUNKS = "monitor_media_chunks";
+const CHUNK_LEN = 700000;            // 每塊 base64 字元數（約 510KB 原始資料）
+const MAX_RAW = 20*1024*1024;        // 單檔 20MB
+const KIND_BY_MIME = {
+  "image/jpeg":"image", "image/png":"image", "image/gif":"gif",
+  "video/mp4":"video", "audio/mpeg":"audio", "audio/wav":"audio", "audio/x-wav":"audio",
+  "application/pdf":"pdf",
+};
+const KIND_ICON = { gif:"\u{1F39E}", video:"\u{1F3AC}", audio:"\u{1F50A}", pdf:"\u{1F4C4}", image:"\u{1F5BC}" };
 
 function readFileAsDataURL(file){
   return new Promise((res,rej)=>{
@@ -352,7 +370,26 @@ function loadImage(src){
     im.src = src;
   });
 }
-// 壓縮影像：長邊 ≤1400px、JPEG 品質遞減直到 <900KB（Firestore 文件上限 1MB）
+function drawThumb(source, w, h){
+  const T = 280, scale = Math.min(1, T/Math.max(w,h));
+  const cv = document.createElement("canvas");
+  cv.width = Math.round(w*scale); cv.height = Math.round(h*scale);
+  const ctx = cv.getContext("2d");
+  ctx.fillStyle = "#000"; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.drawImage(source, 0, 0, cv.width, cv.height);
+  return cv.toDataURL("image/jpeg", 0.7);
+}
+async function makeVideoThumb(dataUrl){
+  return new Promise(res=>{
+    const v = document.createElement("video");
+    v.muted = true; v.playsInline = true; v.preload = "auto";
+    v.onloadeddata = ()=>{ try{ res(drawThumb(v, v.videoWidth, v.videoHeight)); }catch(e){ res(null); } };
+    v.onerror = ()=> res(null);
+    setTimeout(()=>res(null), 8000); // 解碼逾時保險
+    v.src = dataUrl;
+  });
+}
+// 壓縮影像：長邊 ≤1400px、JPEG 品質遞減直到 <900KB
 async function processImage(file){
   const raw = await readFileAsDataURL(file);
   if (raw.length < 350000) return raw;
@@ -368,23 +405,101 @@ async function processImage(file){
   while (out.length > 900000 && q > 0.35){ q -= 0.1; out = cv.toDataURL("image/jpeg", q); }
   return out;
 }
+function upProgress(msg){
+  const p = $("upProgress");
+  if (!msg){ p.style.display = "none"; return; }
+  p.textContent = msg; p.style.display = "block";
+}
 async function uploadFiles(files){
   if (!db){ toast("Firebase 無法連線", true); return; }
   for (const f of files){
-    if (!/^image\/(jpeg|png)$/.test(f.type)){ toast(f.name+" 不是 JPG/PNG", true); continue; }
-    toast("處理中："+f.name);
+    const kind = KIND_BY_MIME[f.type];
+    if (!kind){ toast(f.name+" 格式不支援", true); continue; }
+    if (f.size > MAX_RAW){ toast(f.name+" 超過 20MB 上限", true); continue; }
+    upProgress("處理中："+f.name);
     try{
-      const dataUrl = await processImage(f);
-      if (dataUrl.length > 980000){ toast(f.name+" 壓縮後仍太大", true); continue; }
-      const ref = await addDoc(collection(db,MEDIA), {
-        name: f.name.replace(/\.(jpe?g|png)$/i,""),
-        dataUrl, created: Date.now(),
-      });
-      addMediaCard({ id:ref.id, name:f.name.replace(/\.(jpe?g|png)$/i,""), dataUrl }, true);
+      let dataUrl, thumb = null;
+      if (kind === "image"){
+        dataUrl = await processImage(f);
+        thumb = null; // 小圖直接內嵌，縮圖用原圖
+      } else {
+        dataUrl = await readFileAsDataURL(f);
+      }
+      if (kind === "gif"){
+        try{ const im = await loadImage(dataUrl); thumb = drawThumb(im, im.width, im.height); }catch(e){}
+      }
+      if (kind === "video") thumb = await makeVideoThumb(dataUrl);
+
+      const b64 = dataUrl.split(",")[1];
+      const meta = { name: f.name.replace(/\.[a-z0-9]+$/i,""), kind, mime: f.type,
+                     size: f.size, created: Date.now(), thumb: thumb||null, chunks: 0 };
+      if (dataUrl.length < 900000){
+        meta.dataUrl = dataUrl;
+      } else {
+        meta.chunks = Math.ceil(b64.length / CHUNK_LEN);
+      }
+      const ref = await addDoc(collection(db,MEDIA), meta);
+      for (let i=0; i<meta.chunks; i++){
+        upProgress(`上傳中 ${f.name}：${i+1}/${meta.chunks}`);
+        await setDoc(doc(db,CHUNKS, ref.id+"_"+i),
+          { mediaId: ref.id, idx: i, data: b64.slice(i*CHUNK_LEN, (i+1)*CHUNK_LEN) });
+      }
+      addMediaCard(Object.assign({id:ref.id}, meta), true);
       toast("已上傳 "+f.name);
-    }catch(e){ toast(f.name+" 上傳失敗", true); }
+    }catch(e){ console.warn(e); toast(f.name+" 上傳失敗", true); }
   }
+  upProgress(null);
   $("mediaEmpty").style.display = $("mediaGrid").children.length ? "none" : "block";
+}
+// 取得可播放的 URL（小檔直接 dataUrl；大檔組回分塊 → Blob URL）
+const mediaUrlCache = {};
+async function getMediaUrl(m){
+  if (m.dataUrl) return m.dataUrl;
+  if (mediaUrlCache[m.id]) return mediaUrlCache[m.id];
+  const parts = [];
+  for (let i=0; i<m.chunks; i++){
+    const s = await getDoc(doc(db,CHUNKS, m.id+"_"+i));
+    if (!s.exists()) throw new Error("chunk missing");
+    parts.push(s.data().data);
+  }
+  const bin = atob(parts.join(""));
+  const u8 = new Uint8Array(bin.length);
+  for (let i=0; i<bin.length; i++) u8[i] = bin.charCodeAt(i);
+  const url = URL.createObjectURL(new Blob([u8], {type: m.mime}));
+  mediaUrlCache[m.id] = url;
+  return url;
+}
+async function openLightbox(m){
+  const box = $("lightContent");
+  box.innerHTML = '<div style="color:#fff;font-size:18px">載入中…</div>';
+  $("lightbox").style.display = "flex";
+  try{
+    const url = await getMediaUrl(m);
+    box.innerHTML = "";
+    if (m.kind==="video"){
+      const v = document.createElement("video");
+      v.src = url; v.controls = true; v.autoplay = true; v.playsInline = true;
+      box.appendChild(v);
+    } else if (m.kind==="audio"){
+      const wrapA = document.createElement("div");
+      wrapA.style.cssText = "text-align:center;color:#fff";
+      wrapA.innerHTML = '<div style="font-size:60px;margin-bottom:14px">\u{1F50A}</div><div style="margin-bottom:14px">'+m.name+'</div>';
+      const a = document.createElement("audio");
+      a.src = url; a.controls = true; a.autoplay = true;
+      wrapA.appendChild(a);
+      box.appendChild(wrapA);
+      wrapA.onclick = e=> e.stopPropagation();
+    } else if (m.kind==="pdf"){
+      const fr = document.createElement("iframe");
+      fr.src = url;
+      box.appendChild(fr);
+      fr.onclick = e=> e.stopPropagation();
+    } else {
+      const im = document.createElement("img");
+      im.src = url;
+      box.appendChild(im);
+    }
+  }catch(e){ box.innerHTML = '<div style="color:#ff453a">載入失敗</div>'; }
 }
 $("dropZone").onclick = ()=> $("fileInput").click();
 $("fileInput").onchange = e=>{ uploadFiles([...e.target.files]); e.target.value=""; };
@@ -397,9 +512,24 @@ function addMediaCard(m, prepend){
   const card = document.createElement("div");
   card.className = "media-card";
   card.dataset.id = m.id;
-  const img = document.createElement("img");
-  img.src = m.dataUrl; img.alt = m.name;
-  img.onclick = ()=>{ $("lightImg").src = m.dataUrl; $("lightbox").style.display = "flex"; };
+  m.kind = m.kind || "image"; // 舊資料相容
+  let img;
+  const thumbSrc = m.thumb || (m.kind==="image"||m.kind==="gif" ? m.dataUrl : null);
+  if (thumbSrc){
+    img = document.createElement("img");
+    img.src = thumbSrc; img.alt = m.name;
+  } else {
+    img = document.createElement("div");
+    img.className = "media-icon";
+    img.textContent = KIND_ICON[m.kind] || "\u{1F4C1}";
+  }
+  img.onclick = ()=> openLightbox(m);
+  if (m.kind !== "image"){
+    const badge = document.createElement("div");
+    badge.className = "media-kind";
+    badge.textContent = m.kind.toUpperCase();
+    card.appendChild(badge);
+  }
   const nameIn = document.createElement("input");
   nameIn.value = m.name;
   nameIn.onchange = async ()=>{
@@ -423,7 +553,10 @@ function addMediaCard(m, prepend){
   del.className = "m-del"; del.textContent = "\u{1F5D1}";
   del.onclick = async ()=>{
     if (!confirm("刪除「"+nameIn.value+"」？")) return;
-    try{ await deleteDoc(doc(db,MEDIA,m.id)); card.remove(); toast("已刪除");
+    try{
+      await deleteDoc(doc(db,MEDIA,m.id));
+      for (let i=0; i<(m.chunks||0); i++) deleteDoc(doc(db,CHUNKS, m.id+"_"+i)).catch(()=>{});
+      card.remove(); toast("已刪除");
       $("mediaEmpty").style.display = $("mediaGrid").children.length ? "none" : "block";
     }catch(e){ toast("刪除失敗", true); }
   };
@@ -441,7 +574,10 @@ async function loadMedia(){
     $("mediaEmpty").style.display = qs.empty ? "block" : "none";
   }catch(e){ toast("媒體庫載入失敗", true); }
 }
-$("lightbox").onclick = ()=> $("lightbox").style.display = "none";
+$("lightbox").onclick = ()=>{
+  $("lightbox").style.display = "none";
+  $("lightContent").innerHTML = ""; // 停止播放中的影音
+};
 
 // URL 參數 ?code=1234 自動連線
 const usp = new URLSearchParams(location.search);

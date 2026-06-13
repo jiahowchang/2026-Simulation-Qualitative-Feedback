@@ -516,7 +516,16 @@
         <div id="invThumbs"></div>
         <div style="flex:1;min-width:0">
           <div class="tabline" id="invTitle">12 Lead ECG</div>
-          <div id="ecg12Wrap"><canvas id="ecg12cv"></canvas><img id="invImg" alt=""></div>
+          <div id="ecg12Wrap">
+            <canvas id="ecg12cv"></canvas>
+            <img id="invImg" alt="">
+            <video id="invVid" controls playsinline style="display:none;width:100%;max-height:62vh;border-radius:4px"></video>
+            <div id="invAudWrap" style="display:none;text-align:center;padding:40px 0;color:#fff">
+              <div style="font-size:60px;margin-bottom:14px">&#x1F50A;</div>
+              <audio id="invAud" controls style="width:80%"></audio>
+            </div>
+            <iframe id="invPdf" style="display:none;width:100%;height:62vh;border:none;border-radius:4px;background:#fff"></iframe>
+          </div>
         </div>
       </div>
     </div>
@@ -1201,33 +1210,48 @@ document.getElementById('btnLayout').onclick = ()=>{
 // Investigations：12 導程 + 後台推送的影像
 const investigations = []; // {id, name, dataUrl}
 let invSel = 'ecg12';
+const INV_ICON = { video:'\u{1F3AC}', audio:'\u{1F50A}', pdf:'\u{1F4C4}' };
 function renderInvThumbs(){
   const wrap = document.getElementById('invThumbs');
   wrap.innerHTML = '';
-  const mk = (id, label, imgSrc)=>{
+  const mk = (id, label, imgSrc, icon)=>{
     const d = document.createElement('div');
     d.className = 'inv-thumb' + (invSel===id ? ' sel' : '');
     if (imgSrc){ const im = document.createElement('img'); im.src = imgSrc; d.appendChild(im); }
+    else if (icon){ const ic = document.createElement('div'); ic.textContent = icon; ic.style.fontSize='26px'; d.appendChild(ic); }
     const s = document.createElement('div'); s.textContent = label; d.appendChild(s);
     d.onclick = ()=> selectInv(id);
     wrap.appendChild(d);
   };
-  mk('ecg12', '12 Lead ECG', null);
-  investigations.forEach(m=> mk(m.id, m.name, m.dataUrl));
+  mk('ecg12', '12 Lead ECG', null, null);
+  investigations.forEach(m=> mk(m.id, m.name, m.thumb || ((m.kind==='image'||m.kind==='gif') ? m.url : null), INV_ICON[m.kind]));
+}
+function stopInvPlayback(){
+  document.getElementById('invVid').pause();
+  document.getElementById('invAud').pause();
 }
 function selectInv(id){
   invSel = id;
-  const cv = document.getElementById('ecg12cv'), im = document.getElementById('invImg'), ti = document.getElementById('invTitle');
+  const ti = document.getElementById('invTitle');
+  const els = {
+    cv: document.getElementById('ecg12cv'), im: document.getElementById('invImg'),
+    vid: document.getElementById('invVid'), aud: document.getElementById('invAudWrap'),
+    pdf: document.getElementById('invPdf'),
+  };
+  stopInvPlayback();
+  Object.values(els).forEach(e=> e.style.display='none');
   if (id==='ecg12'){
     draw12Lead();
-    cv.style.display='block'; im.style.display='none';
+    els.cv.style.display='block';
     ti.textContent = '12 Lead ECG';
   } else {
     const m = investigations.find(x=>x.id===id);
     if (!m) return;
-    im.src = m.dataUrl;
-    cv.style.display='none'; im.style.display='block';
     ti.textContent = m.name;
+    if (m.kind==='video'){ els.vid.src = m.url; els.vid.style.display='block'; els.vid.play().catch(()=>{}); }
+    else if (m.kind==='audio'){ document.getElementById('invAud').src = m.url; els.aud.style.display='block'; document.getElementById('invAud').play().catch(()=>{}); }
+    else if (m.kind==='pdf'){ els.pdf.src = m.url; els.pdf.style.display='block'; }
+    else { els.im.src = m.url; els.im.style.display='block'; }
   }
   renderInvThumbs();
 }
@@ -1237,6 +1261,8 @@ window.addInvestigation = function(m){
   openModal('ecg12Modal');
   beep(880,.15,.15); // 提示學員有新檢查結果
 };
+document.querySelector('#ecg12Modal .modal-x').addEventListener('click', stopInvPlayback);
+document.getElementById('ecg12Modal').addEventListener('click', e=>{ if (e.target.id==='ecg12Modal') stopInvPlayback(); });
 document.getElementById('btn12Lead').onclick = ()=>{ selectInv('ecg12'); openModal('ecg12Modal'); };
 document.getElementById('btnLeads').onclick = ()=>{
   state.ecgLead = (state.ecgLead+1)%3;
@@ -1384,15 +1410,31 @@ function applyRemoteCtrl(c){
   if (c.silenceSeq && c.silenceSeq > remote.lastSilence){ remote.lastSilence = c.silenceSeq; state.silencedUntil = simT+120; }
   if (c.mediaSeq && c.mediaSeq > remote.lastMedia){
     remote.lastMedia = c.mediaSeq;
-    if (c.mediaId){
-      getDoc(doc(db,"monitor_media",c.mediaId)).then(s=>{
-        if (s.exists()){
-          const m = s.data();
-          window.addInvestigation({ id:c.mediaId, name:c.mediaName||m.name||"Image", dataUrl:m.dataUrl });
-        }
-      }).catch(()=>{});
-    }
+    if (c.mediaId) fetchAndShowMedia(c.mediaId, c.mediaName);
   }
+}
+// 取得媒體（大檔由 monitor_media_chunks 分塊組回成 Blob URL）
+async function fetchAndShowMedia(id, nameOverride){
+  try{
+    const s = await getDoc(doc(db,"monitor_media",id));
+    if (!s.exists()) return;
+    const m = s.data();
+    let url = m.dataUrl;
+    if (!url && m.chunks){
+      const parts = [];
+      for (let i=0; i<m.chunks; i++){
+        const cs = await getDoc(doc(db,"monitor_media_chunks", id+"_"+i));
+        if (!cs.exists()) return;
+        parts.push(cs.data().data);
+      }
+      const bin = atob(parts.join(""));
+      const u8 = new Uint8Array(bin.length);
+      for (let i=0; i<bin.length; i++) u8[i] = bin.charCodeAt(i);
+      url = URL.createObjectURL(new Blob([u8], {type: m.mime||"application/octet-stream"}));
+    }
+    if (!url) return;
+    window.addInvestigation({ id, name: nameOverride||m.name||"Media", kind: m.kind||"image", url, thumb: m.thumb||null });
+  }catch(e){ console.warn("media fetch failed", e); }
 }
 async function createSession(){
   if (!db) return;

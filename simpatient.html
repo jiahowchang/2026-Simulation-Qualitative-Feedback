@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>SimPatient 模擬病人平台</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css">
+<script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { background:#000; color:#fff; font-family:-apple-system,"Helvetica Neue",Arial,"PingFang TC",sans-serif; min-height:100vh; }
+  button { cursor:pointer; font-family:inherit; }
+  .screen { display:none; }
+  .screen.active { display:block; }
+
+  /* ===== 共用 ===== */
+  #wrap { max-width:980px; margin:0 auto; padding:0 14px 60px 14px; }
+  header.app { position:sticky; top:0; z-index:20; background:#000; padding:14px 0 10px 0; border-bottom:1px solid #2c2c2e; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  header.app h1 { font-size:20px; flex:1; }
+  header.app h1 span { color:#5ac8fa; }
+  .card { background:#1c1c1e; border:1px solid #3a3a3c; border-radius:14px; padding:16px; margin:14px 0; }
+  .card h2 { font-size:14px; color:#5ac8fa; margin-bottom:10px; font-weight:700; }
+  .btn { padding:10px 16px; border:none; border-radius:10px; font-size:15px; font-weight:700; background:#3a3a3c; color:#fff; }
+  .btn.primary { background:#0a84ff; }
+  .btn.green { background:#30d158; color:#000; }
+  .btn.red { background:#ff453a; }
+  .btn.ghost { background:none; border:1px solid #48484a; color:#5ac8fa; }
+  .field { margin-bottom:12px; }
+  .field label { display:block; font-size:13px; color:#999; margin-bottom:5px; }
+  .field input, .field textarea, .field select { width:100%; background:#2c2c2e; border:1px solid #48484a; color:#fff; font-size:15px; padding:10px; border-radius:10px; font-family:inherit; }
+  .field textarea { min-height:70px; resize:vertical; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 14px; }
+  .grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:0 14px; }
+  .muted { color:#777; font-size:14px; text-align:center; padding:14px; }
+  .chip { display:inline-block; padding:5px 12px; border-radius:16px; border:1px solid #48484a; font-size:13px; margin:0 6px 6px 0; cursor:pointer; color:#ccc; }
+  .chip.on { background:#0a84ff; border-color:#0a84ff; color:#fff; }
+  #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#30d158; color:#000; font-weight:700; padding:10px 22px; border-radius:24px; font-size:15px; display:none; z-index:300; }
+
+  /* ===== 教案清單 ===== */
+  .case-card { display:flex; align-items:center; gap:14px; background:#1c1c1e; border:1px solid #3a3a3c; border-radius:14px; padding:16px; margin-bottom:12px; }
+  .case-info { flex:1; min-width:0; }
+  .case-info h3 { font-size:17px; margin-bottom:4px; }
+  .case-info .tags { font-size:12px; color:#5ac8fa; }
+  .case-info .sub { font-size:13px; color:#999; margin-top:3px; }
+  .case-acts { display:flex; gap:8px; flex-shrink:0; }
+
+  /* ===== 熱點清單 ===== */
+  .hs-row { display:flex; align-items:center; gap:10px; padding:8px 4px; border-bottom:1px solid #2c2c2e; font-size:14px; }
+  .hs-row .t { color:#5ac8fa; width:64px; flex-shrink:0; }
+  .hs-row .del { background:none; border:none; color:#ff453a; font-size:16px; }
+  #editorPano { width:100%; height:300px; border-radius:12px; background:#111; }
+  #panoHint { font-size:13px; color:#ff9f0a; margin-top:8px; min-height:18px; }
+
+  /* ===== 執行畫面 ===== */
+  #playerScreen { position:fixed; inset:0; background:#000; z-index:50; }
+  #playerPano { position:absolute; inset:0; }
+  #playerTop { position:absolute; top:0; left:0; right:0; z-index:60; display:flex; align-items:center; gap:10px; padding:10px 14px; background:linear-gradient(rgba(0,0,0,.75),transparent); }
+  #playerTop h2 { font-size:17px; flex:1; text-shadow:0 1px 4px #000; }
+  .pbtn { padding:9px 14px; border:none; border-radius:10px; font-size:14px; font-weight:700; background:rgba(28,28,30,.85); color:#fff; }
+
+  /* chat 面板 */
+  #chatPanel { position:absolute; left:14px; bottom:14px; width:min(420px, calc(100vw - 28px)); max-height:62vh; display:flex; flex-direction:column; background:rgba(18,18,20,.93); border:1px solid #3a3a3c; border-radius:16px; z-index:60; backdrop-filter:blur(8px); }
+  #chatHead { display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid #2c2c2e; cursor:pointer; }
+  #chatHead .avatar { width:34px; height:34px; border-radius:50%; background:#0a84ff; display:flex; align-items:center; justify-content:center; font-size:18px; }
+  #chatHead .nm { flex:1; font-size:15px; font-weight:700; }
+  #chatHead .st { font-size:12px; color:#30d158; }
+  #chatMsgs { flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:8px; min-height:120px; }
+  .msg { max-width:84%; padding:9px 13px; border-radius:14px; font-size:15px; line-height:1.45; white-space:pre-wrap; }
+  .msg.user { align-self:flex-end; background:#0a84ff; }
+  .msg.pt { align-self:flex-start; background:#2c2c2e; }
+  .msg.sys { align-self:center; background:none; color:#888; font-size:12px; }
+  #chatInputRow { display:flex; gap:8px; padding:10px; border-top:1px solid #2c2c2e; }
+  #chatInput { flex:1; background:#2c2c2e; border:1px solid #48484a; color:#fff; font-size:15px; padding:10px 12px; border-radius:12px; }
+  #micBtn, #sendBtn { width:44px; border:none; border-radius:12px; font-size:17px; }
+  #sendBtn { background:#0a84ff; color:#fff; }
+  #micBtn { background:#3a3a3c; color:#fff; }
+  #micBtn.rec { background:#ff453a; animation:pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity:.6; } }
+  #chatPanel.min #chatMsgs, #chatPanel.min #chatInputRow { display:none; }
+
+  /* 熱點樣式 */
+  .hotspot-dot { width:30px; height:30px; border-radius:50%; background:rgba(10,132,255,.9); border:2px solid #fff; box-shadow:0 0 12px rgba(10,132,255,.9); display:flex; align-items:center; justify-content:center; font-size:15px; cursor:pointer; }
+  .hotspot-dot.media { background:rgba(255,159,10,.92); box-shadow:0 0 12px rgba(255,159,10,.9); }
+  .hotspot-dot.monitor { background:rgba(48,209,88,.92); box-shadow:0 0 12px rgba(48,209,88,.9); }
+
+  /* ===== 通用 modal ===== */
+  .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.65); display:none; align-items:center; justify-content:center; z-index:200; }
+  .modal-bg.open { display:flex; }
+  .modal { background:#1c1c1e; border:1px solid #3a3a3c; border-radius:16px; width:min(560px,92vw); max-height:88vh; overflow-y:auto; padding:18px; }
+  .modal h3 { font-size:17px; margin-bottom:14px; }
+  .modal .x { float:right; background:none; border:none; color:#fff; font-size:20px; }
+  #mediaPickGrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px; }
+  #mediaPickGrid .mp { border:2px solid transparent; border-radius:10px; overflow:hidden; cursor:pointer; background:#2c2c2e; }
+  #mediaPickGrid .mp img { width:100%; height:80px; object-fit:cover; display:block; }
+  #mediaPickGrid .mp .ic { height:80px; display:flex; align-items:center; justify-content:center; font-size:30px; }
+  #mediaPickGrid .mp div.nm { font-size:11px; padding:5px; color:#ccc; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #mediaViewBox { text-align:center; }
+  #mediaViewBox img, #mediaViewBox video { max-width:100%; max-height:64vh; border-radius:8px; }
+  #mediaViewBox iframe { width:100%; height:64vh; border:none; border-radius:8px; background:#fff; }
+</style>
+</head>
+<body>
+
+<!-- ================= 教案管理 ================= -->
+<div class="screen active" id="listScreen">
+  <div id="wrap">
+    <header class="app">
+      <h1>Sim<span>Patient</span> 3D 模擬病人平台</h1>
+      <button class="btn ghost" id="settingsBtn">&#x2699; API 設定</button>
+      <button class="btn primary" id="newCaseBtn">＋ 新增教案</button>
+    </header>
+    <div class="card" style="font-size:14px;color:#bbb;line-height:1.7">
+      跨職類臨床模擬訓練：教師建立教案（病人設定 + 360&deg; 實景 + 互動熱點），學員在場景中與
+      <b style="color:#fff">AI 驅動的模擬病人</b>對話、查閱檢查、執行處置。
+      生理監視器請搭配 <a href="monitor.html" target="_blank" style="color:#5ac8fa">SimMonitor</a>，媒體請在
+      <a href="monitor-admin.html" target="_blank" style="color:#5ac8fa">教師後台</a>上傳。
+    </div>
+    <div id="caseList"></div>
+    <div class="muted" id="caseEmpty" style="display:none">還沒有教案 — 按「新增教案」或 <button class="btn ghost" id="demoBtn" style="font-size:13px;padding:6px 10px">載入範例教案（胸痛）</button></div>
+  </div>
+</div>
+
+<!-- ================= 教案編輯 ================= -->
+<div class="screen" id="editScreen">
+  <div id="wrap">
+    <header class="app">
+      <button class="btn" id="editBackBtn">&#x2190; 返回</button>
+      <h1 id="editTitle">編輯教案</h1>
+      <button class="btn green" id="saveCaseBtn">儲存教案</button>
+    </header>
+
+    <div class="card">
+      <h2>教案基本資料</h2>
+      <div class="field"><label>教案名稱</label><input id="fTitle" placeholder="例：急性胸痛之評估與處置"></div>
+      <div class="field"><label>適用職類（可複選）</label><div id="profChips"></div></div>
+      <div class="field"><label>教學目標（每行一項）</label><textarea id="fObjectives" placeholder="1. 能執行系統性胸痛評估&#10;2. 能正確判讀 12 導程心電圖&#10;3. 能依 ACS 流程給予初步處置"></textarea></div>
+      <div class="field"><label>情境簡介（學員開場看到的 brief）</label><textarea id="fBrief" placeholder="58 歲男性於急診檢傷主訴胸悶 2 小時⋯⋯"></textarea></div>
+    </div>
+
+    <div class="card">
+      <h2>模擬病人設定（AI 角色扮演依據）</h2>
+      <div class="grid3">
+        <div class="field"><label>姓名</label><input id="fName" placeholder="王大明"></div>
+        <div class="field"><label>年齡</label><input id="fAge" type="number" placeholder="58"></div>
+        <div class="field"><label>性別</label><select id="fSex"><option>男</option><option>女</option></select></div>
+      </div>
+      <div class="field"><label>主訴與現病史</label><textarea id="fHpi" placeholder="胸口悶痛 2 小時，壓迫感、冒冷汗，會傳到左肩⋯⋯"></textarea></div>
+      <div class="field"><label>過去病史 / 用藥 / 過敏</label><textarea id="fPmh" placeholder="高血壓 10 年（服用 Amlodipine）、抽菸 30 年。否認藥物過敏。"></textarea></div>
+      <div class="field"><label>個性與說話風格</label><input id="fPersona" placeholder="焦慮、講話急促、會反覆問自己是不是心臟病發"></div>
+      <div class="field"><label>意識與配合度</label><input id="fMental" placeholder="意識清楚，因疼痛而坐立不安"></div>
+      <div class="field"><label>隱藏劇本（學員問對問題才透露；其他職類專屬資訊也寫這裡）</label><textarea id="fHidden" placeholder="若被問到家族史：父親 55 歲心肌梗塞過世。&#10;若藥師詢問用藥順從性：其實常常忘記吃血壓藥。&#10;若被告知要做心導管：會擔心費用並詢問風險。"></textarea></div>
+    </div>
+
+    <div class="card">
+      <h2>建議生命徵象（供 SimMonitor 教師控制台設定）</h2>
+      <div class="grid3">
+        <div class="field"><label>HR</label><input id="fHr" type="number" placeholder="105"></div>
+        <div class="field"><label>BP</label><input id="fBp" placeholder="148/92"></div>
+        <div class="field"><label>SpO2</label><input id="fSpo2" type="number" placeholder="95"></div>
+        <div class="field"><label>RR</label><input id="fRr" type="number" placeholder="22"></div>
+        <div class="field"><label>Temp</label><input id="fTemp" placeholder="36.9"></div>
+        <div class="field"><label>心律</label><input id="fRhythm" placeholder="Sinus tachycardia"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>360&deg; 場景與互動熱點</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <button class="btn" id="panoUploadBtn">上傳 360 照片</button>
+        <button class="btn" id="panoPickBtn">從媒體庫選擇</button>
+        <button class="btn ghost" id="hsAddBtn">＋ 新增熱點（點擊全景位置）</button>
+        <input type="file" id="panoFile" accept="image/jpeg,image/png" style="display:none">
+      </div>
+      <div id="editorPano"></div>
+      <div id="panoHint"></div>
+      <div id="hsList" style="margin-top:10px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 場景執行 ================= -->
+<div id="playerScreen" class="screen">
+  <div id="playerPano"></div>
+  <div id="playerTop">
+    <button class="pbtn" id="playerBackBtn">&#x2190; 離開</button>
+    <h2 id="playerTitle"></h2>
+    <button class="pbtn" id="briefBtn">&#x1F4CB; 情境</button>
+    <button class="pbtn" id="voiceBtn">&#x1F50A; 語音</button>
+    <button class="pbtn" id="monitorBtn" style="background:rgba(48,209,88,.85);color:#000">&#x1F4FA; 監視器</button>
+  </div>
+  <div id="chatPanel">
+    <div id="chatHead">
+      <div class="avatar">&#x1F464;</div>
+      <div class="nm" id="ptName">模擬病人</div>
+      <div class="st" id="ptStatus">待命</div>
+    </div>
+    <div id="chatMsgs"></div>
+    <div id="chatInputRow">
+      <button id="micBtn" title="語音輸入">&#x1F3A4;</button>
+      <input id="chatInput" placeholder="跟病人說話⋯⋯" autocomplete="off">
+      <button id="sendBtn">&#x27A4;</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= Modals ================= -->
+<div class="modal-bg" id="settingsModal">
+  <div class="modal">
+    <button class="x" data-close="settingsModal">&#x2715;</button>
+    <h3>&#x2699; AI 病人 API 設定</h3>
+    <div class="field"><label>Anthropic API Key（僅儲存在這台裝置的瀏覽器）</label><input id="setKey" type="password" placeholder="sk-ant-..."></div>
+    <div class="field"><label>模型</label>
+      <select id="setModel">
+        <option value="claude-opus-4-8">Claude Opus 4.8（最聰明，建議）</option>
+        <option value="claude-sonnet-4-6">Claude Sonnet 4.6（快速，省成本）</option>
+        <option value="claude-haiku-4-5">Claude Haiku 4.5（最便宜）</option>
+      </select>
+    </div>
+    <div style="font-size:13px;color:#999;line-height:1.6;margin-bottom:12px">
+      到 <a href="https://platform.claude.com/" target="_blank" style="color:#5ac8fa">platform.claude.com</a> 申請 API Key。
+      Key 只存於本機 localStorage，不會上傳到任何伺服器；請勿在公用電腦儲存。
+    </div>
+    <button class="btn primary" style="width:100%" id="setSaveBtn">儲存</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="hsModal">
+  <div class="modal">
+    <button class="x" data-close="hsModal">&#x2715;</button>
+    <h3>新增熱點</h3>
+    <div class="field"><label>類型</label>
+      <select id="hsType">
+        <option value="info">&#x2139; 資訊（文字說明）</option>
+        <option value="media">&#x1F4C1; 媒體（影像/影音/PDF，從媒體庫）</option>
+        <option value="monitor">&#x1F4FA; 生理監視器</option>
+      </select>
+    </div>
+    <div class="field"><label>標籤名稱</label><input id="hsLabel" placeholder="例：床頭卡 / 12導程ECG / 點滴幫浦"></div>
+    <div class="field" id="hsTextField"><label>文字內容</label><textarea id="hsText" placeholder="學員點擊後看到的說明文字"></textarea></div>
+    <div class="field" id="hsMediaField" style="display:none">
+      <label>選擇媒體</label>
+      <button class="btn" id="hsMediaPick" style="width:100%">從媒體庫選擇⋯</button>
+      <div id="hsMediaName" style="font-size:13px;color:#5ac8fa;margin-top:6px"></div>
+    </div>
+    <button class="btn primary" style="width:100%" id="hsSaveBtn">加入熱點</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="mediaPickModal">
+  <div class="modal">
+    <button class="x" data-close="mediaPickModal">&#x2715;</button>
+    <h3>&#x1F5BC; 媒體庫</h3>
+    <div id="mediaPickGrid"></div>
+    <div class="muted" id="mediaPickEmpty" style="display:none">媒體庫沒有檔案，請先到教師後台上傳</div>
+  </div>
+</div>
+
+<div class="modal-bg" id="mediaViewModal">
+  <div class="modal" style="width:min(900px,94vw)">
+    <button class="x" data-close="mediaViewModal">&#x2715;</button>
+    <h3 id="mediaViewTitle"></h3>
+    <div id="mediaViewBox"></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="infoModal">
+  <div class="modal">
+    <button class="x" data-close="infoModal">&#x2715;</button>
+    <h3 id="infoTitle"></h3>
+    <div id="infoBody" style="font-size:15px;line-height:1.7;white-space:pre-wrap;color:#ddd"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, doc, addDoc, getDoc, getDocs, setDoc, deleteDoc, query, orderBy }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey:"AIzaSyBrs80vpFVe-iEh5ctzRWfYHUBb3KGvILo",
+  authDomain:"speech-to-text-2f776.firebaseapp.com",
+  projectId:"speech-to-text-2f776",
+  storageBucket:"speech-to-text-2f776.firebasestorage.app",
+  messagingSenderId:"283739023798",
+  appId:"1:283739023798:web:3091ec2bcf6262b5ecb917"
+};
+let db = null;
+try{ db = getFirestore(initializeApp(firebaseConfig)); }catch(e){ console.warn("Firebase init failed", e); }
+const $ = id => document.getElementById(id);
+const CASES = "sim_cases", MEDIA = "monitor_media", CHUNKS = "monitor_media_chunks";
+const PROFESSIONS = ["醫學生","護理師","藥師","呼吸治療師","醫事放射師","臨床心理師","營養師","物理治療師"];
+
+function toast(msg, bad){
+  const t = $("toast");
+  t.textContent = msg;
+  t.style.background = bad ? "#ff453a" : "#30d158";
+  t.style.color = bad ? "#fff" : "#000";
+  t.style.display = "block";
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=> t.style.display = "none", 2400);
+}
+document.querySelectorAll(".x").forEach(b=> b.onclick = ()=> $(b.dataset.close).classList.remove("open"));
+document.querySelectorAll(".modal-bg").forEach(m=> m.addEventListener("click", e=>{ if (e.target===m) m.classList.remove("open"); }));
+function show(id){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active")); $(id).classList.add("active"); }
+
+// ============ 媒體工具（與後台共用 Firestore 分塊格式）============
+const mediaUrlCache = {};
+async function getMediaUrl(m){
+  if (m.dataUrl) return m.dataUrl;
+  if (mediaUrlCache[m.id]) return mediaUrlCache[m.id];
+  const parts = [];
+  for (let i=0; i<(m.chunks||0); i++){
+    const s = await getDoc(doc(db,CHUNKS, m.id+"_"+i));
+    if (!s.exists()) throw new Error("chunk missing");
+    parts.push(s.data().data);
+  }
+  const bin = atob(parts.join(""));
+  const u8 = new Uint8Array(bin.length);
+  for (let i=0; i<bin.length; i++) u8[i] = bin.charCodeAt(i);
+  const url = URL.createObjectURL(new Blob([u8], {type:m.mime||"image/jpeg"}));
+  mediaUrlCache[m.id] = url;
+  return url;
+}
+async function fetchMediaMeta(id){
+  const s = await getDoc(doc(db,MEDIA,id));
+  return s.exists() ? Object.assign({id}, s.data()) : null;
+}
+// 媒體選擇器
+let pickResolve = null;
+async function pickMedia(kindFilter){
+  $("mediaPickGrid").innerHTML = '<div class="muted">載入中…</div>';
+  $("mediaPickModal").classList.add("open");
+  const qs = await getDocs(query(collection(db,MEDIA), orderBy("created","desc")));
+  const grid = $("mediaPickGrid");
+  grid.innerHTML = "";
+  let n = 0;
+  const ICON = { video:"\u{1F3AC}", audio:"\u{1F50A}", pdf:"\u{1F4C4}" };
+  qs.forEach(d=>{
+    const m = Object.assign({id:d.id}, d.data());
+    m.kind = m.kind || "image";
+    if (kindFilter && !kindFilter.includes(m.kind)) return;
+    n++;
+    const div = document.createElement("div");
+    div.className = "mp";
+    const thumb = m.thumb || ((m.kind==="image"||m.kind==="gif") ? m.dataUrl : null);
+    div.innerHTML = (thumb ? `<img src="${thumb}">` : `<div class="ic">${ICON[m.kind]||"\u{1F4C1}"}</div>`) + `<div class="nm"></div>`;
+    div.querySelector(".nm").textContent = m.name;
+    div.onclick = ()=>{ $("mediaPickModal").classList.remove("open"); if (pickResolve) pickResolve(m); };
+    grid.appendChild(div);
+  });
+  $("mediaPickEmpty").style.display = n ? "none" : "block";
+  return new Promise(res=> pickResolve = res);
+}
+// 媒體檢視（播放器內）
+async function viewMedia(id){
+  const m = await fetchMediaMeta(id);
+  if (!m){ toast("找不到媒體", true); return; }
+  $("mediaViewTitle").textContent = m.name;
+  const box = $("mediaViewBox");
+  box.innerHTML = '<div class="muted">載入中…</div>';
+  $("mediaViewModal").classList.add("open");
+  try{
+    const url = await getMediaUrl(m);
+    box.innerHTML = "";
+    if (m.kind==="video"){ const v=document.createElement("video"); v.src=url; v.controls=true; v.autoplay=true; v.playsInline=true; box.appendChild(v); }
+    else if (m.kind==="audio"){ const a=document.createElement("audio"); a.src=url; a.controls=true; a.autoplay=true; a.style.width="100%"; box.appendChild(a); }
+    else if (m.kind==="pdf"){ const f=document.createElement("iframe"); f.src=url; box.appendChild(f); }
+    else { const im=document.createElement("img"); im.src=url; box.appendChild(im); }
+  }catch(e){ box.innerHTML = '<div class="muted">載入失敗</div>'; }
+}
+// 影像壓縮上傳（360 照片，長邊 4096）
+function readFileAsDataURL(f){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(f); }); }
+function loadImage(src){ return new Promise((res,rej)=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=src; }); }
+async function uploadPano(file){
+  const raw = await readFileAsDataURL(file);
+  const img = await loadImage(raw);
+  const MAXW = 4096;
+  const scale = Math.min(1, MAXW/img.width);
+  const cv = document.createElement("canvas");
+  cv.width = Math.round(img.width*scale); cv.height = Math.round(img.height*scale);
+  cv.getContext("2d").drawImage(img,0,0,cv.width,cv.height);
+  let q = 0.8, out = cv.toDataURL("image/jpeg", q);
+  // 360 圖較大，超過 900KB 就分塊
+  const tcv = document.createElement("canvas");
+  const ts = Math.min(1, 280/cv.width);
+  tcv.width = Math.round(cv.width*ts); tcv.height = Math.round(cv.height*ts);
+  tcv.getContext("2d").drawImage(cv,0,0,tcv.width,tcv.height);
+  const thumb = tcv.toDataURL("image/jpeg", 0.7);
+  const b64 = out.split(",")[1];
+  const CH = 700000;
+  const meta = { name: file.name.replace(/\.[a-z0-9]+$/i,"")+" (360)", kind:"image", mime:"image/jpeg",
+                 size: file.size, created: Date.now(), thumb, chunks: 0 };
+  if (out.length < 900000) meta.dataUrl = out;
+  else meta.chunks = Math.ceil(b64.length/CH);
+  const ref = await addDoc(collection(db,MEDIA), meta);
+  for (let i=0;i<meta.chunks;i++){
+    toast(`上傳 360 照片：${i+1}/${meta.chunks}`);
+    await setDoc(doc(db,CHUNKS, ref.id+"_"+i), { mediaId:ref.id, idx:i, data: b64.slice(i*CH,(i+1)*CH) });
+  }
+  return ref.id;
+}
+// 預設示範全景（無 360 照片時）
+function placeholderPano(){
+  const cv = document.createElement("canvas");
+  cv.width = 2048; cv.height = 1024;
+  const ctx = cv.getContext("2d");
+  const g = ctx.createLinearGradient(0,0,0,1024);
+  g.addColorStop(0,"#26303a"); g.addColorStop(0.55,"#3a4754"); g.addColorStop(0.62,"#2a2e33"); g.addColorStop(1,"#17191c");
+  ctx.fillStyle = g; ctx.fillRect(0,0,2048,1024);
+  ctx.strokeStyle = "rgba(120,150,170,.25)";
+  for (let x=0;x<=2048;x+=128){ ctx.beginPath(); ctx.moveTo(x,560); ctx.lineTo(x,1024); ctx.stroke(); }
+  for (let y=560;y<=1024;y+=64){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(2048,y); ctx.stroke(); }
+  ctx.fillStyle = "rgba(255,255,255,.75)";
+  ctx.font = "bold 44px sans-serif"; ctx.textAlign = "center";
+  ctx.fillText("示範場景（請上傳 360° 實景照片取代）", 1024, 320);
+  ctx.font = "28px sans-serif";
+  ctx.fillText("用 360 相機拍攝病房 / 急救室 / ICU 實景", 1024, 380);
+  return cv.toDataURL("image/jpeg", 0.8);
+}
+
+// ============ 教案 CRUD ============
+let cases = [];
+async function loadCases(){
+  if (!db) return;
+  const qs = await getDocs(query(collection(db,CASES), orderBy("updated","desc")));
+  cases = [];
+  qs.forEach(d=> cases.push(Object.assign({id:d.id}, d.data())));
+  const box = $("caseList");
+  box.innerHTML = "";
+  $("caseEmpty").style.display = cases.length ? "none" : "block";
+  cases.forEach(c=>{
+    const div = document.createElement("div");
+    div.className = "case-card";
+    div.innerHTML = `<div class="case-info"><h3></h3><div class="tags"></div><div class="sub"></div></div>
+      <div class="case-acts">
+        <button class="btn green run">&#x25B6; 執行</button>
+        <button class="btn edit">編輯</button>
+        <button class="btn red del">刪除</button>
+      </div>`;
+    div.querySelector("h3").textContent = c.title || "(未命名)";
+    div.querySelector(".tags").textContent = (c.professions||[]).join("、");
+    div.querySelector(".sub").textContent = (c.patient&&c.patient.name? c.patient.name+"，"+(c.patient.age||"?")+"歲 — " : "") + (c.brief||"").slice(0,50);
+    div.querySelector(".run").onclick = ()=> startPlayer(c);
+    div.querySelector(".edit").onclick = ()=> openEditor(c);
+    div.querySelector(".del").onclick = async ()=>{
+      if (!confirm("刪除教案「"+(c.title||"未命名")+"」？")) return;
+      await deleteDoc(doc(db,CASES,c.id));
+      loadCases(); toast("已刪除");
+    };
+    box.appendChild(div);
+  });
+}
+
+// ---------- 編輯器 ----------
+let editing = null;       // 編輯中 case 物件
+let editorViewer = null;  // pannellum instance
+let hsAddMode = false;
+let pendingHsCoords = null;
+
+function profChipsRender(sel){
+  const box = $("profChips");
+  box.innerHTML = "";
+  PROFESSIONS.forEach(p=>{
+    const s = document.createElement("span");
+    s.className = "chip" + ((sel||[]).includes(p) ? " on" : "");
+    s.textContent = p;
+    s.onclick = ()=> s.classList.toggle("on");
+    box.appendChild(s);
+  });
+}
+function profChipsValue(){
+  return [...document.querySelectorAll("#profChips .chip.on")].map(s=>s.textContent);
+}
+async function openEditor(c){
+  editing = c ? JSON.parse(JSON.stringify(c)) : {
+    title:"", professions:[], objectives:"", brief:"",
+    patient:{name:"",age:"",sex:"男",hpi:"",pmh:"",persona:"",mental:"",hidden:""},
+    vitals:{hr:"",bp:"",spo2:"",rr:"",temp:"",rhythm:""},
+    panoId:null, hotspots:[],
+  };
+  $("editTitle").textContent = c ? "編輯教案" : "新增教案";
+  $("fTitle").value = editing.title||"";
+  profChipsRender(editing.professions);
+  $("fObjectives").value = editing.objectives||"";
+  $("fBrief").value = editing.brief||"";
+  const p = editing.patient||{};
+  $("fName").value=p.name||""; $("fAge").value=p.age||""; $("fSex").value=p.sex||"男";
+  $("fHpi").value=p.hpi||""; $("fPmh").value=p.pmh||""; $("fPersona").value=p.persona||"";
+  $("fMental").value=p.mental||""; $("fHidden").value=p.hidden||"";
+  const v = editing.vitals||{};
+  $("fHr").value=v.hr||""; $("fBp").value=v.bp||""; $("fSpo2").value=v.spo2||"";
+  $("fRr").value=v.rr||""; $("fTemp").value=v.temp||""; $("fRhythm").value=v.rhythm||"";
+  show("editScreen");
+  await initEditorPano();
+  renderHsList();
+}
+async function panoUrlOf(c){
+  if (c.panoId){
+    try{
+      const m = await fetchMediaMeta(c.panoId);
+      if (m) return await getMediaUrl(m);
+    }catch(e){}
+  }
+  return placeholderPano();
+}
+async function initEditorPano(){
+  if (editorViewer){ editorViewer.destroy(); editorViewer = null; }
+  const url = await panoUrlOf(editing);
+  editorViewer = pannellum.viewer("editorPano", {
+    type:"equirectangular", panorama:url, autoLoad:true, showControls:false,
+    hotSpots: editing.hotspots.map(hsSpec),
+  });
+  editorViewer.on("mousedown", e=>{
+    if (!hsAddMode) return;
+    const c = editorViewer.mouseEventToCoords(e);
+    pendingHsCoords = { pitch:c[0], yaw:c[1] };
+    hsAddMode = false;
+    $("panoHint").textContent = "";
+    $("hsLabel").value = ""; $("hsText").value = "";
+    hsPickedMedia = null; $("hsMediaName").textContent = "";
+    $("hsModal").classList.add("open");
+  });
+}
+const HS_ICON = { info:"ℹ", media:"\u{1F4C1}", monitor:"\u{1F4FA}" };
+function hsSpec(h, forPlayer){
+  return {
+    pitch:h.pitch, yaw:h.yaw, cssClass:"hs-anchor",
+    createTooltipFunc: el=>{
+      const d = document.createElement("div");
+      d.className = "hotspot-dot " + (h.type||"info");
+      d.textContent = HS_ICON[h.type]||"ℹ";
+      d.title = h.label||"";
+      d.onclick = ()=> forPlayer ? playerHsClick(h) : null;
+      el.appendChild(d);
+      const lb = document.createElement("div");
+      lb.style.cssText = "position:absolute;top:34px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:12px;color:#fff;text-shadow:0 1px 3px #000;pointer-events:none";
+      lb.textContent = h.label||"";
+      el.appendChild(lb);
+    },
+    createTooltipArgs: null,
+  };
+}
+function renderHsList(){
+  const box = $("hsList");
+  box.innerHTML = "";
+  (editing.hotspots||[]).forEach((h,i)=>{
+    const r = document.createElement("div");
+    r.className = "hs-row";
+    r.innerHTML = `<span class="t"></span><span style="flex:1"></span><button class="del">✕</button>`;
+    r.querySelector(".t").textContent = {info:"資訊",media:"媒體",monitor:"監視器"}[h.type]||h.type;
+    r.children[1].textContent = h.label || h.text || "";
+    r.querySelector(".del").onclick = ()=>{
+      editing.hotspots.splice(i,1);
+      renderHsList(); initEditorPano();
+    };
+    box.appendChild(r);
+  });
+}
+let hsPickedMedia = null;
+$("hsType").onchange = ()=>{
+  const t = $("hsType").value;
+  $("hsTextField").style.display = t==="info" ? "" : "none";
+  $("hsMediaField").style.display = t==="media" ? "" : "none";
+};
+$("hsMediaPick").onclick = async ()=>{
+  const m = await pickMedia(null);
+  if (m){ hsPickedMedia = m; $("hsMediaName").textContent = "已選擇："+m.name; }
+};
+$("hsSaveBtn").onclick = ()=>{
+  if (!pendingHsCoords) return;
+  const t = $("hsType").value;
+  const h = {
+    pitch: pendingHsCoords.pitch, yaw: pendingHsCoords.yaw, type:t,
+    label: $("hsLabel").value.trim() || {info:"資訊",media:"媒體",monitor:"監視器"}[t],
+    text: $("hsText").value.trim(),
+    mediaId: t==="media" && hsPickedMedia ? hsPickedMedia.id : null,
+  };
+  editing.hotspots.push(h);
+  $("hsModal").classList.remove("open");
+  renderHsList(); initEditorPano();
+};
+$("hsAddBtn").onclick = ()=>{
+  hsAddMode = true;
+  $("panoHint").textContent = "請在上方全景中點擊要放熱點的位置";
+};
+$("panoUploadBtn").onclick = ()=> $("panoFile").click();
+$("panoFile").onchange = async e=>{
+  const f = e.target.files[0];
+  if (!f) return;
+  toast("處理 360 照片中…");
+  try{
+    editing.panoId = await uploadPano(f);
+    toast("360 照片已上傳");
+    initEditorPano();
+  }catch(err){ toast("上傳失敗", true); }
+  e.target.value = "";
+};
+$("panoPickBtn").onclick = async ()=>{
+  const m = await pickMedia(["image"]);
+  if (m){ editing.panoId = m.id; initEditorPano(); }
+};
+$("saveCaseBtn").onclick = async ()=>{
+  editing.title = $("fTitle").value.trim();
+  if (!editing.title){ toast("請輸入教案名稱", true); return; }
+  editing.professions = profChipsValue();
+  editing.objectives = $("fObjectives").value;
+  editing.brief = $("fBrief").value;
+  editing.patient = {
+    name:$("fName").value, age:$("fAge").value, sex:$("fSex").value,
+    hpi:$("fHpi").value, pmh:$("fPmh").value, persona:$("fPersona").value,
+    mental:$("fMental").value, hidden:$("fHidden").value,
+  };
+  editing.vitals = {
+    hr:$("fHr").value, bp:$("fBp").value, spo2:$("fSpo2").value,
+    rr:$("fRr").value, temp:$("fTemp").value, rhythm:$("fRhythm").value,
+  };
+  editing.updated = Date.now();
+  try{
+    if (editing.id){
+      const id = editing.id;
+      const data = Object.assign({}, editing); delete data.id;
+      await setDoc(doc(db,CASES,id), data);
+    } else {
+      editing.created = Date.now();
+      const ref = await addDoc(collection(db,CASES), editing);
+      editing.id = ref.id;
+    }
+    toast("教案已儲存");
+    show("listScreen"); loadCases();
+  }catch(e){ toast("儲存失敗", true); }
+};
+$("editBackBtn").onclick = ()=>{ show("listScreen"); };
+$("newCaseBtn").onclick = ()=> openEditor(null);
+
+// 範例教案
+$("demoBtn") && ($("demoBtn").onclick = async ()=>{
+  const demo = {
+    title:"急性胸痛之跨職類評估與處置",
+    professions:["醫學生","護理師","藥師"],
+    objectives:"1. 能執行系統性胸痛評估（OPQRST）\n2. 能正確判讀 12 導程心電圖並辨識 STEMI\n3. 能依 ACS 流程給予初步處置（MONA）\n4. 藥師：能進行抗血小板藥物衛教",
+    brief:"58 歲男性，自行步入急診，主訴胸口悶痛 2 小時。檢傷站量得 BP 148/92、HR 105、SpO2 95%。請進行評估與處置。",
+    patient:{
+      name:"王大明", age:"58", sex:"男",
+      hpi:"今天下午搬重物後開始胸口正中央悶痛，像被石頭壓住，持續 2 小時不緩解，會傳到左肩和下巴，伴隨冒冷汗、噁心。休息也不會好。",
+      pmh:"高血壓 10 年（醫師開 Amlodipine，但常忘記吃）、高血脂、抽菸 30 年每天一包。否認糖尿病。否認藥物過敏。",
+      persona:"焦慮、講話急促，會一直問「我是不是心臟病？會不會死掉？」，痛起來會皺眉、手按住胸口。",
+      mental:"意識清楚，因疼痛與焦慮坐立不安。",
+      hidden:"若被問到家族史：父親 55 歲時心肌梗塞過世（說到這裡會更緊張）。\n若藥師詢問用藥順從性：承認血壓藥三天打魚兩天曬網，覺得沒症狀就不用吃。\n若被告知需要做心導管：會擔心費用和風險，需要學員解釋安撫。\n若學員給予 NTG 舌下含片：5 分鐘後疼痛從 8 分降到 5 分但不會完全緩解。",
+    },
+    vitals:{hr:"105", bp:"148/92", spo2:"95", rr:"22", temp:"36.9", rhythm:"Sinus tachycardia"},
+    panoId:null, hotspots:[
+      {pitch:-8, yaw:-40, type:"monitor", label:"生理監視器", text:"", mediaId:null},
+      {pitch:-15, yaw:25, type:"info", label:"床頭卡", text:"王大明，58歲男性\n病歷號：12345678\n過敏：NKDA\n主治醫師：張OO", mediaId:null},
+    ],
+    created: Date.now(), updated: Date.now(),
+  };
+  await addDoc(collection(db,CASES), demo);
+  toast("已建立範例教案");
+  loadCases();
+});
+
+// ============ 場景執行（player）============
+let playing = null, playerViewer = null;
+const chat = { messages: [], busy:false };
+
+async function startPlayer(c){
+  playing = c;
+  chat.messages = [];
+  $("chatMsgs").innerHTML = "";
+  $("playerTitle").textContent = c.title||"";
+  $("ptName").textContent = (c.patient&&c.patient.name) ? c.patient.name+"（模擬病人）" : "模擬病人";
+  $("ptStatus").textContent = "待命";
+  show("playerScreen");
+  if (playerViewer){ playerViewer.destroy(); playerViewer = null; }
+  const url = await panoUrlOf(c);
+  playerViewer = pannellum.viewer("playerPano", {
+    type:"equirectangular", panorama:url, autoLoad:true, showControls:false, compass:false,
+    hotSpots: (c.hotspots||[]).map(h=> hsSpec(h, true)),
+  });
+  addMsg("sys", "情境：" + (c.brief||"（無簡介）"));
+  if (c.objectives) addMsg("sys", "教學目標：\n"+c.objectives);
+}
+window.playerHsClick = function(h){
+  if (h.type==="info"){
+    $("infoTitle").textContent = h.label||"資訊";
+    $("infoBody").textContent = h.text||"";
+    $("infoModal").classList.add("open");
+  } else if (h.type==="media" && h.mediaId){
+    viewMedia(h.mediaId);
+  } else if (h.type==="monitor"){
+    openMonitor();
+  }
+};
+function openMonitor(){
+  const v = playing && playing.vitals || {};
+  const hint = `建議生命徵象 — HR:${v.hr||"?"} BP:${v.bp||"?"} SpO2:${v.spo2||"?"} RR:${v.rr||"?"} Temp:${v.temp||"?"} 心律:${v.rhythm||"?"}\n\n將開啟 SimMonitor，請在 iPad/另一視窗按 START，並用教師控制台設定上述數值。`;
+  if (confirm(hint)) window.open("monitor.html", "_blank");
+}
+$("monitorBtn").onclick = openMonitor;
+$("briefBtn").onclick = ()=>{
+  $("infoTitle").textContent = "情境簡介";
+  $("infoBody").textContent = (playing.brief||"") + (playing.objectives? "\n\n教學目標：\n"+playing.objectives : "");
+  $("infoModal").classList.add("open");
+};
+$("playerBackBtn").onclick = ()=>{
+  speechSynthesis.cancel();
+  show("listScreen");
+};
+$("chatHead").onclick = ()=> $("chatPanel").classList.toggle("min");
+
+// ---------- AI 病人對話 ----------
+function addMsg(cls, text){
+  const d = document.createElement("div");
+  d.className = "msg "+cls;
+  d.textContent = text;
+  $("chatMsgs").appendChild(d);
+  $("chatMsgs").scrollTop = $("chatMsgs").scrollHeight;
+  return d;
+}
+function buildSystemPrompt(c){
+  const p = c.patient||{}, v = c.vitals||{};
+  return `你是臨床模擬訓練中的「標準化病人」，由 AI 扮演。你正在扮演以下病人，與醫療團隊學員（可能是${(c.professions||[]).join("、")||"醫療人員"}）互動。
+
+## 你的角色
+姓名：${p.name||"病人"}，${p.age||"?"} 歲，${p.sex||""}性
+主訴與現病史：${p.hpi||"（未設定）"}
+過去病史/用藥/過敏：${p.pmh||"（未設定）"}
+個性與說話風格：${p.persona||"一般"}
+意識與配合度：${p.mental||"清醒"}
+目前生命徵象（你身體的感覺要與此一致）：HR ${v.hr||"?"}、BP ${v.bp||"?"}、SpO2 ${v.spo2||"?"}%、RR ${v.rr||"?"}、體溫 ${v.temp||"?"}、心律 ${v.rhythm||"?"}
+
+## 隱藏劇本（只有學員問到相關問題時才透露，不可主動全盤托出）
+${p.hidden||"（無）"}
+
+## 扮演規則
+1. 完全以病人第一人稱說話，使用台灣口語繁體中文，符合角色的個性與教育程度。
+2. 一次回覆 1-3 句，像真實對話。痛苦或喘的時候講話要斷斷續續。
+3. 只回答學員問到的事，不主動提供完整病史；學員問得好才透露更多。
+4. 你沒有醫學專業知識，只會用一般民眾的詞彙描述症狀（例如說「心臟好像被捏住」而不是「胸骨後壓迫性疼痛」）。
+5. 學員執行檢查或處置時，配合描述你的感受與反應。
+6. 對學員的態度要有真實情緒反應：態度好就慢慢信任，被忽視就更焦慮或不耐煩。
+7. 絕不跳出角色。若被問「你是 AI 嗎」，以病人身分困惑地回應。
+8. 不要使用任何旁白、括號動作描述以外的格式；可以偶爾用（皺眉）（按住胸口）這類簡短動作描述。`;
+}
+async function callPatientAPI(userText){
+  const key = localStorage.getItem("simpat_key");
+  if (!key){
+    addMsg("sys", "尚未設定 API Key — 請按右上「API 設定」");
+    $("settingsModal").classList.add("open");
+    return null;
+  }
+  chat.messages.push({ role:"user", content:userText });
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method:"POST",
+    headers:{
+      "x-api-key": key,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
+    body: JSON.stringify({
+      model: localStorage.getItem("simpat_model") || "claude-opus-4-8",
+      max_tokens: 700,
+      system: buildSystemPrompt(playing),
+      messages: chat.messages,
+    }),
+  });
+  if (!res.ok){
+    chat.messages.pop();
+    let msg = "API 錯誤 "+res.status;
+    try{ const e = await res.json(); msg += "："+(e.error&&e.error.message||""); }catch(_){}
+    if (res.status===401) msg = "API Key 無效，請檢查設定";
+    if (res.status===429) msg = "請求太頻繁，稍等幾秒再試";
+    throw new Error(msg);
+  }
+  const data = await res.json();
+  const text = (data.content.find(b=>b.type==="text")||{}).text || "（病人沒有回應）";
+  chat.messages.push({ role:"assistant", content:text });
+  return text;
+}
+async function sendChat(){
+  const txt = $("chatInput").value.trim();
+  if (!txt || chat.busy) return;
+  $("chatInput").value = "";
+  addMsg("user", txt);
+  chat.busy = true;
+  $("ptStatus").textContent = "思考中…";
+  const tmp = addMsg("pt", "…");
+  try{
+    const reply = await callPatientAPI(txt);
+    if (reply===null){ tmp.remove(); return; }
+    tmp.textContent = reply;
+    speak(reply);
+  }catch(e){
+    tmp.remove();
+    addMsg("sys", e.message);
+  }finally{
+    chat.busy = false;
+    $("ptStatus").textContent = "待命";
+    $("chatMsgs").scrollTop = $("chatMsgs").scrollHeight;
+  }
+}
+$("sendBtn").onclick = sendChat;
+$("chatInput").addEventListener("keydown", e=>{ if (e.key==="Enter") sendChat(); });
+
+// ---------- 語音（TTS / STT）----------
+let voiceOn = true;
+$("voiceBtn").onclick = function(){
+  voiceOn = !voiceOn;
+  this.innerHTML = voiceOn ? "&#x1F50A; 語音" : "&#x1F507; 語音";
+  if (!voiceOn) speechSynthesis.cancel();
+};
+function speak(text){
+  if (!voiceOn || !("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const clean = text.replace(/（[^）]*）/g, "");  // 去掉動作描述
+  const u = new SpeechSynthesisUtterance(clean);
+  u.lang = "zh-TW"; u.rate = 1.0;
+  const vs = speechSynthesis.getVoices();
+  const v = vs.find(x=>x.lang==="zh-TW") || vs.find(x=>x.lang&&x.lang.startsWith("zh"));
+  if (v) u.voice = v;
+  speechSynthesis.speak(u);
+}
+// STT（Chrome/Edge 的 webkitSpeechRecognition）
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SR) $("micBtn").style.display = "none";
+let rec = null, recOn = false;
+$("micBtn").onclick = ()=>{
+  if (!SR) return;
+  if (recOn){ rec.stop(); return; }
+  rec = new SR();
+  rec.lang = "zh-TW"; rec.interimResults = false;
+  rec.onresult = e=>{
+    $("chatInput").value = e.results[0][0].transcript;
+    sendChat();
+  };
+  rec.onend = ()=>{ recOn = false; $("micBtn").classList.remove("rec"); };
+  rec.onerror = ()=>{ recOn = false; $("micBtn").classList.remove("rec"); };
+  rec.start(); recOn = true;
+  $("micBtn").classList.add("rec");
+};
+
+// ---------- 設定 ----------
+$("settingsBtn").onclick = ()=>{
+  $("setKey").value = localStorage.getItem("simpat_key")||"";
+  $("setModel").value = localStorage.getItem("simpat_model")||"claude-opus-4-8";
+  $("settingsModal").classList.add("open");
+};
+$("setSaveBtn").onclick = ()=>{
+  localStorage.setItem("simpat_key", $("setKey").value.trim());
+  localStorage.setItem("simpat_model", $("setModel").value);
+  $("settingsModal").classList.remove("open");
+  toast("已儲存設定");
+};
+
+loadCases();
+</script>
+</body>
+</html>

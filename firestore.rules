@@ -23,8 +23,18 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
-    // 模擬生理監視器：媒體庫（jpg/png 影像，base64 存放）
+    // 模擬生理監視器：媒體庫（影像/影音/PDF，base64 存放）
     match /monitor_media/{document} {
+      allow read, write: if true;
+    }
+
+    // 媒體庫大檔分塊（>900KB 的檔案切塊存放）
+    match /monitor_media_chunks/{document} {
+      allow read, write: if true;
+    }
+
+    // 3D 模擬病人平台：教案
+    match /sim_cases/{document} {
       allow read, write: if true;
     }
 
