@@ -745,35 +745,56 @@ ${p.hidden||"（無）"}
 7. 絕不跳出角色。若被問「你是 AI 嗎」，以病人身分困惑地回應。
 8. 不要使用任何旁白、括號動作描述以外的格式；可以偶爾用（皺眉）（按住胸口）這類簡短動作描述。`;
 }
+// 後端代理（部署後填這裡；未部署時會自動退回個人 Key 模式）
+const PROXY_URL = "https://us-central1-speech-to-text-2f776.cloudfunctions.net/patient";
+
 async function callPatientAPI(userText){
   const key = localStorage.getItem("simpat_key");
-  if (!key){
-    addMsg("sys", "尚未設定 API Key — 請按右上「API 設定」");
+  chat.messages.push({ role:"user", content:userText });
+  const payload = {
+    model: localStorage.getItem("simpat_model") || "claude-opus-4-8",
+    max_tokens: 700,
+    system: buildSystemPrompt(playing),
+    messages: chat.messages,
+  };
+
+  // 優先走後端代理（瀏覽器不需放 Key）。代理未部署/無法連線時，退回個人 Key 直連。
+  let res = null, viaProxy = false;
+  if (PROXY_URL){
+    try{
+      const r = await fetch(PROXY_URL, {
+        method:"POST",
+        headers:{ "content-type":"application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (r.status !== 404){ res = r; viaProxy = true; }  // 404 = 尚未部署 → 退回 Key
+    }catch(e){ /* 連線失敗 → 退回 Key */ }
+  }
+  if (!res && key){
+    res = await fetch("https://api.anthropic.com/v1/messages", {
+      method:"POST",
+      headers:{
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
+      body: JSON.stringify(payload),
+    });
+  }
+  if (!res){
+    chat.messages.pop();
+    addMsg("sys", "AI 病人服務未就緒：代理尚未部署，且未設定個人 API Key — 請按右上「API 設定」");
     $("settingsModal").classList.add("open");
     return null;
   }
-  chat.messages.push({ role:"user", content:userText });
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method:"POST",
-    headers:{
-      "x-api-key": key,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-      "anthropic-dangerous-direct-browser-access": "true",
-    },
-    body: JSON.stringify({
-      model: localStorage.getItem("simpat_model") || "claude-opus-4-8",
-      max_tokens: 700,
-      system: buildSystemPrompt(playing),
-      messages: chat.messages,
-    }),
-  });
   if (!res.ok){
     chat.messages.pop();
     let msg = "API 錯誤 "+res.status;
     try{ const e = await res.json(); msg += "："+(e.error&&e.error.message||""); }catch(_){}
     if (res.status===401) msg = "API Key 無效，請檢查設定";
     if (res.status===429) msg = "請求太頻繁，稍等幾秒再試";
+    if (res.status===403 && viaProxy) msg = "代理拒絕此來源（Origin 不在允許清單）";
     throw new Error(msg);
   }
   const data = await res.json();
