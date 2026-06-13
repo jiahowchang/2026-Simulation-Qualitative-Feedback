@@ -148,6 +148,39 @@
   #monScreen.bigNum #hrVal,#monScreen.bigNum #spo2Val,#monScreen.bigNum #etco2Val { font-size:150px; }
   #monScreen.bigNum #bpVal { font-size:110px; }
 
+  /* ===== 遙控碼徽章 ===== */
+  #tbCode { display:none; align-items:center; gap:6px; padding:0 12px; font-size:15px; font-weight:700; color:#5ac8fa; letter-spacing:1px; }
+
+  /* ===== 教師控制台（手機）===== */
+  #ctrlScreen { background:#000; overflow-y:auto; -webkit-overflow-scrolling:touch; display:none; }
+  #ctrlScreen.active { display:block; }
+  #ctrlInner { max-width:560px; margin:0 auto; padding:0 14px 120px 14px; }
+  .ctrl-head { position:sticky; top:0; z-index:10; background:#000; display:flex; align-items:center; gap:10px; padding:14px 2px 10px 2px; }
+  .ctrl-head h1 { flex:1; font-size:19px; }
+  .conn-dot { width:12px; height:12px; border-radius:50%; background:#666; }
+  .conn-dot.on { background:#30e050; box-shadow:0 0 8px #30e050; }
+  .ctrl-card { background:#1c1c1e; border:1px solid #3a3a3c; border-radius:14px; padding:14px; margin-bottom:14px; }
+  .ctrl-card h2 { font-size:14px; color:#5ac8fa; margin-bottom:10px; font-weight:700; }
+  #codeInput { width:100%; font-size:34px; letter-spacing:14px; text-align:center; background:#2c2c2e; border:1px solid #48484a; color:#fff; padding:10px; border-radius:10px; font-variant-numeric:tabular-nums; }
+  #connectBtn { width:100%; margin-top:10px; padding:14px; background:#0a84ff; color:#fff; border:none; border-radius:10px; font-size:18px; font-weight:700; cursor:pointer; }
+  #connMsg { font-size:14px; color:#ff9f0a; margin-top:8px; min-height:18px; text-align:center; }
+  .stat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .stat-cell { background:#2c2c2e; border-radius:10px; padding:8px 6px; text-align:center; }
+  .stat-cell .l { font-size:11px; color:#999; }
+  .stat-cell .v { font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; }
+  #stAlarm { grid-column:1/-1; color:#ffd60a; font-size:14px; font-weight:700; text-align:center; min-height:18px; }
+  #ctrlScreen .preset-row { gap:8px; }
+  #ctrlScreen .preset-btn { flex:1 1 30%; padding:12px 6px; font-size:15px; }
+  #ctrlScreen .inst-field { margin-bottom:12px; }
+  #ctrlScreen select, #ctrlScreen input[type=number] { width:100%; background:#2c2c2e; border:1px solid #48484a; color:#fff; font-size:16px; padding:10px; border-radius:10px; }
+  #ctrlScreen input[type=range] { width:100%; height:30px; }
+  .ctrl-actions { position:fixed; left:0; right:0; bottom:0; display:flex; gap:8px; padding:10px 14px calc(10px + env(safe-area-inset-bottom)) 14px; background:rgba(0,0,0,.92); border-top:1px solid #3a3a3c; z-index:20; }
+  .ctrl-actions button { padding:15px 10px; border:none; border-radius:12px; font-size:16px; font-weight:700; cursor:pointer; }
+  #cApply { flex:2.2; background:#0a84ff; color:#fff; }
+  #cNibp { flex:1; background:#3a3a3c; color:#fff; }
+  #cSilence { flex:1; background:#ff3b30; color:#fff; }
+  #ctrlModeBtn { margin-top:14px; padding:14px; border-radius:14px; border:1px solid #48484a; background:none; color:#5ac8fa; font-size:17px; font-weight:600; cursor:pointer; }
+
   @media (max-width:760px){
     #monMain { grid-template-columns:1fr 200px; }
     #hrVal{font-size:44px} #bpVal{font-size:36px} #spo2Val,#etco2Val{font-size:48px}
@@ -170,6 +203,109 @@
     <button class="age-btn" data-age="toddler">Toddler (1-2)</button>
     <button class="age-btn" data-age="neonate">Neonate</button>
     <button id="startBtn"><span class="pwr">&#x23FB;</span> START</button>
+    <button id="ctrlModeBtn">&#x1F4F1; 教師控制台（遙控另一台監視器）</button>
+  </div>
+</div>
+
+<!-- ============ 教師控制台（手機遙控）============ -->
+<div id="ctrlScreen" class="screen">
+  <div id="ctrlInner">
+    <div class="ctrl-head">
+      <button class="modal-x" id="ctrlBackBtn" style="font-size:20px">&#x2190;</button>
+      <h1>教師控制台</h1>
+      <span style="font-size:13px;color:#999" id="connLabel">未連線</span>
+      <span class="conn-dot" id="connDot"></span>
+    </div>
+
+    <div class="ctrl-card" id="connectCard">
+      <h2>輸入監視器畫面上方的 4 位遙控碼</h2>
+      <input id="codeInput" type="tel" inputmode="numeric" maxlength="4" placeholder="0000" autocomplete="off">
+      <button id="connectBtn">連線</button>
+      <div id="connMsg"></div>
+    </div>
+
+    <div id="ctrlPanel" style="display:none">
+      <div class="ctrl-card">
+        <h2>學生端即時數值</h2>
+        <div class="stat-grid">
+          <div class="stat-cell"><div class="l">HR</div><div class="v c-green" id="stHr">--</div></div>
+          <div class="stat-cell"><div class="l">BP</div><div class="v c-red" id="stBp" style="font-size:15px;line-height:1.7">--/--</div></div>
+          <div class="stat-cell"><div class="l">SpO2</div><div class="v c-yellow" id="stSp">--</div></div>
+          <div class="stat-cell"><div class="l">EtCO2</div><div class="v c-white" id="stEt">--</div></div>
+          <div class="stat-cell"><div class="l">RR</div><div class="v c-white" id="stRr">--</div></div>
+          <div class="stat-cell"><div class="l">Temp</div><div class="v c-temp" id="stTp">--</div></div>
+          <div class="stat-cell" style="grid-column:span 2"><div class="l">NIBP / 心律</div><div class="v" style="font-size:13px;line-height:1.5"><span id="stNibp">--</span><br><span id="stRhythm" style="color:#5ac8fa">--</span></div></div>
+          <div id="stAlarm"></div>
+        </div>
+      </div>
+
+      <div class="ctrl-card">
+        <h2>情境快速鍵（按下立即套用）</h2>
+        <div class="preset-row" id="cPresetRow"></div>
+      </div>
+
+      <div class="ctrl-card">
+        <h2>心律與生命徵象（調整後按「套用」）</h2>
+        <div class="inst-field">
+          <label><b>心律 Rhythm</b></label>
+          <select id="cRhythm">
+            <option value="sinus">竇性心律 Sinus</option>
+            <option value="afib">心房顫動 AFib</option>
+            <option value="aflutter">心房撲動 AFlutter</option>
+            <option value="svt">SVT</option>
+            <option value="vtp">VT（有脈）</option>
+            <option value="vt">VT（無脈）</option>
+            <option value="vfc">VF（粗）</option>
+            <option value="vff">VF（細）</option>
+            <option value="pea">PEA</option>
+            <option value="asystole">Asystole</option>
+            <option value="avb3">三度房室傳導阻滯</option>
+          </select>
+        </div>
+        <div class="inst-field">
+          <label><b>變化時間</b></label>
+          <select id="cTrend">
+            <option value="0">立即</option>
+            <option value="10">10 秒</option>
+            <option value="30">30 秒</option>
+            <option value="60">1 分鐘</option>
+            <option value="180">3 分鐘</option>
+          </select>
+        </div>
+        <div class="inst-field"><label><b>HR</b><span id="cHrV"></span></label><input type="range" id="cHr" min="20" max="220" step="1" value="75"></div>
+        <div class="inst-field"><label><b>SpO2</b><span id="cSpV"></span></label><input type="range" id="cSp" min="50" max="100" step="1" value="97"></div>
+        <div class="inst-field"><label><b>收縮壓 SBP</b><span id="cSysV"></span></label><input type="range" id="cSys" min="30" max="250" step="1" value="118"></div>
+        <div class="inst-field"><label><b>舒張壓 DBP</b><span id="cDiaV"></span></label><input type="range" id="cDia" min="15" max="150" step="1" value="78"></div>
+        <div class="inst-field"><label><b>RR</b><span id="cRrV"></span></label><input type="range" id="cRr" min="0" max="60" step="1" value="14"></div>
+        <div class="inst-field"><label><b>EtCO2</b><span id="cEtV"></span></label><input type="range" id="cEt" min="0" max="90" step="1" value="38"></div>
+        <div class="inst-field"><label><b>體溫 Temp</b><span id="cTpV"></span></label><input type="range" id="cTp" min="32" max="42" step="0.1" value="36.8"></div>
+      </div>
+
+      <div class="ctrl-card">
+        <h2>感測器連接</h2>
+        <div class="toggle-row">
+          <label><input type="checkbox" id="cSEcg" checked> ECG 導極</label>
+          <label><input type="checkbox" id="cSSp" checked> SpO2 探頭</label>
+          <label><input type="checkbox" id="cSArt" checked> 動脈導管</label>
+          <label><input type="checkbox" id="cSEt" checked> EtCO2</label>
+          <label><input type="checkbox" id="cSTp" checked> 體溫</label>
+        </div>
+      </div>
+
+      <div class="ctrl-card">
+        <h2>12 導程病理</h2>
+        <select id="cEcg12">
+          <option value="normal">正常</option>
+          <option value="antstemi">前壁 STEMI</option>
+          <option value="infstemi">下壁 STEMI</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="ctrl-actions" id="ctrlActions" style="display:none">
+    <button id="cApply">套用 Apply</button>
+    <button id="cNibp">量 NIBP</button>
+    <button id="cSilence">靜音</button>
   </div>
 </div>
 
@@ -180,6 +316,7 @@
       <button id="exitBtn" title="返回">&#x2386;</button>
       <button id="soundBtn" title="音效">&#x1F50A;</button>
       <button id="instBtn" title="教師控制">&#x1F4CB;</button>
+      <div id="tbCode">&#x21C4; <span id="tbCodeNum">----</span></div>
     </div>
     <div class="tb-brand"><span class="b1">si</span><span class="b2">m</span><span class="b1">monitor</span><span class="hearticon">&#x2764;&#xFE0E;</span></div>
     <div class="tb-right">
@@ -1142,6 +1279,219 @@ document.getElementById('btnPacer').onclick = ()=> openModal('pacerModal');
 document.getElementById('pacerOn').onchange = function(){ state.pacer.on = this.checked; eng.lastSched=simT+0.1; };
 document.getElementById('pRate').oninput = function(){ state.pacer.rate=+this.value; document.getElementById('pRateV').textContent=this.value+' ppm'; };
 document.getElementById('pOut').oninput = function(){ state.pacer.out=+this.value; document.getElementById('pOutV').textContent=this.value+' mA'; };
+</script>
+
+<script type="module">
+/* ================================================================
+   雙裝置遙控：iPhone 教師控制台 ↔ 監視器（Firestore 即時同步）
+   - 監視器 START 時建立 4 位數遙控碼 session
+   - 控制台輸入代碼後可遙控心律/生命徵象，並看到學生端即時數值
+   ================================================================ */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey:"AIzaSyBrs80vpFVe-iEh5ctzRWfYHUBb3KGvILo",
+  authDomain:"speech-to-text-2f776.firebaseapp.com",
+  projectId:"speech-to-text-2f776",
+  storageBucket:"speech-to-text-2f776.firebasestorage.app",
+  messagingSenderId:"283739023798",
+  appId:"1:283739023798:web:3091ec2bcf6262b5ecb917"
+};
+let db = null;
+try{ db = getFirestore(initializeApp(firebaseConfig)); }catch(e){ console.warn("Firebase init failed", e); }
+const SESS = "monitor_sessions";
+const $ = id => document.getElementById(id);
+
+// ========== 監視器端 ==========
+const remote = { code:null, unsub:null, lastSeq:0, lastNibp:0, lastSilence:0, pubTimer:null };
+
+function snapshotStatus(){
+  const hr = dispHR();
+  return {
+    age: state.age, rhythm: state.rhythm,
+    hr: hr===null ? "--" : String(hr),
+    bp: $("bpVal").textContent+" "+$("bpMap").textContent,
+    spo2: $("spo2Val").textContent, etco2: $("etco2Val").textContent,
+    rr: $("rrVal").textContent, temp: $("tempVal").textContent,
+    nibp: $("nibpVal").textContent,
+    alarm: alarmState.active ? alarmState.text : "",
+    cur: { hr:Math.round(state.cur.hr), sys:Math.round(state.cur.sys), dia:Math.round(state.cur.dia),
+           spo2:Math.round(state.cur.spo2), rr:Math.round(state.cur.rr), etco2:Math.round(state.cur.etco2),
+           temp:+state.cur.temp.toFixed(1) },
+    ts: Date.now(),
+  };
+}
+function applyRemoteCtrl(c){
+  if (c.seq && c.seq > remote.lastSeq){
+    remote.lastSeq = c.seq;
+    setRhythm(c.rhythm);
+    state.ecg12 = c.ecg12 || "normal";
+    if (c.sensors) Object.assign(state.sensors, c.sensors);
+    if (c.t) applyTargets(Object.assign({}, c.t), c.trend||0);
+  }
+  if (c.nibpSeq && c.nibpSeq > remote.lastNibp){ remote.lastNibp = c.nibpSeq; startNibp(); }
+  if (c.silenceSeq && c.silenceSeq > remote.lastSilence){ remote.lastSilence = c.silenceSeq; state.silencedUntil = simT+120; }
+}
+async function createSession(){
+  if (!db) return;
+  try{
+    endSession();
+    remote.code = String(Math.floor(1000+Math.random()*9000));
+    remote.lastSeq = Date.now(); // 忽略舊命令
+    await setDoc(doc(db,SESS,remote.code), { created: serverTimestamp(), status: snapshotStatus() });
+    $("tbCodeNum").textContent = remote.code;
+    $("tbCode").style.display = "flex";
+    remote.unsub = onSnapshot(doc(db,SESS,remote.code), s=>{
+      const d = s.data();
+      if (d && d.ctrl) applyRemoteCtrl(d.ctrl);
+    });
+    remote.pubTimer = setInterval(async ()=>{
+      if (!state.running || !remote.code) return;
+      try{ await updateDoc(doc(db,SESS,remote.code), { status: snapshotStatus() }); }catch(e){}
+    }, 4000);
+  }catch(e){ console.warn("createSession failed", e); }
+}
+function endSession(){
+  if (remote.unsub){ remote.unsub(); remote.unsub=null; }
+  if (remote.pubTimer){ clearInterval(remote.pubTimer); remote.pubTimer=null; }
+  if (db && remote.code){ deleteDoc(doc(db,SESS,remote.code)).catch(()=>{}); }
+  remote.code = null;
+  $("tbCode").style.display = "none";
+}
+// classic script 的 onclick 先執行（property handler 註冊較早），這裡是附加行為
+$("startBtn").addEventListener("click", ()=>{ if (state.running) createSession(); });
+$("exitBtn").addEventListener("click", ()=>{ if (!state.running) endSession(); });
+window.addEventListener("beforeunload", ()=>{ endSession(); });
+
+// ========== 控制台端 ==========
+const ctrl = { code:null, unsub:null, inited:false };
+const RHYTHM_NAMES = { sinus:"竇性", afib:"AFib", aflutter:"AFlutter", svt:"SVT", vtp:"VT(有脈)",
+  vt:"VT(無脈)", vfc:"VF(粗)", vff:"VF(細)", pea:"PEA", asystole:"Asystole", avb3:"3度AVB" };
+
+function showCtrlScreen(){
+  $("startScreen").classList.remove("active");
+  $("ctrlScreen").classList.add("active");
+}
+$("ctrlModeBtn").onclick = showCtrlScreen;
+$("ctrlBackBtn").onclick = ()=>{
+  disconnectCtrl();
+  $("ctrlScreen").classList.remove("active");
+  $("startScreen").classList.add("active");
+};
+function disconnectCtrl(){
+  if (ctrl.unsub){ ctrl.unsub(); ctrl.unsub=null; }
+  ctrl.code = null; ctrl.inited = false;
+  $("connectCard").style.display = "";
+  $("ctrlPanel").style.display = "none";
+  $("ctrlActions").style.display = "none";
+  $("connDot").classList.remove("on");
+  $("connLabel").textContent = "未連線";
+  $("connMsg").textContent = "";
+}
+function cLabels(){
+  $("cHrV").textContent=$("cHr").value+" bpm"; $("cSpV").textContent=$("cSp").value+" %";
+  $("cSysV").textContent=$("cSys").value+" mmHg"; $("cDiaV").textContent=$("cDia").value+" mmHg";
+  $("cRrV").textContent=$("cRr").value+" /min"; $("cEtV").textContent=$("cEt").value+" mmHg";
+  $("cTpV").textContent=(+$("cTp").value).toFixed(1)+" °C";
+}
+["cHr","cSp","cSys","cDia","cRr","cEt","cTp"].forEach(id=> $(id).addEventListener("input", cLabels));
+cLabels();
+
+function renderStatus(st){
+  $("stHr").textContent=st.hr; $("stBp").textContent=st.bp; $("stSp").textContent=st.spo2;
+  $("stEt").textContent=st.etco2; $("stRr").textContent=st.rr; $("stTp").textContent=st.temp;
+  $("stNibp").textContent=st.nibp;
+  $("stRhythm").textContent = RHYTHM_NAMES[st.rhythm]||st.rhythm;
+  $("stAlarm").textContent = st.alarm ? "⚠ "+st.alarm : "";
+  if (!ctrl.inited && st.cur){
+    ctrl.inited = true;
+    state.age = st.age || "adult"; // 供情境快速鍵的「恢復正常」使用
+    $("cRhythm").value = st.rhythm;
+    $("cHr").value=st.cur.hr; $("cSp").value=st.cur.spo2; $("cSys").value=st.cur.sys; $("cDia").value=st.cur.dia;
+    $("cRr").value=st.cur.rr; $("cEt").value=st.cur.etco2; $("cTp").value=st.cur.temp;
+    cLabels();
+  }
+}
+async function connectCtrl(){
+  const code = $("codeInput").value.trim();
+  if (!/^\d{4}$/.test(code)){ $("connMsg").textContent="請輸入 4 位數字代碼"; return; }
+  if (!db){ $("connMsg").textContent="Firebase 無法連線，請檢查網路"; return; }
+  $("connMsg").textContent = "連線中…";
+  try{
+    const snap = await getDoc(doc(db,SESS,code));
+    if (!snap.exists()){ $("connMsg").textContent="找不到這個代碼，請確認監視器已按 START"; return; }
+    ctrl.code = code; ctrl.inited = false;
+    $("connectCard").style.display = "none";
+    $("ctrlPanel").style.display = "block";
+    $("ctrlActions").style.display = "flex";
+    $("connDot").classList.add("on");
+    $("connLabel").textContent = "已連線 "+code;
+    ctrl.unsub = onSnapshot(doc(db,SESS,code), s=>{
+      if (!s.exists()){
+        $("connLabel").textContent = "監視器已離線";
+        $("connDot").classList.remove("on");
+        return;
+      }
+      const d = s.data();
+      if (d && d.status) renderStatus(d.status);
+    });
+  }catch(e){ $("connMsg").textContent = "連線失敗："+e.message; }
+}
+$("connectBtn").onclick = connectCtrl;
+
+async function sendCtrl(){
+  if (!db || !ctrl.code) return;
+  const payload = {
+    seq: Date.now(),
+    rhythm: $("cRhythm").value,
+    trend: +$("cTrend").value,
+    ecg12: $("cEcg12").value,
+    sensors: { ecg:$("cSEcg").checked, spo2:$("cSSp").checked, art:$("cSArt").checked, etco2:$("cSEt").checked, temp:$("cSTp").checked },
+    t: { hr:+$("cHr").value, spo2:+$("cSp").value, sys:+$("cSys").value, dia:+$("cDia").value,
+         rr:+$("cRr").value, etco2:+$("cEt").value, temp:+$("cTp").value },
+  };
+  try{
+    await updateDoc(doc(db,SESS,ctrl.code), { ctrl: payload });
+    const b = $("cApply"), orig = "套用 Apply";
+    b.textContent = "已送出 ✓";
+    setTimeout(()=>{ b.textContent = orig; }, 900);
+  }catch(e){ $("connLabel").textContent = "傳送失敗"; }
+}
+$("cApply").onclick = sendCtrl;
+$("cNibp").onclick = async ()=>{
+  if (!db || !ctrl.code) return;
+  try{ await updateDoc(doc(db,SESS,ctrl.code), { "ctrl.nibpSeq": Date.now() }); }catch(e){}
+};
+$("cSilence").onclick = async ()=>{
+  if (!db || !ctrl.code) return;
+  try{ await updateDoc(doc(db,SESS,ctrl.code), { "ctrl.silenceSeq": Date.now() }); }catch(e){}
+};
+
+// 情境快速鍵（沿用主程式的 PRESETS，按下立即送出）
+PRESETS.forEach(p=>{
+  const b = document.createElement("button");
+  b.className = "preset-btn"; b.textContent = p.name;
+  b.onclick = ()=>{
+    const r = p.f();
+    $("cRhythm").value = r.rhythm;
+    const v = r.v || {};
+    const map = { hr:"cHr", spo2:"cSp", sys:"cSys", dia:"cDia", rr:"cRr", etco2:"cEt", temp:"cTp" };
+    for (const k in map) if (v[k]!==undefined) $(map[k]).value = v[k];
+    cLabels();
+    sendCtrl();
+  };
+  $("cPresetRow").appendChild(b);
+});
+
+// URL 參數：?ctrl 直接進控制台、?ctrl=1234 自動連線
+const usp = new URLSearchParams(location.search);
+if (usp.has("ctrl")){
+  showCtrlScreen();
+  const c = usp.get("ctrl");
+  if (/^\d{4}$/.test(c)){ $("codeInput").value = c; connectCtrl(); }
+}
 </script>
 </body>
 </html>
