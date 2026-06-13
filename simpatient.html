@@ -746,7 +746,7 @@ ${p.hidden||"（無）"}
 8. 不要使用任何旁白、括號動作描述以外的格式；可以偶爾用（皺眉）（按住胸口）這類簡短動作描述。`;
 }
 // 後端代理（部署後填這裡；未部署時會自動退回個人 Key 模式）
-const PROXY_URL = "https://us-central1-speech-to-text-2f776.cloudfunctions.net/patient";
+const PROXY_URL = "https://patient-mkargc7maa-uc.a.run.app";
 
 async function callPatientAPI(userText){
   const key = localStorage.getItem("simpat_key");
