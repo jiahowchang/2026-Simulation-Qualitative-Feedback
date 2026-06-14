@@ -272,11 +272,23 @@
   </div>
 </div>
 
+<div class="modal-bg" id="nameModal">
+  <div class="modal">
+    <button class="x" data-close="nameModal">&#x2715;</button>
+    <h3>&#x1F464; 開始模擬</h3>
+    <div class="field">
+      <label>請輸入姓名 / 學號（供教師回顧你的問診對話）</label>
+      <input id="studentName" placeholder="例：王小明 / N123456" autocomplete="off">
+    </div>
+    <button class="btn primary" style="width:100%" id="nameStartBtn">開始 &#x25B6;</button>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, doc, addDoc, getDoc, getDocs, setDoc, deleteDoc, query, orderBy }
+import { getFirestore, collection, doc, addDoc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, orderBy }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -443,7 +455,7 @@ async function loadCases(){
     div.querySelector("h3").textContent = c.title || "(未命名)";
     div.querySelector(".tags").textContent = (c.professions||[]).join("、");
     div.querySelector(".sub").textContent = (c.patient&&c.patient.name? c.patient.name+"，"+(c.patient.age||"?")+"歲 — " : "") + (c.brief||"").slice(0,50);
-    div.querySelector(".run").onclick = ()=> startPlayer(c);
+    div.querySelector(".run").onclick = ()=> promptStudentThenPlay(c);
     div.querySelector(".edit").onclick = ()=> openEditor(c);
     div.querySelector(".del").onclick = async ()=>{
       if (!confirm("刪除教案「"+(c.title||"未命名")+"」？")) return;
@@ -665,10 +677,32 @@ $("demoBtn") && ($("demoBtn").onclick = async ()=>{
 // ============ 場景執行（player）============
 let playing = null, playerViewer = null;
 const chat = { messages: [], busy:false };
+const session = { transcriptId:null, student:"", turns:[], startedAt:0, startedAtStr:"" };
 
-async function startPlayer(c){
+// 執行教案前先請學生輸入姓名/學號
+let pendingCase = null;
+function promptStudentThenPlay(c){
+  pendingCase = c;
+  $("studentName").value = "";
+  $("nameModal").classList.add("open");
+  setTimeout(()=> $("studentName").focus(), 120);
+}
+$("nameStartBtn").onclick = ()=>{
+  const nm = $("studentName").value.trim();
+  if (!nm){ $("studentName").focus(); toast("請輸入姓名 / 學號", true); return; }
+  $("nameModal").classList.remove("open");
+  startPlayer(pendingCase, nm);
+};
+$("studentName").addEventListener("keydown", e=>{ if (e.key==="Enter") $("nameStartBtn").onclick(); });
+
+async function startPlayer(c, student){
   playing = c;
   chat.messages = [];
+  session.transcriptId = null;
+  session.student = student || "(未具名)";
+  session.turns = [];
+  session.startedAt = Date.now();
+  session.startedAtStr = new Date().toLocaleString("zh-TW", {hour12:false});
   $("chatMsgs").innerHTML = "";
   $("playerTitle").textContent = c.title||"";
   $("ptName").textContent = (c.patient&&c.patient.name) ? c.patient.name+"（模擬病人）" : "模擬病人";
@@ -815,6 +849,7 @@ async function sendChat(){
     if (reply===null){ tmp.remove(); return; }
     tmp.textContent = reply;
     speak(reply);
+    saveTranscript(txt, reply);
   }catch(e){
     tmp.remove();
     addMsg("sys", e.message);
@@ -823,6 +858,25 @@ async function sendChat(){
     $("ptStatus").textContent = "待命";
     $("chatMsgs").scrollTop = $("chatMsgs").scrollHeight;
   }
+}
+// 將問答存進 Firestore（只存學生問句 + 病人回答，不含教師的系統提示/隱藏劇本）
+async function saveTranscript(userText, ptText){
+  if (!db || !playing) return;
+  const now = Date.now();
+  session.turns.push({ role:"user", text:userText, t:now });
+  session.turns.push({ role:"pt", text:ptText, t:now });
+  try{
+    if (!session.transcriptId){
+      const ref = await addDoc(collection(db,"sim_transcripts"), {
+        caseId: playing.id||"", caseTitle: playing.title||"",
+        student: session.student, startedAt: session.startedAt,
+        startedAtStr: session.startedAtStr, updated: now, turns: session.turns,
+      });
+      session.transcriptId = ref.id;
+    } else {
+      await updateDoc(doc(db,"sim_transcripts",session.transcriptId), { updated: now, turns: session.turns });
+    }
+  }catch(e){ /* 紀錄失敗不影響對話進行 */ }
 }
 $("sendBtn").onclick = sendChat;
 $("chatInput").addEventListener("keydown", e=>{ if (e.key==="Enter") sendChat(); });

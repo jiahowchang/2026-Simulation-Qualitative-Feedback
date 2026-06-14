@@ -49,6 +49,21 @@
   #evtList .lb { flex:1; }
   #evtList .del { background:none; border:none; color:#ff453a; font-size:17px; cursor:pointer; padding:2px 8px; }
   .muted { color:#777; font-size:14px; text-align:center; padding:10px; }
+  /* ===== 對話紀錄 ===== */
+  .tr-item { border:1px solid #3a3a3c; border-radius:10px; margin-bottom:10px; overflow:hidden; }
+  .tr-head { display:flex; gap:10px; align-items:center; padding:12px; cursor:pointer; flex-wrap:wrap; }
+  .tr-head:hover { background:#222; }
+  .tr-head .arr { color:#777; transition:transform .15s; }
+  .tr-item.open .tr-head .arr { transform:rotate(90deg); }
+  .tr-student { font-weight:700; color:#5ac8fa; }
+  .tr-case { flex:1; color:#ccc; font-size:14px; min-width:120px; }
+  .tr-meta { font-size:12px; color:#999; }
+  .tr-body { display:none; padding:6px 12px 12px 12px; background:#141416; }
+  .tr-item.open .tr-body { display:block; }
+  .tr-msg { padding:8px 11px; border-radius:10px; margin:7px 0; font-size:14px; line-height:1.5; white-space:pre-wrap; max-width:90%; }
+  .tr-msg.u { background:#0a4a8f; margin-left:auto; }
+  .tr-msg.p { background:#2c2c2e; }
+
   .hist-item { display:flex; gap:10px; align-items:center; padding:10px 4px; border-bottom:1px solid #2c2c2e; font-size:15px; cursor:pointer; }
   .hist-item:hover { background:#222; }
   .ghost-btn { padding:9px 14px; background:none; border:1px solid #48484a; color:#5ac8fa; border-radius:9px; font-size:14px; font-weight:600; cursor:pointer; }
@@ -94,6 +109,7 @@
     <div class="tabs">
       <div class="tab sel" data-page="evtPage">&#x1F4DD; 事件記錄</div>
       <div class="tab" data-page="mediaPage">&#x1F5BC; 媒體庫</div>
+      <div class="tab" data-page="transcriptPage">&#x1F4AC; 對話紀錄</div>
     </div>
   </header>
 
@@ -138,6 +154,14 @@
       <div class="muted" id="mediaEmpty" style="display:none">媒體庫是空的，上傳第一個檔案吧</div>
     </div>
   </div>
+
+  <!-- ============ 對話紀錄 ============ -->
+  <div class="page" id="transcriptPage">
+    <div class="card">
+      <h2>學生與 AI 病人的對話 <button class="ghost-btn" id="trLoadBtn" style="float:right;margin-top:-6px">重新整理</button></h2>
+      <div id="trList"><div class="muted">載入中…</div></div>
+    </div>
+  </div>
 </div>
 
 <div id="lightbox"><div id="lightContent"></div></div>
@@ -161,7 +185,7 @@ const firebaseConfig = {
 let db = null;
 try{ db = getFirestore(initializeApp(firebaseConfig)); }catch(e){ console.warn("Firebase init failed", e); }
 const $ = id => document.getElementById(id);
-const SESS = "monitor_sessions", EVTS = "monitor_events", MEDIA = "monitor_media";
+const SESS = "monitor_sessions", EVTS = "monitor_events", MEDIA = "monitor_media", TRANSCRIPTS = "sim_transcripts";
 
 function toast(msg, bad){
   const t = $("toast");
@@ -181,6 +205,7 @@ document.querySelectorAll(".tab").forEach(tb=>{
     tb.classList.add("sel");
     $(tb.dataset.page).classList.add("sel");
     if (tb.dataset.page==="mediaPage" && !mediaLoaded) loadMedia();
+    if (tb.dataset.page==="transcriptPage") loadTranscripts();
   };
 });
 
@@ -578,6 +603,63 @@ $("lightbox").onclick = ()=>{
   $("lightbox").style.display = "none";
   $("lightContent").innerHTML = ""; // 停止播放中的影音
 };
+
+// ========== 對話紀錄 ==========
+$("trLoadBtn").onclick = loadTranscripts;
+async function loadTranscripts(){
+  if (!db){ toast("Firebase 無法連線", true); return; }
+  $("trList").innerHTML = '<div class="muted">載入中…</div>';
+  try{
+    const qs = await getDocs(query(collection(db,TRANSCRIPTS), orderBy("updated","desc"), limit(60)));
+    const box = $("trList");
+    box.innerHTML = "";
+    if (qs.empty){ box.innerHTML = '<div class="muted">還沒有對話紀錄 — 學生用 SimPatient 執行教案並問診後，會出現在這裡</div>'; return; }
+    qs.forEach(d=>{
+      const v = d.data();
+      const turns = v.turns || [];
+      const item = document.createElement("div");
+      item.className = "tr-item";
+
+      const head = document.createElement("div");
+      head.className = "tr-head";
+      head.innerHTML = `<span class="arr">&#x25B6;</span><span class="tr-student"></span><span class="tr-case"></span><span class="tr-meta"></span>`;
+      head.querySelector(".tr-student").textContent = v.student || "(未具名)";
+      head.querySelector(".tr-case").textContent = v.caseTitle || "";
+      head.querySelector(".tr-meta").textContent = (v.startedAtStr||"") + " · " + Math.floor(turns.length/2) + " 問";
+
+      const body = document.createElement("div");
+      body.className = "tr-body";
+      turns.forEach(t=>{
+        const m = document.createElement("div");
+        m.className = "tr-msg " + (t.role==="user" ? "u" : "p");
+        m.textContent = t.text;
+        body.appendChild(m);
+      });
+      const copyBtn = document.createElement("button");
+      copyBtn.className = "ghost-btn"; copyBtn.style.marginTop = "8px";
+      copyBtn.textContent = "複製逐字稿";
+      copyBtn.onclick = e=>{
+        e.stopPropagation();
+        const lines = [`${v.student||"(未具名)"} — ${v.caseTitle||""}（${v.startedAtStr||""}）`];
+        turns.forEach(t=> lines.push((t.role==="user"?"問：":"病人：")+t.text));
+        navigator.clipboard.writeText(lines.join("\n")).then(()=>toast("已複製逐字稿")).catch(()=>toast("複製失敗", true));
+      };
+      const delBtn = document.createElement("button");
+      delBtn.className = "ghost-btn"; delBtn.style.cssText = "margin-top:8px;margin-left:8px;border-color:#5a2a2a;color:#ff6b6b";
+      delBtn.textContent = "刪除";
+      delBtn.onclick = async e=>{
+        e.stopPropagation();
+        if (!confirm("刪除這筆對話紀錄？")) return;
+        try{ await deleteDoc(doc(db,TRANSCRIPTS,d.id)); item.remove(); toast("已刪除"); }catch(_){ toast("刪除失敗", true); }
+      };
+      body.appendChild(copyBtn); body.appendChild(delBtn);
+
+      head.onclick = ()=> item.classList.toggle("open");
+      item.appendChild(head); item.appendChild(body);
+      box.appendChild(item);
+    });
+  }catch(e){ $("trList").innerHTML = '<div class="muted">載入失敗</div>'; }
+}
 
 // URL 參數 ?code=1234 自動連線
 const usp = new URLSearchParams(location.search);

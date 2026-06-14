@@ -38,6 +38,37 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // 3D 模擬病人平台：學生與 AI 病人的對話逐字稿（debriefing/評分用）
+    match /sim_transcripts/{document} {
+      allow read, write: if true;
+    }
+
+    // 麻醉專師學習平台：使用者資料
+    // - 已登入使用者只能讀寫「自己」的資料
+    // - 管理員 (jiahowchang@gmail.com) 可讀寫所有人
+    match /np_anesthesia_users/{userId} {
+      allow read: if request.auth != null &&
+        (request.auth.uid == userId || request.auth.token.email == "jiahowchang@gmail.com");
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null &&
+        (request.auth.token.email == "jiahowchang@gmail.com" ||
+         (request.auth.uid == userId &&
+          // 一般使用者更新自己時，禁止改 status 欄位
+          !("status" in request.resource.data.diff(resource.data).affectedKeys())));
+      allow delete: if request.auth != null && request.auth.token.email == "jiahowchang@gmail.com";
+    }
+
+    // 麻醉專師學習平台：個人學習筆記
+    // - doc id 格式為 {uid}__{questionId}
+    // - 使用者只能讀寫自己的筆記 (資料內 uid 欄位須等於登入者)
+    match /np_anesthesia_notes/{noteId} {
+      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow update: if request.auth != null && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+
     // 其他集合預設禁止存取
     match /{document=**} {
       allow read, write: if false;
