@@ -63,6 +63,7 @@
   .tr-msg { padding:8px 11px; border-radius:10px; margin:7px 0; font-size:14px; line-height:1.5; white-space:pre-wrap; max-width:90%; }
   .tr-msg.u { background:#0a4a8f; margin-left:auto; }
   .tr-msg.p { background:#2c2c2e; }
+  .tr-time { font-size:11px; color:#9bb; opacity:.7; margin-right:6px; font-variant-numeric:tabular-nums; }
 
   .hist-item { display:flex; gap:10px; align-items:center; padding:10px 4px; border-bottom:1px solid #2c2c2e; font-size:15px; cursor:pointer; }
   .hist-item:hover { background:#222; }
@@ -158,7 +159,12 @@
   <!-- ============ 對話紀錄 ============ -->
   <div class="page" id="transcriptPage">
     <div class="card">
-      <h2>學生與 AI 病人的對話 <button class="ghost-btn" id="trLoadBtn" style="float:right;margin-top:-6px">重新整理</button></h2>
+      <h2>學生與 AI 病人的對話
+        <span style="float:right;margin-top:-6px;display:flex;gap:8px">
+          <button class="ghost-btn" id="trXlsBtn">&#x2B07; 全部匯出 Excel</button>
+          <button class="ghost-btn" id="trLoadBtn">重新整理</button>
+        </span>
+      </h2>
       <div id="trList"><div class="muted">載入中…</div></div>
     </div>
   </div>
@@ -605,10 +611,55 @@ $("lightbox").onclick = ()=>{
 };
 
 // ========== 對話紀錄 ==========
+let loadedTranscripts = [];
 $("trLoadBtn").onclick = loadTranscripts;
+$("trXlsBtn").onclick = exportAllExcel;
+
+function fmtClock(ms){
+  if (!ms) return "";
+  const d = new Date(ms);
+  return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")+":"+String(d.getSeconds()).padStart(2,"0");
+}
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function downloadBlob(blob, name){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=> URL.revokeObjectURL(url), 2000);
+}
+function safeName(s){ return String(s||"").replace(/[\\/:*?"<>|]/g,"_").slice(0,40); }
+
+function exportWord(v){
+  const turns = v.turns || [];
+  const rows = turns.map(t=>{
+    const who = t.role==="user" ? "學生" : "病人";
+    const color = t.role==="user" ? "#0a4a8f" : "#333";
+    return `<p style="margin:5px 0"><span style="color:#888">[${fmtClock(t.t)}]</span> <b style="color:${color}">${who}：</b>${esc(t.text)}</p>`;
+  }).join("");
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>對話紀錄</title></head><body style="font-family:'PMingLiU',serif;font-size:12pt">
+    <h2 style="margin:0">${esc(v.caseTitle||"模擬病人對話紀錄")}</h2>
+    <p style="color:#555;margin:4px 0 12px 0">學生：${esc(v.student||"(未具名)")}　|　開始時間：${esc(v.startedAtStr||"")}　|　共 ${Math.floor(turns.length/2)} 問</p>
+    <hr>${rows}</body></html>`;
+  downloadBlob(new Blob(["﻿"+html], {type:"application/msword"}), `${safeName(v.student)}_${safeName(v.caseTitle)}.doc`);
+}
+function exportAllExcel(){
+  if (!loadedTranscripts.length){ toast("沒有可匯出的紀錄", true); return; }
+  let body = "";
+  loadedTranscripts.forEach(v=>{
+    (v.turns||[]).forEach(t=>{
+      body += `<tr><td>${esc(v.student)}</td><td>${esc(v.caseTitle)}</td><td>${esc(v.startedAtStr)}</td><td>${fmtClock(t.t)}</td><td>${t.role==="user"?"學生":"病人"}</td><td>${esc(t.text)}</td></tr>`;
+    });
+  });
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"></head><body><table border="1"><tr style="background:#ddd;font-weight:bold"><th>學生</th><th>教案</th><th>開始時間</th><th>訊息時間</th><th>角色</th><th>內容</th></tr>${body}</table></body></html>`;
+  downloadBlob(new Blob(["﻿"+html], {type:"application/vnd.ms-excel"}), "對話紀錄_全部匯出.xls");
+  toast("已匯出 Excel");
+}
+
 async function loadTranscripts(){
   if (!db){ toast("Firebase 無法連線", true); return; }
   $("trList").innerHTML = '<div class="muted">載入中…</div>';
+  loadedTranscripts = [];
   try{
     const qs = await getDocs(query(collection(db,TRANSCRIPTS), orderBy("updated","desc"), limit(60)));
     const box = $("trList");
@@ -616,6 +667,7 @@ async function loadTranscripts(){
     if (qs.empty){ box.innerHTML = '<div class="muted">還沒有對話紀錄 — 學生用 SimPatient 執行教案並問診後，會出現在這裡</div>'; return; }
     qs.forEach(d=>{
       const v = d.data();
+      loadedTranscripts.push(v);
       const turns = v.turns || [];
       const item = document.createElement("div");
       item.className = "tr-item";
@@ -632,27 +684,36 @@ async function loadTranscripts(){
       turns.forEach(t=>{
         const m = document.createElement("div");
         m.className = "tr-msg " + (t.role==="user" ? "u" : "p");
-        m.textContent = t.text;
+        const tm = document.createElement("span");
+        tm.className = "tr-time"; tm.textContent = "["+fmtClock(t.t)+"]";
+        m.appendChild(tm);
+        m.appendChild(document.createTextNode(t.text));
         body.appendChild(m);
       });
+
+      const acts = document.createElement("div");
+      acts.style.cssText = "margin-top:8px;display:flex;gap:8px;flex-wrap:wrap";
       const copyBtn = document.createElement("button");
-      copyBtn.className = "ghost-btn"; copyBtn.style.marginTop = "8px";
-      copyBtn.textContent = "複製逐字稿";
+      copyBtn.className = "ghost-btn"; copyBtn.textContent = "複製逐字稿";
       copyBtn.onclick = e=>{
         e.stopPropagation();
         const lines = [`${v.student||"(未具名)"} — ${v.caseTitle||""}（${v.startedAtStr||""}）`];
-        turns.forEach(t=> lines.push((t.role==="user"?"問：":"病人：")+t.text));
+        turns.forEach(t=> lines.push(`[${fmtClock(t.t)}] `+(t.role==="user"?"問：":"病人：")+t.text));
         navigator.clipboard.writeText(lines.join("\n")).then(()=>toast("已複製逐字稿")).catch(()=>toast("複製失敗", true));
       };
+      const wordBtn = document.createElement("button");
+      wordBtn.className = "ghost-btn"; wordBtn.textContent = "匯出 Word";
+      wordBtn.onclick = e=>{ e.stopPropagation(); exportWord(v); };
       const delBtn = document.createElement("button");
-      delBtn.className = "ghost-btn"; delBtn.style.cssText = "margin-top:8px;margin-left:8px;border-color:#5a2a2a;color:#ff6b6b";
+      delBtn.className = "ghost-btn"; delBtn.style.cssText = "border-color:#5a2a2a;color:#ff6b6b";
       delBtn.textContent = "刪除";
       delBtn.onclick = async e=>{
         e.stopPropagation();
         if (!confirm("刪除這筆對話紀錄？")) return;
-        try{ await deleteDoc(doc(db,TRANSCRIPTS,d.id)); item.remove(); toast("已刪除"); }catch(_){ toast("刪除失敗", true); }
+        try{ await deleteDoc(doc(db,TRANSCRIPTS,d.id)); item.remove(); loadedTranscripts = loadedTranscripts.filter(x=>x!==v); toast("已刪除"); }catch(_){ toast("刪除失敗", true); }
       };
-      body.appendChild(copyBtn); body.appendChild(delBtn);
+      acts.appendChild(copyBtn); acts.appendChild(wordBtn); acts.appendChild(delBtn);
+      body.appendChild(acts);
 
       head.onclick = ()=> item.classList.toggle("open");
       item.appendChild(head); item.appendChild(body);

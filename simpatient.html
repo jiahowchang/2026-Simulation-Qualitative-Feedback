@@ -844,12 +844,13 @@ async function sendChat(){
   chat.busy = true;
   $("ptStatus").textContent = "思考中…";
   const tmp = addMsg("pt", "…");
+  const sentAt = Date.now();
   try{
     const reply = await callPatientAPI(txt);
     if (reply===null){ tmp.remove(); return; }
     tmp.textContent = reply;
     speak(reply);
-    saveTranscript(txt, reply);
+    saveTranscript(txt, reply, sentAt);
   }catch(e){
     tmp.remove();
     addMsg("sys", e.message);
@@ -860,11 +861,11 @@ async function sendChat(){
   }
 }
 // 將問答存進 Firestore（只存學生問句 + 病人回答，不含教師的系統提示/隱藏劇本）
-async function saveTranscript(userText, ptText){
+async function saveTranscript(userText, ptText, sentAt){
   if (!db || !playing) return;
   const now = Date.now();
-  session.turns.push({ role:"user", text:userText, t:now });
-  session.turns.push({ role:"pt", text:ptText, t:now });
+  session.turns.push({ role:"user", text:userText, t: sentAt || now });
+  session.turns.push({ role:"pt", text:ptText, t: now });
   try{
     if (!session.transcriptId){
       const ref = await addDoc(collection(db,"sim_transcripts"), {
