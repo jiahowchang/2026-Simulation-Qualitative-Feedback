@@ -250,6 +250,16 @@
       </div>
 
       <div class="ctrl-card">
+        <h2>傳送影像到監視器（jpg / png / gif）</h2>
+        <button id="cImgUploadBtn" style="width:100%;padding:13px;background:#0a84ff;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer">&#x1F4F7; 上傳並傳送（拍照 / 相簿 / 檔案）</button>
+        <input type="file" id="cImgFile" accept="image/jpeg,image/png,image/gif" style="display:none">
+        <div id="cImgMsg" style="font-size:13px;color:#ff9f0a;margin-top:8px;min-height:18px"></div>
+        <div style="font-size:13px;color:#999;margin-top:6px">或點下方媒體庫圖片直接傳送：</div>
+        <div id="cImgGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;margin-top:8px"></div>
+        <div id="cImgEmpty" style="font-size:13px;color:#777;padding:6px 0;display:none">媒體庫還沒有圖片，用上面的按鈕上傳吧</div>
+      </div>
+
+      <div class="ctrl-card">
         <h2>心律與生命徵象（調整後按「套用」）</h2>
         <div class="inst-field">
           <label><b>心律 Rhythm</b></label>
@@ -1363,7 +1373,8 @@ document.getElementById('pOut').oninput = function(){ state.pacer.out=+this.valu
    - 控制台輸入代碼後可遙控心律/生命徵象，並看到學生端即時數值
    ================================================================ */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp }
+import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp,
+         collection, addDoc, getDocs, query, orderBy }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -1530,6 +1541,7 @@ async function connectCtrl(){
     $("ctrlActions").style.display = "flex";
     $("connDot").classList.add("on");
     $("connLabel").textContent = "已連線 "+code;
+    loadImgGrid();
     ctrl.unsub = onSnapshot(doc(db,SESS,code), s=>{
       if (!s.exists()){
         $("connLabel").textContent = "監視器已離線";
@@ -1577,6 +1589,91 @@ $("cSilence").onclick = async ()=>{
   try{ await updateDoc(doc(db,SESS,ctrl.code), { "ctrl.silenceSeq": Date.now() }); flashBtn($("cSilence"), "已靜音 ✓"); }
   catch(e){ flashBtn($("cSilence"), "失敗"); }
 };
+
+// ---------- 控制台：傳送影像到監視器 ----------
+const MEDIA_COLL = "monitor_media", MEDIA_CHUNKS = "monitor_media_chunks", IMG_CHUNK = 700000;
+function cImgMsg(t){ $("cImgMsg").textContent = t || ""; }
+function readDataURL(f){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(f); }); }
+function loadImg(src){ return new Promise((res,rej)=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=src; }); }
+// 把媒體推到監視器（寫 ctrl.mediaSeq + mediaId）
+async function pushMediaToMonitor(mediaId, name){
+  if (!ctrl.code) return;
+  await updateDoc(doc(db,SESS,ctrl.code), { "ctrl.mediaSeq": Date.now(), "ctrl.mediaId": mediaId, "ctrl.mediaName": name||"" });
+}
+// 上傳影像到媒體庫（jpg/png 壓縮；gif 原樣保留動畫；>900KB 分塊）
+async function uploadImageMedia(file){
+  const raw = await readDataURL(file);
+  let dataUrl, thumb = null;
+  if (file.type === "image/gif"){
+    dataUrl = raw; // gif 不可重繪，否則動畫會被壓成單張
+    try{ const im=await loadImg(raw); const tc=document.createElement("canvas"); const ts=Math.min(1,200/Math.max(im.width,im.height)); tc.width=im.width*ts; tc.height=im.height*ts; tc.getContext("2d").drawImage(im,0,0,tc.width,tc.height); thumb=tc.toDataURL("image/jpeg",0.6); }catch(e){}
+  } else {
+    const im = await loadImg(raw);
+    const MAX=1400, sc=Math.min(1,MAX/Math.max(im.width,im.height));
+    const cv=document.createElement("canvas"); cv.width=Math.round(im.width*sc); cv.height=Math.round(im.height*sc);
+    const cx=cv.getContext("2d"); cx.fillStyle="#fff"; cx.fillRect(0,0,cv.width,cv.height); cx.drawImage(im,0,0,cv.width,cv.height);
+    let q=0.85; dataUrl=cv.toDataURL("image/jpeg",q);
+    while(dataUrl.length>900000 && q>0.35){ q-=0.1; dataUrl=cv.toDataURL("image/jpeg",q); }
+  }
+  const b64 = dataUrl.split(",")[1];
+  const meta = { name: file.name.replace(/\.[a-z0-9]+$/i,""), kind: file.type==="image/gif"?"gif":"image",
+                 mime: file.type==="image/gif"?"image/gif":"image/jpeg", size:file.size, created:Date.now(), thumb, chunks:0 };
+  if (dataUrl.length < 900000){ meta.dataUrl = dataUrl; }
+  else { meta.chunks = Math.ceil(b64.length/IMG_CHUNK); }
+  const ref = await addDoc(collection(db,MEDIA_COLL), meta);
+  for (let i=0;i<meta.chunks;i++){
+    cImgMsg(`上傳中 ${i+1}/${meta.chunks}…`);
+    await setDoc(doc(db,MEDIA_CHUNKS, ref.id+"_"+i), { mediaId:ref.id, idx:i, data:b64.slice(i*IMG_CHUNK,(i+1)*IMG_CHUNK) });
+  }
+  return { id: ref.id, name: meta.name, thumb: thumb || (meta.dataUrl||null) };
+}
+$("cImgUploadBtn").onclick = ()=>{ if(!ctrl.code){ cImgMsg("請先連線監視器"); return; } $("cImgFile").click(); };
+$("cImgFile").onchange = async (e)=>{
+  const f = e.target.files[0]; e.target.value="";
+  if (!f) return;
+  if (!/^image\/(jpeg|png|gif)$/.test(f.type)){ cImgMsg("只支援 jpg / png / gif"); return; }
+  if (f.size > 20*1024*1024){ cImgMsg("檔案超過 20MB"); return; }
+  $("cImgUploadBtn").disabled = true;
+  try{
+    cImgMsg("處理中…");
+    const m = await uploadImageMedia(f);
+    await pushMediaToMonitor(m.id, m.name);
+    cImgMsg("已傳送到監視器 ✓：" + m.name);
+    addImgThumb(m, true);
+  }catch(err){ cImgMsg("傳送失敗，請重試"); console.warn(err); }
+  finally{ $("cImgUploadBtn").disabled = false; }
+};
+function addImgThumb(m, prepend){
+  if ($("cImgGrid").querySelector('[data-id="'+m.id+'"]')) return;
+  const d = document.createElement("div");
+  d.dataset.id = m.id;
+  d.style.cssText = "border:1px solid #3a3a3c;border-radius:8px;overflow:hidden;cursor:pointer;background:#2c2c2e";
+  const src = m.thumb || m.dataUrl;
+  d.innerHTML = src ? `<img src="${src}" style="width:100%;height:56px;object-fit:cover;display:block">` : `<div style="height:56px;display:flex;align-items:center;justify-content:center;font-size:22px">&#x1F5BC;</div>`;
+  d.onclick = async ()=>{
+    if (!ctrl.code){ cImgMsg("請先連線監視器"); return; }
+    d.style.outline = "3px solid #30d158";
+    try{ await pushMediaToMonitor(m.id, m.name); cImgMsg("已傳送 ✓：" + (m.name||"")); }
+    catch(e){ cImgMsg("傳送失敗"); }
+    setTimeout(()=>{ d.style.outline = "none"; }, 800);
+  };
+  if (prepend) $("cImgGrid").prepend(d); else $("cImgGrid").appendChild(d);
+}
+async function loadImgGrid(){
+  if (!db) return;
+  try{
+    const qs = await getDocs(query(collection(db,MEDIA_COLL), orderBy("created","desc")));
+    $("cImgGrid").innerHTML = "";
+    let n = 0;
+    qs.forEach(s=>{
+      const m = Object.assign({id:s.id}, s.data());
+      const kind = m.kind || "image";
+      if (kind!=="image" && kind!=="gif") return; // 控制台只列圖片
+      n++; addImgThumb(m);
+    });
+    $("cImgEmpty").style.display = n ? "none" : "block";
+  }catch(e){ /* 忽略 */ }
+}
 
 // 情境快速鍵（沿用主程式的 PRESETS，按下立即送出）
 PRESETS.forEach(p=>{
