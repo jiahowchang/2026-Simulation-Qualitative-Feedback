@@ -1,0 +1,14 @@
+{
+  "name": "SimPatient 模擬病人平台",
+  "short_name": "SimPatient",
+  "start_url": "simpatient.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#000000",
+  "theme_color": "#0a5cff",
+  "icons": [
+    { "src": "icons/simpatient-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icons/simpatient-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

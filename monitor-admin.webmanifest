@@ -1,0 +1,14 @@
+{
+  "name": "SimMonitor 教師後台",
+  "short_name": "教師後台",
+  "start_url": "monitor-admin.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#000000",
+  "theme_color": "#1c1c1e",
+  "icons": [
+    { "src": "icons/admin-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icons/admin-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
