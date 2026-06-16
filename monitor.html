@@ -293,6 +293,26 @@
       </div>
 
       <div class="ctrl-card">
+        <h2>&#x1F3AC; 教案 Timeline（AI 解析 → 遠端執行）</h2>
+        <textarea id="cScnText" placeholder="例：&#10;58歲男性敗血症。初始 HR 105、BP 110/65、SpO2 95%、RR 24、體溫 38.8、竇性。&#10;第2分鐘血壓1分鐘內降到 85/48，HR 125，SpO2 92，RR 30。&#10;第5分鐘惡化為 SVT，HR 160、BP 70/40、SpO2 88、EtCO2 26。&#10;第8分鐘心跳停止變成粗顫 VF，EtCO2 12。" style="width:100%;min-height:110px;background:#2c2c2e;border:1px solid #48484a;color:#fff;font-size:15px;padding:10px;border-radius:10px;resize:vertical"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <button class="scn-btn" id="cScnExampleBtn" style="background:#3a3a3c;color:#fff">載入範例</button>
+          <button class="scn-btn" id="cScnParseBtn" style="background:#0a84ff;color:#fff">&#x1F9E0; AI 解析</button>
+        </div>
+        <div id="cScnMsg" style="font-size:14px;color:#ff9f0a;min-height:18px;margin:8px 0"></div>
+        <div id="cScnSteps" style="max-height:200px;overflow-y:auto"></div>
+        <button id="cScnStartBtn" disabled style="width:100%;margin-top:10px;padding:14px;background:#30d158;color:#000;border:none;border-radius:10px;font-size:16px;font-weight:800;cursor:pointer">載入並開始（送到監視器）</button>
+        <div id="cScnPlayback" style="display:none;gap:8px;margin-top:10px">
+          <button class="scn-btn" id="cScnPlayPauseBtn" style="flex:1;background:#3a3a3c;color:#fff">&#x275A;&#x275A; 暫停</button>
+          <button class="scn-btn" id="cScnRestartBtn" style="flex:1;background:#3a3a3c;color:#fff">&#x21BA; 重來</button>
+          <button class="scn-btn" id="cScnStopBtn" style="flex:1;background:#ff3b30;color:#fff">&#x25A0; 結束</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px"><button class="scn-btn" id="cScnSaveBtn" style="flex:1;background:#3a3a3c;color:#fff">存入教案庫</button></div>
+        <div style="margin-top:12px;font-size:13px;font-weight:700;color:#5ac8fa">教案庫 <button class="scn-btn" id="cScnLibBtn" style="float:right;margin-top:-4px;padding:5px 10px;font-size:13px;background:#3a3a3c;color:#fff">重新整理</button></div>
+        <div id="cScnLib"><div style="color:#777;font-size:13px;padding:6px 0">按「重新整理」載入已儲存教案</div></div>
+      </div>
+
+      <div class="ctrl-card">
         <h2>心律與生命徵象（調整後按「套用」）</h2>
         <div class="inst-field">
           <label><b>心律 Rhythm</b></label>
@@ -1503,7 +1523,7 @@ const SESS = "monitor_sessions";
 const $ = id => document.getElementById(id);
 
 // ========== 監視器端 ==========
-const remote = { code:null, unsub:null, lastSeq:0, lastNibp:0, lastSilence:0, lastMedia:0, pubTimer:null };
+const remote = { code:null, unsub:null, lastSeq:0, lastNibp:0, lastSilence:0, lastMedia:0, lastScn:0, pubTimer:null };
 
 function snapshotStatus(){
   const hr = dispHR();
@@ -1534,6 +1554,16 @@ function applyRemoteCtrl(c){
   if (c.mediaSeq && c.mediaSeq > remote.lastMedia){
     remote.lastMedia = c.mediaSeq;
     if (c.mediaId) fetchAndShowMedia(c.mediaId, c.mediaName);
+  }
+  // 控制台遠端控制 timeline 教案
+  if (c.scnSeq && c.scnSeq > remote.lastScn){
+    remote.lastScn = c.scnSeq;
+    const cmd = c.scnCmd;
+    if (cmd === "start" && Array.isArray(c.scnSteps)){ window.scenarioLoad(c.scnSteps, c.scnTitle); window.scenarioPlay(); }
+    else if (cmd === "play") window.scenarioPlay();
+    else if (cmd === "pause") window.scenarioPause();
+    else if (cmd === "stop") window.scenarioStop();
+    else if (cmd === "restart") window.scenarioRestart();
   }
 }
 // 取得媒體（大檔由 monitor_media_chunks 分塊組回成 Blob URL）
@@ -1867,8 +1897,8 @@ function validScn(o){
   if (!o || !Array.isArray(o.steps) || !o.steps.length) return false;
   return o.steps.every(s=> typeof s.t==="number" || !isNaN(+s.t));
 }
-function renderScnSteps(scn){
-  const box = $("scnSteps"); box.innerHTML = "";
+function renderScnSteps(scn, boxId){
+  const box = $(boxId || "scnSteps"); box.innerHTML = "";
   scn.steps.forEach(s=>{
     const d = document.createElement("div"); d.className="scn-step";
     const mm = String(Math.floor((+s.t)/60)).padStart(2,'0')+':'+String((+s.t)%60).padStart(2,'0');
@@ -1929,6 +1959,78 @@ async function loadScnLib(){
       box.appendChild(row);
     });
   }catch(e){ $("scnLib").innerHTML = '<div style="color:#777;font-size:14px;padding:8px 0">載入失敗</div>'; }
+}
+
+// ========== 控制台端：遠端教案（解析 → 送指令到監視器執行）==========
+let cScnParsed = null, cScnPaused = false;
+function cScnMsg(t){ $("cScnMsg").textContent = t||""; }
+const SCN_EXAMPLE =
+"58歲男性，敗血性休克。初始 HR 105、BP 110/65、SpO2 95%、RR 24、體溫 38.8、竇性心律。\n"+
+"第2分鐘血壓開始下降，1分鐘內降到 BP 85/48，HR 升到 125，SpO2 92，RR 30，體溫 39.2。\n"+
+"第5分鐘代償失敗，惡化為 SVT，HR 160、BP 70/40、SpO2 88、RR 34、EtCO2 26。\n"+
+"第8分鐘心跳停止，變成粗顫 VF，EtCO2 12。";
+$("cScnExampleBtn").onclick = ()=>{ $("cScnText").value = SCN_EXAMPLE; };
+
+async function sendScnCmd(cmd, extra){
+  if (!db || !ctrl.code){ cScnMsg("尚未連線監視器"); return false; }
+  try{ await updateDoc(doc(db,SESS,ctrl.code), Object.assign({ "ctrl.scnSeq": Date.now(), "ctrl.scnCmd": cmd }, extra||{})); return true; }
+  catch(e){ cScnMsg("傳送失敗"); return false; }
+}
+function showCScnPlayback(on){
+  $("cScnPlayback").style.display = on ? "flex" : "none";
+  if (on){ cScnPaused=false; $("cScnPlayPauseBtn").innerHTML = "❚❚ 暫停"; }
+}
+$("cScnParseBtn").onclick = async ()=>{
+  const text = $("cScnText").value.trim();
+  if (!text){ cScnMsg("請先貼上教案文字"); return; }
+  cScnMsg("AI 解析中…（約 5-15 秒）"); $("cScnParseBtn").disabled=true; $("cScnStartBtn").disabled=true;
+  try{
+    const o = await callScnAI(text);
+    if (!validScn(o)) throw new Error("格式不正確，請簡化教案再試");
+    cScnParsed = o; renderScnSteps(o, "cScnSteps");
+    cScnMsg("解析完成：「"+(o.title||"教案")+"」共 "+o.steps.length+" 步");
+    $("cScnStartBtn").disabled=false;
+  }catch(e){ cScnMsg("解析失敗："+e.message); }
+  finally{ $("cScnParseBtn").disabled=false; }
+};
+$("cScnStartBtn").onclick = async ()=>{
+  if (!cScnParsed) return;
+  const ok = await sendScnCmd("start", { "ctrl.scnSteps": cScnParsed.steps, "ctrl.scnTitle": cScnParsed.title||"教案" });
+  if (ok){ cScnMsg("已送到監視器並開始播放 ✓"); showCScnPlayback(true); }
+};
+$("cScnPlayPauseBtn").onclick = async ()=>{
+  if (cScnPaused){ if(await sendScnCmd("play")){ cScnPaused=false; $("cScnPlayPauseBtn").innerHTML="❚❚ 暫停"; cScnMsg("已繼續"); } }
+  else { if(await sendScnCmd("pause")){ cScnPaused=true; $("cScnPlayPauseBtn").innerHTML="▶ 繼續"; cScnMsg("已暫停"); } }
+};
+$("cScnRestartBtn").onclick = async ()=>{ if(await sendScnCmd("restart")){ cScnPaused=false; $("cScnPlayPauseBtn").innerHTML="❚❚ 暫停"; cScnMsg("已從頭重來"); } };
+$("cScnStopBtn").onclick = async ()=>{ if(await sendScnCmd("stop")){ showCScnPlayback(false); cScnMsg("已結束教案"); } };
+$("cScnSaveBtn").onclick = async ()=>{
+  if (!cScnParsed){ cScnMsg("請先 AI 解析"); return; }
+  if (!db){ cScnMsg("Firebase 無法連線"); return; }
+  try{ await addDoc(collection(db,SCEN_COLL), { title:cScnParsed.title||"教案", steps:cScnParsed.steps, created:Date.now() }); cScnMsg("已存入教案庫 ✓"); loadCScnLib(); }
+  catch(e){ cScnMsg("儲存失敗"); }
+};
+$("cScnLibBtn").onclick = loadCScnLib;
+async function loadCScnLib(){
+  if (!db) return;
+  $("cScnLib").innerHTML = '<div style="color:#777;font-size:13px;padding:6px 0">載入中…</div>';
+  try{
+    const qs = await getDocs(query(collection(db,SCEN_COLL), orderBy("created","desc")));
+    const box = $("cScnLib"); box.innerHTML="";
+    if (qs.empty){ box.innerHTML = '<div style="color:#777;font-size:13px;padding:6px 0">教案庫是空的</div>'; return; }
+    qs.forEach(dd=>{
+      const v = dd.data();
+      const row = document.createElement("div"); row.className="scn-lib-item";
+      row.innerHTML = `<span class="nm"></span><span style="color:#888;font-size:13px">${(v.steps||[]).length}步</span><button class="del">✕</button>`;
+      row.querySelector(".nm").textContent = v.title||"(未命名)";
+      row.querySelector(".nm").onclick = ()=>{
+        cScnParsed = { title:v.title, steps:v.steps }; renderScnSteps(cScnParsed, "cScnSteps");
+        cScnMsg("已載入「"+(v.title||"教案")+"」，可直接開始"); $("cScnStartBtn").disabled=false; $("cScnText").value="";
+      };
+      row.querySelector(".del").onclick = async ()=>{ if(!confirm("刪除教案「"+(v.title||"")+"」？"))return; try{ await deleteDoc(doc(db,SCEN_COLL,dd.id)); row.remove(); }catch(_){} };
+      box.appendChild(row);
+    });
+  }catch(e){ $("cScnLib").innerHTML = '<div style="color:#777;font-size:13px;padding:6px 0">載入失敗</div>'; }
 }
 
 // URL 參數：?ctrl 直接進控制台、?ctrl=1234 自動連線
