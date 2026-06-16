@@ -1556,19 +1556,26 @@ async function sendCtrl(){
   };
   try{
     await updateDoc(doc(db,SESS,ctrl.code), { ctrl: payload });
-    const b = $("cApply"), orig = "套用 Apply";
-    b.textContent = "已送出 ✓";
-    setTimeout(()=>{ b.textContent = orig; }, 900);
+    flashBtn($("cApply"), "已送出 ✓");
   }catch(e){ $("connLabel").textContent = "傳送失敗"; }
+}
+// 按鈕短暫顯示確認文字
+function flashBtn(btn, msg){
+  if (btn._t){ clearTimeout(btn._t); }
+  if (!btn._orig) btn._orig = btn.textContent;
+  btn.textContent = msg;
+  btn._t = setTimeout(()=>{ btn.textContent = btn._orig; btn._t = null; }, 1100);
 }
 $("cApply").onclick = sendCtrl;
 $("cNibp").onclick = async ()=>{
-  if (!db || !ctrl.code) return;
-  try{ await updateDoc(doc(db,SESS,ctrl.code), { "ctrl.nibpSeq": Date.now() }); }catch(e){}
+  if (!db || !ctrl.code){ flashBtn($("cNibp"), "未連線"); return; }
+  try{ await updateDoc(doc(db,SESS,ctrl.code), { "ctrl.nibpSeq": Date.now() }); flashBtn($("cNibp"), "已送出 ✓"); }
+  catch(e){ flashBtn($("cNibp"), "失敗"); }
 };
 $("cSilence").onclick = async ()=>{
-  if (!db || !ctrl.code) return;
-  try{ await updateDoc(doc(db,SESS,ctrl.code), { "ctrl.silenceSeq": Date.now() }); }catch(e){}
+  if (!db || !ctrl.code){ flashBtn($("cSilence"), "未連線"); return; }
+  try{ await updateDoc(doc(db,SESS,ctrl.code), { "ctrl.silenceSeq": Date.now() }); flashBtn($("cSilence"), "已靜音 ✓"); }
+  catch(e){ flashBtn($("cSilence"), "失敗"); }
 };
 
 // 情境快速鍵（沿用主程式的 PRESETS，按下立即送出）
