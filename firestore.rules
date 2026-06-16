@@ -38,6 +38,11 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // 生理監視器：timeline 教案（AI 解析後的生命徵象腳本）
+    match /monitor_scenarios/{document} {
+      allow read, write: if true;
+    }
+
     // 3D 模擬病人平台：學生與 AI 病人的對話逐字稿（debriefing/評分用）
     match /sim_transcripts/{document} {
       allow read, write: if true;

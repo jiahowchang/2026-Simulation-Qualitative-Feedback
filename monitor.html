@@ -149,6 +149,35 @@
   /* NIBP measuring text */
   .measuring { font-size:24px !important; color:var(--red); }
 
+  /* 教案 timeline 模態與播放列 */
+  #scnModal .modal { width:min(720px,94vw); }
+  #scnModal textarea { width:100%; min-height:130px; background:#2c2c2e; border:1px solid #48484a; color:#fff; font-size:15px; padding:10px; border-radius:10px; font-family:inherit; resize:vertical; }
+  .scn-btn { padding:11px 16px; border:none; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; }
+  #scnParseBtn { background:#0a84ff; color:#fff; }
+  #scnExampleBtn, #scnSaveBtn { background:#3a3a3c; color:#fff; }
+  #scnMsg { font-size:14px; color:#ff9f0a; min-height:18px; margin:8px 0; }
+  #scnSteps { margin-top:6px; max-height:230px; overflow-y:auto; }
+  .scn-step { display:grid; grid-template-columns:64px 1fr; gap:10px; padding:8px 6px; border-bottom:1px solid #2c2c2e; font-size:14px; }
+  .scn-step .tm { color:#30d158; font-weight:700; font-variant-numeric:tabular-nums; }
+  .scn-step .lb { font-weight:600; }
+  .scn-step .vv { color:#aaa; font-size:13px; margin-top:2px; }
+  #scnStartBtn { width:100%; margin-top:12px; padding:14px; background:#30d158; color:#000; border:none; border-radius:10px; font-size:17px; font-weight:800; cursor:pointer; }
+  #scnStartBtn:disabled { background:#3a3a3c; color:#777; cursor:default; }
+  .scn-lib-item { display:flex; align-items:center; gap:10px; padding:9px 6px; border-bottom:1px solid #2c2c2e; font-size:15px; }
+  .scn-lib-item .nm { flex:1; cursor:pointer; }
+  .scn-lib-item .del { background:none; border:none; color:#ff453a; font-size:16px; cursor:pointer; }
+
+  /* 螢幕上的播放列 */
+  #scnBar { position:absolute; left:50%; transform:translateX(-50%); top:56px; z-index:25; display:none; align-items:center; gap:12px;
+            background:rgba(20,20,22,.92); border:1px solid #3a3a3c; border-radius:12px; padding:8px 14px; backdrop-filter:blur(6px); max-width:92vw; }
+  #scnBar button { background:#3a3a3c; border:none; color:#fff; width:38px; height:38px; border-radius:9px; font-size:16px; cursor:pointer; }
+  #scnBar button.play { background:#30d158; color:#000; }
+  #scnBar .info { font-size:13px; line-height:1.35; min-width:200px; }
+  #scnBar .info .now { font-weight:700; color:#30e050; }
+  #scnBar .info .nxt { color:#aaa; }
+  #scnBar .el { font-variant-numeric:tabular-nums; font-weight:700; font-size:15px; color:#5ac8fa; }
+  #scnBar .cls { width:30px !important; height:30px !important; background:none !important; color:#888 !important; font-size:18px !important; }
+
   /* big numbers layout */
   #monScreen.bigNum #waveArea { display:none; }
   #monScreen.bigNum #monMain { grid-template-columns:1fr; }
@@ -335,6 +364,7 @@
       <button id="exitBtn" title="返回">&#x2386;</button>
       <button id="soundBtn" title="音效">&#x1F50A;</button>
       <button id="instBtn" title="教師控制">&#x1F4CB;</button>
+      <button id="scnBtn" title="教案 Timeline">&#x1F3AC;</button>
       <div id="tbCode">&#x21C4; <span id="tbCodeNum">----</span></div>
     </div>
     <div class="tb-brand"><span class="b1">si</span><span class="b2">m</span><span class="b1">monitor</span><span class="hearticon">&#x2764;&#xFE0E;</span></div>
@@ -434,6 +464,37 @@
 </div>
 
 <div id="shockFlash"></div>
+
+<!-- 螢幕上的教案播放列 -->
+<div id="scnBar">
+  <button id="scnPlayBtn" class="play" title="播放/暫停">&#x25B6;</button>
+  <button id="scnRestartBtn" title="重來">&#x21BA;</button>
+  <span class="el" id="scnElapsed">00:00</span>
+  <div class="info"><div class="now" id="scnNow">—</div><div class="nxt" id="scnNext"></div></div>
+  <button class="cls" id="scnStopBtn" title="結束教案">&#x2715;</button>
+</div>
+
+<!-- ============ 教案 TIMELINE 模態 ============ -->
+<div class="modal-bg" id="scnModal">
+  <div class="modal">
+    <div class="modal-head"><span>&#x1F3AC; 教案 Timeline（AI 解析）</span><button class="modal-x" data-close="scnModal">&#x2715;</button></div>
+    <div class="modal-body">
+      <div style="font-size:13px;color:#bbb;margin-bottom:8px">用文字寫好教案（含時間與生命徵象變化），AI 會解析成 timeline，監視器自動依時間執行。</div>
+      <textarea id="scnText" placeholder="例：&#10;58歲男性敗血症。初始 HR 105、BP 110/65、SpO2 95%、RR 24、體溫 38.8、竇性心律。&#10;第2分鐘血壓開始下降，1分鐘內降到 85/48，HR 升到 125，SpO2 92，RR 30。&#10;第5分鐘惡化為 SVT，HR 160、BP 70/40、SpO2 88、EtCO2 26。&#10;第8分鐘心跳停止，變成粗顫 VF，EtCO2 12。"></textarea>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button class="scn-btn" id="scnExampleBtn">載入範例</button>
+        <button class="scn-btn" id="scnParseBtn">&#x1F9E0; AI 解析</button>
+      </div>
+      <div id="scnMsg"></div>
+      <div id="scnSteps"></div>
+      <button id="scnStartBtn" disabled>載入並開始播放</button>
+      <div style="display:flex;gap:8px;margin-top:8px"><button class="scn-btn" id="scnSaveBtn" style="flex:1">存入教案庫</button></div>
+
+      <div style="margin-top:16px;font-size:14px;font-weight:700;color:#5ac8fa;border-bottom:1px solid #3a3a3c;padding-bottom:4px">教案庫 <button class="scn-btn" id="scnLibLoadBtn" style="float:right;margin-top:-4px;padding:5px 10px;font-size:13px">重新整理</button></div>
+      <div id="scnLib"><div style="color:#777;font-size:14px;padding:8px 0">按「重新整理」載入已儲存的教案</div></div>
+    </div>
+  </div>
+</div>
 
 <!-- ============ INSTRUCTOR PANEL ============ -->
 <div class="modal-bg" id="instModal">
@@ -997,6 +1058,7 @@ function step(ts){
     while (eng.spikes.length && eng.spikes[0]<simT-1) eng.spikes.shift();
   }
   tickTrend();
+  scnTick();
   channels.forEach(c=>c.render(simT));
   // QRS 嗶聲
   for (const bt of eng.beats){
@@ -1009,7 +1071,53 @@ function step(ts){
     startNibp();
   }
 }
-setInterval(()=>{ if(state.running){ updateNumerics(); evalAlarms(); } }, 450);
+setInterval(()=>{ if(state.running){ updateNumerics(); evalAlarms(); if(scn.steps) updateScnBar(); } }, 450);
+
+// ---------- 教案 timeline 引擎 ----------
+const scn = { steps:null, title:'', active:false, paused:false, startT:0, pauseT:0, idx:0 };
+const SCN_KEYS = ['hr','sys','dia','spo2','rr','etco2','temp'];
+function scnElapsed(){ if(!scn.active) return 0; return (scn.paused?scn.pauseT:simT) - scn.startT; }
+function applyScnStep(s){
+  if (s.rhythm) setRhythm(s.rhythm);
+  const tgt = Object.assign({}, state.cur);
+  SCN_KEYS.forEach(k=>{ if (s[k]!==undefined && s[k]!==null) tgt[k]=+s[k]; });
+  applyTargets(tgt, +s.trend||0);
+}
+function scnTick(){
+  if (!scn.active || scn.paused || !scn.steps) return;
+  const el = scnElapsed();
+  while (scn.idx < scn.steps.length && el >= (+scn.steps[scn.idx].t||0)){
+    applyScnStep(scn.steps[scn.idx]); scn.idx++;
+  }
+}
+function fmtMMSS(s){ s=Math.max(0,Math.floor(s)); return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
+function updateScnBar(){
+  if (!scn.steps){ document.getElementById('scnBar').style.display='none'; return; }
+  document.getElementById('scnBar').style.display='flex';
+  document.getElementById('scnElapsed').textContent = fmtMMSS(scnElapsed());
+  const done = scn.idx>0 ? scn.steps[scn.idx-1] : null;
+  const next = scn.idx<scn.steps.length ? scn.steps[scn.idx] : null;
+  document.getElementById('scnNow').textContent = scn.active ? (done? '▸ '+(done.label||'進行中') : '▸ 準備開始') : '已載入（按 ▶ 開始）';
+  document.getElementById('scnNext').textContent = next ? ('下一步 '+(next.label||'')+'　@'+fmtMMSS(next.t)+(scn.active?'（'+fmtMMSS(Math.max(0,next.t-scnElapsed()))+' 後）':'')) : (scn.active?'教案結束':'');
+  const pb=document.getElementById('scnPlayBtn'); pb.innerHTML = (scn.active&&!scn.paused)?'❚❚':'▶'; pb.classList.toggle('play', !(scn.active&&!scn.paused));
+}
+window.scenarioLoad = function(steps, title){
+  scn.steps = steps; scn.title = title||'教案'; scn.idx=0; scn.active=false; scn.paused=false;
+  updateScnBar();
+};
+window.scenarioPlay = function(){
+  if (!scn.steps) return;
+  if (!scn.active){ scn.active=true; scn.paused=false; scn.idx=0; scn.startT=simT; }
+  else if (scn.paused){ scn.startT += (simT-scn.pauseT); scn.paused=false; }
+  updateScnBar();
+};
+window.scenarioPause = function(){ if(scn.active&&!scn.paused){ scn.paused=true; scn.pauseT=simT; updateScnBar(); } };
+window.scenarioToggle = function(){ if(!scn.active||scn.paused) window.scenarioPlay(); else window.scenarioPause(); };
+window.scenarioRestart = function(){ if(!scn.steps)return; scn.idx=0; scn.active=true; scn.paused=false; scn.startT=simT; updateScnBar(); };
+window.scenarioStop = function(){ scn.steps=null; scn.active=false; scn.paused=false; document.getElementById('scnBar').style.display='none'; };
+document.getElementById('scnPlayBtn').onclick = ()=> window.scenarioToggle();
+document.getElementById('scnRestartBtn').onclick = ()=> window.scenarioRestart();
+document.getElementById('scnStopBtn').onclick = ()=>{ if(confirm('結束並清除目前教案？')) window.scenarioStop(); };
 setInterval(()=>{
   const d=new Date();
   const s = String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');
@@ -1700,6 +1808,128 @@ PRESETS.forEach(p=>{
   };
   $("cPresetRow").appendChild(b);
 });
+
+// ========== 教案 Timeline（AI 解析）==========
+const SCEN_COLL = "monitor_scenarios";
+const SCN_PROXY = "https://patient-mkargc7maa-uc.a.run.app";
+let scnParsed = null;  // { title, steps }
+
+function scnMsg(t){ $("scnMsg").textContent = t||""; }
+$("scnBtn").onclick = ()=> $("scnModal").classList.add("open");
+
+$("scnExampleBtn").onclick = ()=>{
+  $("scnText").value =
+"58歲男性，敗血性休克。初始 HR 105、BP 110/65、SpO2 95%、RR 24、體溫 38.8、竇性心律。\n"+
+"第2分鐘血壓開始下降，1分鐘內降到 BP 85/48，HR 升到 125，SpO2 92，RR 30，體溫 39.2。\n"+
+"第5分鐘代償失敗，惡化為 SVT，HR 160、BP 70/40、SpO2 88、RR 34、EtCO2 26。\n"+
+"第8分鐘心跳停止，變成粗顫 VF，EtCO2 12。";
+};
+
+const SCN_SYS = `你是臨床模擬「生理監視器教案解析器」。把使用者提供的中文情境教案，轉換成一個 timeline JSON，讓監視器依時間自動改變生命徵象。
+
+只輸出 JSON，不要任何說明文字、不要 markdown 程式碼框。格式：
+{
+  "title": "教案簡短名稱",
+  "steps": [
+    { "t": 0, "label": "初始狀態", "rhythm": "sinus", "trend": 0, "hr": 105, "sys": 110, "dia": 65, "spo2": 95, "rr": 24, "etco2": 34, "temp": 38.8 }
+  ]
+}
+
+規則：
+- t = 從教案開始的「秒數」（第2分鐘=120、第5分鐘=300）。第一步通常 t:0。steps 依 t 由小到大排序。
+- 每一步都要包含全部 7 個數值（hr, sys=收縮壓, dia=舒張壓, spo2, rr, etco2, temp）。沒提到變化的，沿用上一步的值。
+- trend = 漸變秒數：「突然/立即」用 0；「X分鐘內/逐漸下降」用該秒數（1分鐘內=60）。
+- rhythm 只能是這些字串之一：sinus(竇性), afib(心房顫動), aflutter(心房撲動), svt(SVT), vtp(VT有脈), vt(VT無脈), vfc(粗顫VF), vff(細顫VF), pea(PEA), asystole(心跳停止/靜止), avb3(三度房室阻滯)。沒提到就沿用上一步。
+- etco2 沒提到時用合理值（正常約 35-40；低灌流/心停時偏低）。
+- 最多 12 步。label 用簡短中文（4-10字）。`;
+
+function extractJSON(txt){
+  let s = txt.trim().replace(/^```(json)?/i,'').replace(/```$/,'').trim();
+  const a = s.indexOf('{'), b = s.lastIndexOf('}');
+  if (a>=0 && b>a) s = s.slice(a, b+1);
+  return JSON.parse(s);
+}
+async function callScnAI(text){
+  const payload = { model:"claude-opus-4-8", max_tokens:1500, system:SCN_SYS, messages:[{role:"user", content:text}] };
+  let res=null;
+  try{ const r = await fetch(SCN_PROXY, { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(payload) }); if (r.status!==404) res=r; }catch(e){}
+  if (!res){
+    const key = localStorage.getItem("simpat_key");
+    if (!key) throw new Error("AI 代理無法連線，且未設定 API Key");
+    res = await fetch("https://api.anthropic.com/v1/messages", { method:"POST", headers:{ "x-api-key":key, "anthropic-version":"2023-06-01", "content-type":"application/json", "anthropic-dangerous-direct-browser-access":"true" }, body:JSON.stringify(payload) });
+  }
+  if (!res.ok){ let m="AI 錯誤 "+res.status; try{ const e=await res.json(); m+="："+(e.error&&e.error.message||""); }catch(_){}; throw new Error(m); }
+  const data = await res.json();
+  const txt = (data.content.find(b=>b.type==="text")||{}).text || "";
+  return extractJSON(txt);
+}
+function validScn(o){
+  if (!o || !Array.isArray(o.steps) || !o.steps.length) return false;
+  return o.steps.every(s=> typeof s.t==="number" || !isNaN(+s.t));
+}
+function renderScnSteps(scn){
+  const box = $("scnSteps"); box.innerHTML = "";
+  scn.steps.forEach(s=>{
+    const d = document.createElement("div"); d.className="scn-step";
+    const mm = String(Math.floor((+s.t)/60)).padStart(2,'0')+':'+String((+s.t)%60).padStart(2,'0');
+    const RN = { sinus:"竇性",afib:"AFib",aflutter:"AFlutter",svt:"SVT",vtp:"VT(脈)",vt:"VT(無脈)",vfc:"粗VF",vff:"細VF",pea:"PEA",asystole:"Asystole",avb3:"3°AVB" };
+    d.innerHTML = `<div class="tm">${mm}</div><div><div class="lb"></div><div class="vv"></div></div>`;
+    d.querySelector(".lb").textContent = (s.label||"") + (s.rhythm? "　["+(RN[s.rhythm]||s.rhythm)+"]":"") + (s.trend? "　漸變"+s.trend+"s":"");
+    d.querySelector(".vv").textContent = `HR ${s.hr??'-'}　BP ${s.sys??'-'}/${s.dia??'-'}　SpO2 ${s.spo2??'-'}　RR ${s.rr??'-'}　EtCO2 ${s.etco2??'-'}　T ${s.temp??'-'}`;
+    box.appendChild(d);
+  });
+}
+$("scnParseBtn").onclick = async ()=>{
+  const text = $("scnText").value.trim();
+  if (!text){ scnMsg("請先貼上教案文字"); return; }
+  scnMsg("AI 解析中…（約 5-15 秒）"); $("scnParseBtn").disabled=true; $("scnStartBtn").disabled=true;
+  try{
+    const o = await callScnAI(text);
+    if (!validScn(o)) throw new Error("解析結果格式不正確，請簡化教案再試");
+    scnParsed = o;
+    renderScnSteps(o);
+    scnMsg("解析完成：「"+(o.title||"教案")+"」共 "+o.steps.length+" 步。可直接開始或存入教案庫。");
+    $("scnStartBtn").disabled=false;
+  }catch(e){ scnMsg("解析失敗："+e.message); }
+  finally{ $("scnParseBtn").disabled=false; }
+};
+$("scnStartBtn").onclick = ()=>{
+  if (!scnParsed) return;
+  window.scenarioLoad(scnParsed.steps, scnParsed.title);
+  window.scenarioPlay();
+  $("scnModal").classList.remove("open");
+};
+$("scnSaveBtn").onclick = async ()=>{
+  if (!scnParsed){ scnMsg("請先 AI 解析出 timeline"); return; }
+  if (!db){ scnMsg("Firebase 無法連線"); return; }
+  try{
+    await addDoc(collection(db,SCEN_COLL), { title:scnParsed.title||"教案", steps:scnParsed.steps, created:Date.now() });
+    scnMsg("已存入教案庫 ✓"); loadScnLib();
+  }catch(e){ scnMsg("儲存失敗"); }
+};
+$("scnLibLoadBtn").onclick = loadScnLib;
+async function loadScnLib(){
+  if (!db) return;
+  $("scnLib").innerHTML = '<div style="color:#777;font-size:14px;padding:8px 0">載入中…</div>';
+  try{
+    const qs = await getDocs(query(collection(db,SCEN_COLL), orderBy("created","desc")));
+    const box = $("scnLib"); box.innerHTML="";
+    if (qs.empty){ box.innerHTML = '<div style="color:#777;font-size:14px;padding:8px 0">教案庫是空的，解析後按「存入教案庫」</div>'; return; }
+    qs.forEach(dd=>{
+      const v = dd.data();
+      const row = document.createElement("div"); row.className="scn-lib-item";
+      row.innerHTML = `<span class="nm"></span><span style="color:#888;font-size:13px">${(v.steps||[]).length}步</span><button class="del">✕</button>`;
+      row.querySelector(".nm").textContent = v.title||"(未命名)";
+      row.querySelector(".nm").onclick = ()=>{
+        scnParsed = { title:v.title, steps:v.steps };
+        renderScnSteps(scnParsed); scnMsg("已載入「"+(v.title||"教案")+"」，可直接開始。"); $("scnStartBtn").disabled=false;
+        $("scnText").value = "";
+      };
+      row.querySelector(".del").onclick = async ()=>{ if(!confirm("刪除教案「"+(v.title||"")+"」？"))return; try{ await deleteDoc(doc(db,SCEN_COLL,dd.id)); row.remove(); }catch(_){} };
+      box.appendChild(row);
+    });
+  }catch(e){ $("scnLib").innerHTML = '<div style="color:#777;font-size:14px;padding:8px 0">載入失敗</div>'; }
+}
 
 // URL 參數：?ctrl 直接進控制台、?ctrl=1234 自動連線
 const usp = new URLSearchParams(location.search);
