@@ -757,10 +757,17 @@ function ecgGen(t){
   else if (r==='vff') v = vfWave(t,0.13);
   else if (r==='asystole') v = 0.02*Math.sin(6.28*0.35*t);
   else {
+    // STEMI：依目前顯示導程加上 ST 段抬高/壓低（主螢幕也看得到）
+    let st = 0;
+    if (r!=='vt' && r!=='vtp'){ st = (ST_MAP[state.ecg12]||{})[['I','II','III'][state.ecgLead]] || 0; }
+    let stOverlay = 0;
     for (let i=eng.beats.length-1;i>=0;i--){
       const dt = t-eng.beats[i];
       if (dt>0.8) break;
-      if (dt>-0.35) v += qrsTemplate(dt);
+      if (dt>-0.35){
+        v += qrsTemplate(dt);
+        if (st) stOverlay += st * (1/(1+Math.exp(-(dt-0.05)/0.012))) * (1/(1+Math.exp((dt-0.32)/0.05)));
+      }
     }
     // 心房撲動鋸齒波
     if (r==='aflutter') v += 0.18*Math.abs(((t*5)%1)-0.5)*2-0.09;
@@ -769,6 +776,7 @@ function ecgGen(t){
     // 三度阻滯：獨立 P 波 (75/min)
     if (r==='avb3') v += g((t*1.25)%1, 0.14, 0.5, 0.035);
     v *= LEAD_FACTOR[state.ecgLead];
+    v += stOverlay;  // ST 抬高用 ST_MAP 絕對值，不受導程縮放
   }
   // 非擷獲 pacing spikes
   if (state.pacer.on && !pacerCapturing()){
@@ -1512,7 +1520,7 @@ const SESS = "monitor_sessions";
 const $ = id => document.getElementById(id);
 
 // ========== 監視器端 ==========
-const remote = { code:null, unsub:null, lastSeq:0, lastNibp:0, lastSilence:0, lastMedia:0, lastScn:0, pubTimer:null };
+const remote = { code:null, unsub:null, lastSeq:0, lastNibp:0, lastSilence:0, lastMedia:0, lastScn:0, lastEcg12:0, pubTimer:null };
 
 function snapshotStatus(){
   const hr = dispHR();
@@ -1544,6 +1552,7 @@ function applyRemoteCtrl(c){
     const on = (c.silenceOn===undefined) ? true : !!c.silenceOn;  // 舊版相容：沒帶旗標就視為靜音
     if (window.setSilence) window.setSilence(on); else state.silencedUntil = on ? simT+1e9 : 0;
   }
+  if (c.ecg12Seq && c.ecg12Seq > remote.lastEcg12){ remote.lastEcg12 = c.ecg12Seq; state.ecg12 = c.ecg12Val || "normal"; }
   if (c.mediaSeq && c.mediaSeq > remote.lastMedia){
     remote.lastMedia = c.mediaSeq;
     if (c.mediaId) fetchAndShowMedia(c.mediaId, c.mediaName);
@@ -1720,6 +1729,11 @@ $("cNibp").onclick = async ()=>{
   if (!db || !ctrl.code){ flashBtn($("cNibp"), "未連線"); return; }
   try{ await updateDoc(doc(db,SESS,ctrl.code), { "ctrl.nibpSeq": Date.now() }); flashBtn($("cNibp"), "已送出 ✓"); }
   catch(e){ flashBtn($("cNibp"), "失敗"); }
+};
+// 12 導程病理：選了就立即套用（不必按 Apply）
+$("cEcg12").onchange = async ()=>{
+  if (!db || !ctrl.code) return;
+  try{ await updateDoc(doc(db,SESS,ctrl.code), { "ctrl.ecg12Seq": Date.now(), "ctrl.ecg12Val": $("cEcg12").value }); }catch(e){}
 };
 let cSilenced = false;
 function renderCSilence(){
