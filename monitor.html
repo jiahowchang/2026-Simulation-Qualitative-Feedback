@@ -225,9 +225,30 @@
   #ctrlModeBtn { margin-top:14px; padding:14px; border-radius:14px; border:1px solid #48484a; background:none; color:#5ac8fa; font-size:17px; font-weight:600; cursor:pointer; }
 
   @media (max-width:760px){
-    #monMain { grid-template-columns:1fr 200px; }
-    #hrVal{font-size:44px} #bpVal{font-size:36px} #spo2Val,#etco2Val{font-size:48px}
+    #monMain { grid-template-columns:1fr 190px; }
+    #hrVal{font-size:42px} #bpVal{font-size:32px} #spo2Val,#etco2Val{font-size:44px}
     .tool-btn{font-size:11px}
+  }
+
+  /* 手機橫向當「學員顯示端」：螢幕矮，壓縮各區高度與字級，避免數字互相重疊 */
+  @media (max-height:540px){
+    #topbar { height:40px; flex-basis:40px; }
+    #monMain { grid-template-rows:1fr 62px; }
+    #numArea { padding:0 8px 0 6px; }
+    .num-block { padding-top:0; overflow:hidden; }
+    .num-limits, .num-sub, .bs-limits { display:none; }   /* 矮螢幕隱藏警報上下限，讓即時數值不重疊 */
+    .num-name { font-size:12px; line-height:1; }
+    .num-unit { font-size:9px; line-height:1; }
+    .num-val { line-height:.8; }
+    #hrVal{font-size:34px} #bpVal{font-size:24px} #spo2Val,#etco2Val{font-size:34px}
+    #bpMap{font-size:15px; line-height:1; margin-top:1px;}
+    #bottomStrip { padding:0 8px 2px 8px; }
+    .bs-name{font-size:12px}
+    .bs-val{font-size:24px} .bs-unit{font-size:9px}
+    #toolbar { flex-basis:48px; padding:3px 6px 5px 6px; }
+    .tool-btn{font-size:10px; border-radius:8px;} .tool-btn .ic{font-size:15px}
+    #alarmBanner{font-size:14px; min-width:0; max-width:62vw; padding:4px 10px; top:44px; right:6px;}
+    .wave-label{font-size:11px;} #ecgLeadLabel{font-size:13px;}
   }
 </style>
 </head>
