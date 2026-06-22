@@ -35,8 +35,10 @@
   #tbClock { padding:0 18px; font-size:18px; font-weight:600; font-variant-numeric:tabular-nums; }
 
   /* ===== Start screen ===== */
-  #startScreen { background:#000; align-items:center; justify-content:center; }
-  #startInner { display:flex; flex-direction:column; gap:16px; width:min(440px,86vw); }
+  #startScreen { background:#000; }
+  .start-topbar { flex:0 0 46px; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:0 14px; background:#1c1c1e; }
+  .start-scroll { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; }
+  #startInner { margin:auto; width:min(440px,86vw); padding:18px 14px; display:flex; flex-direction:column; gap:16px; }
   .age-btn { padding:18px 10px; border-radius:14px; border:none; background:#3a3a3c; color:#fff; font-size:21px; font-weight:600; cursor:pointer; }
   .age-btn.selected { background:#6fbf4a; }
   #startBtn { margin-top:36px; display:flex; align-items:center; justify-content:center; gap:22px; padding:22px; border-radius:16px; border:none; background:#3a3a3c; color:#fff; font-size:34px; font-weight:700; letter-spacing:2px; cursor:pointer; }
@@ -233,18 +235,20 @@
 
 <!-- ============ START SCREEN ============ -->
 <div id="startScreen" class="screen active">
-  <div style="position:absolute;top:0;left:0;right:0;height:46px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 14px;background:#1c1c1e;">
+  <div class="start-topbar">
     <div style="font-size:18px;font-weight:600;white-space:nowrap;"><span class="b1" style="color:#ccc">si</span><span style="color:#9ad">m</span><span style="color:#ccc">monitor</span> <span style="color:#5ac8fa">♥</span></div>
     <div style="display:flex;gap:12px;font-size:14px;font-weight:600;white-space:nowrap;"><span id="startAgeLabel">Adult</span><span id="startClock"></span></div>
   </div>
-  <div id="startInner">
-    <button class="age-btn selected" data-age="adult">Adult</button>
-    <button class="age-btn" data-age="school">School Age (6-11)</button>
-    <button class="age-btn" data-age="preschool">Preschool (3-5)</button>
-    <button class="age-btn" data-age="toddler">Toddler (1-2)</button>
-    <button class="age-btn" data-age="neonate">Neonate</button>
-    <button id="startBtn"><span class="pwr">&#x23FB;</span> START</button>
-    <button id="ctrlModeBtn">&#x1F4F1; 教師控制台（遙控另一台監視器）</button>
+  <div class="start-scroll">
+    <div id="startInner">
+      <button class="age-btn selected" data-age="adult">Adult</button>
+      <button class="age-btn" data-age="school">School Age (6-11)</button>
+      <button class="age-btn" data-age="preschool">Preschool (3-5)</button>
+      <button class="age-btn" data-age="toddler">Toddler (1-2)</button>
+      <button class="age-btn" data-age="neonate">Neonate</button>
+      <button id="startBtn"><span class="pwr">&#x23FB;</span> START</button>
+      <button id="ctrlModeBtn">&#x1F4F1; 教師控制台（遙控另一台監視器）</button>
+    </div>
   </div>
 </div>
 
