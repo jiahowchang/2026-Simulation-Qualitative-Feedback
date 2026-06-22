@@ -64,7 +64,7 @@
   #bpMap { font-size:30px; font-weight:700; text-align:right; }
 
   /* bottom strip */
-  #bottomStrip { grid-column:1 / 3; grid-row:2; display:grid; grid-template-columns:1.3fr 1fr .9fr; padding:0 10px 4px 10px; gap:8px; }
+  #bottomStrip { grid-column:1 / 3; grid-row:2; display:grid; grid-template-columns:1fr 1fr; padding:0 10px 4px 10px; gap:8px; }
   .bs-block { display:flex; flex-direction:column; }
   .bs-head { display:flex; gap:14px; align-items:flex-start; }
   .bs-name { font-size:17px; font-weight:700; }
@@ -267,7 +267,7 @@
         <h2>學生端即時數值</h2>
         <div class="stat-grid">
           <div class="stat-cell"><div class="l">HR</div><div class="v c-green" id="stHr">--</div></div>
-          <div class="stat-cell"><div class="l">BP</div><div class="v c-red" id="stBp" style="font-size:15px;line-height:1.7">--/--</div></div>
+          <div class="stat-cell"><div class="l">NIBP</div><div class="v c-red" id="stBp" style="font-size:15px;line-height:1.7">--/--</div></div>
           <div class="stat-cell"><div class="l">SpO2</div><div class="v c-yellow" id="stSp">--</div></div>
           <div class="stat-cell"><div class="l">EtCO2</div><div class="v c-white" id="stEt">--</div></div>
           <div class="stat-cell"><div class="l">RR</div><div class="v c-white" id="stRr">--</div></div>
@@ -354,7 +354,7 @@
         <div class="toggle-row">
           <label><input type="checkbox" id="cSEcg" checked> ECG 導極</label>
           <label><input type="checkbox" id="cSSp" checked> SpO2 探頭</label>
-          <label><input type="checkbox" id="cSArt" checked> 動脈導管</label>
+          <label><input type="checkbox" id="cSArt" checked> NIBP 壓脈帶</label>
           <label><input type="checkbox" id="cSEt" checked> EtCO2</label>
           <label><input type="checkbox" id="cSTp" checked> 體溫</label>
         </div>
@@ -399,11 +399,7 @@
   <div id="monMain">
     <div id="waveArea">
       <div class="wave-row"><span class="wave-label" id="ecgLeadLabel">II</span><canvas id="cvEcg"></canvas></div>
-      <div class="wave-row">
-        <span class="wave-scale" style="top:2px">150</span><span class="wave-scale" style="top:48%">75</span><span class="wave-scale" style="bottom:2px">0</span>
-        <canvas id="cvArt"></canvas>
-      </div>
-      <div class="wave-row"><canvas id="cvPleth"></canvas></div>
+      <div class="wave-row"><span class="wave-label">Pleth</span><canvas id="cvPleth"></canvas></div>
       <div class="wave-row">
         <span class="wave-scale" style="top:2px">60</span><span class="wave-scale" style="top:46%">30</span><span class="wave-scale" style="bottom:2px">0</span>
         <canvas id="cvCo2"></canvas>
@@ -420,7 +416,8 @@
       </div>
       <div class="num-block c-red" id="bpBlock">
         <div class="num-head">
-          <div><div class="num-name">BP</div><div class="num-limits"><span id="limBpHi">180/100</span><br><span id="limBpLo">90/50</span></div></div>
+          <div><div class="num-name">NIBP</div><div class="num-limits"><span id="limBpHi">180/100</span><br><span id="limBpLo">90/50</span></div></div>
+          <div class="num-sub" id="nibpTime" style="color:#bbb;font-size:12px"></div>
         </div>
         <div class="num-val" id="bpVal">--/--</div>
         <div id="bpMap">(--)</div>
@@ -443,14 +440,6 @@
     </div>
 
     <div id="bottomStrip">
-      <div class="bs-block c-red" id="nibpBlock">
-        <div class="bs-head">
-          <div class="bs-name">NIBP</div>
-          <div class="bs-limits"><span id="limNibpHi">180/100</span><br><span id="limNibpLo">90/50</span></div>
-        </div>
-        <div class="bs-val" id="nibpVal">--/-- (--)</div>
-        <div class="bs-unit" style="text-align:center">mmHg <span id="nibpTime" style="margin-left:10px;color:#bbb"></span></div>
-      </div>
       <div class="bs-block c-temp" id="tempBlock">
         <div class="bs-head">
           <div class="bs-name">TEMP</div>
@@ -573,7 +562,7 @@
       <div class="toggle-row">
         <label><input type="checkbox" id="sEcg" checked> ECG 導極</label>
         <label><input type="checkbox" id="sSp" checked> SpO2 探頭</label>
-        <label><input type="checkbox" id="sArt" checked> 動脈導管</label>
+        <label><input type="checkbox" id="sArt" checked> NIBP 壓脈帶</label>
         <label><input type="checkbox" id="sEt" checked> EtCO2</label>
         <label><input type="checkbox" id="sTp" checked> 體溫</label>
       </div>
@@ -884,9 +873,8 @@ let channels = [];
 function setupChannels(){
   channels = [
     new Channel('cvEcg',  { color:'#30e050', yMin:-1.4, yMax:2.2, gen:ecgGen,  pxPerSec:()=>channels[0].w/6 }),
-    new Channel('cvArt',  { color:'#ff4545', yMin:0,    yMax:150, gen:artGen,  pxPerSec:()=>channels[1].w/6 }),
-    new Channel('cvPleth',{ color:'#ffd60a', yMin:0,    yMax:1,   gen:plethGen,pxPerSec:()=>channels[2].w/6 }),
-    new Channel('cvCo2',  { color:'#ffffff', yMin:0,    yMax:60,  gen:co2Gen,  pxPerSec:()=>channels[3].w/15, fill:true }),
+    new Channel('cvPleth',{ color:'#ffd60a', yMin:0,    yMax:1,   gen:plethGen,pxPerSec:()=>channels[1].w/6 }),
+    new Channel('cvCo2',  { color:'#ffffff', yMin:0,    yMax:60,  gen:co2Gen,  pxPerSec:()=>channels[2].w/15, fill:true }),
   ];
   channels.forEach(c=>c.resize());
 }
@@ -952,26 +940,19 @@ function updateNumerics(){
   const hr = dispHR();
   el.hrVal.textContent = hr===null?'--':hr;
   el.prVal.textContent = (hasPulse()&&state.sensors.spo2) ? '('+Math.round(effHR())+')' : '(--)';
-  // BP（動脈）
-  if (!state.sensors.art){ el.bpVal.textContent='--/--'; el.bpMap.textContent='(--)'; }
-  else if (!hasPulse()){
-    el.bpVal.textContent='8/6'; el.bpMap.textContent='(7)';
-  } else {
-    const s=Math.round(state.cur.sys), d=Math.round(state.cur.dia);
-    el.bpVal.textContent=s+'/'+d;
-    el.bpMap.textContent='('+Math.round(d+(s-d)/3)+')';
-  }
   el.spo2Val.textContent = (state.sensors.spo2&&hasPulse()) ? Math.round(state.cur.spo2) : '--';
   el.etco2Val.textContent = state.sensors.etco2 ? Math.round(state.cur.etco2) : '--';
   el.rrVal.textContent = state.sensors.etco2 ? Math.round(state.cur.rr) : '--';
   el.tempVal.textContent = state.sensors.temp ? state.cur.temp.toFixed(1) : '--';
-  // NIBP
-  if (state.nibp.measuring){
-    el.nibpVal.textContent = '量測中…'; el.nibpVal.classList.add('measuring');
+  // NIBP（主血壓，量測式 → 顯示在右上大數值區）
+  if (!state.sensors.art){
+    el.bpVal.classList.remove('measuring'); el.bpVal.textContent='--/--'; el.bpMap.textContent='(--)'; el.nibpTime.textContent='未連接';
+  } else if (state.nibp.measuring){
+    el.bpVal.textContent='量測中'; el.bpVal.classList.add('measuring'); el.bpMap.textContent=''; el.nibpTime.textContent='';
   } else {
-    el.nibpVal.classList.remove('measuring');
-    el.nibpVal.textContent = state.nibp.sys===null ? '--/-- (--)' :
-      state.nibp.sys+'/'+state.nibp.dia+' ('+state.nibp.map+')';
+    el.bpVal.classList.remove('measuring');
+    el.bpVal.textContent = state.nibp.sys===null ? '--/--' : state.nibp.sys+'/'+state.nibp.dia;
+    el.bpMap.textContent = state.nibp.map===null ? '(--)' : '('+state.nibp.map+')';
     el.nibpTime.textContent = state.nibp.timeStr;
   }
 }
@@ -980,7 +961,6 @@ function updateLimitLabels(){
   el.limHrHi.textContent=L.hrHi; el.limHrLo.textContent=L.hrLo;
   el.limSpHi.textContent=L.spHi; el.limSpLo.textContent=L.spLo;
   el.limBpHi.textContent=L.sysHi+'/'+L.diaHi; el.limBpLo.textContent=L.sysLo+'/'+L.diaLo;
-  el.limNibpHi.textContent=L.sysHi+'/'+L.diaHi; el.limNibpLo.textContent=L.sysLo+'/'+L.diaLo;
   el.limRrHi.textContent=L.rrHi; el.limRrLo.textContent=L.rrLo;
   el.limEtHi.textContent=L.etHi; el.limEtLo.textContent=L.etLo;
   el.limTpHi.textContent=L.tpHi; el.limTpLo.textContent=L.tpLo;
@@ -1000,8 +980,9 @@ function evalAlarms(){
     const flags = [];
     if (hr!==null){ if(hr>L.hrHi) flags.push('HR High'); else if(hr<L.hrLo) flags.push('HR Low'); }
     if (state.sensors.spo2 && hasPulse() && c.spo2<L.spLo) flags.push('SpO2 Low');
-    if (state.sensors.art && hasPulse()){
-      if (c.sys>L.sysHi) flags.push('BP High'); else if (c.sys<L.sysLo) flags.push('BP Low');
+    // NIBP 警報：以最近一次量測值判斷（間歇）
+    if (state.sensors.art && state.nibp.sys!==null){
+      if (state.nibp.sys>L.sysHi) flags.push('NIBP High'); else if (state.nibp.sys<L.sysLo) flags.push('NIBP Low');
     }
     if (state.sensors.etco2){
       if (c.rr>L.rrHi) flags.push('RR High'); else if (c.rr<L.rrLo&&c.rr>0) flags.push('RR Low');
@@ -1022,7 +1003,7 @@ function evalAlarms(){
   // 數值閃爍
   el.hrBlock.classList.toggle('flashing', alarmState.active && /HR|Pulse|Asystole/.test(alarmState.text));
   el.spo2Block.classList.toggle('flashing', /SpO2/.test(alarmState.text));
-  el.bpBlock.classList.toggle('flashing', /BP/.test(alarmState.text) || (alarmState.crisis&&state.sensors.art));
+  el.bpBlock.classList.toggle('flashing', /NIBP/.test(alarmState.text));
   // 警報音
   const now = simT;
   if (alarmState.active && state.soundOn && now>state.silencedUntil){
@@ -1080,9 +1061,9 @@ function step(ts){
   tickTrend();
   scnTick();
   channels.forEach(c=>c.render(simT));
-  // QRS 嗶聲
+  // QRS 嗶聲（靜音期間連脈搏音一起靜音）
   for (const bt of eng.beats){
-    if (bt<=simT && bt>eng.beeped){ eng.beeped=bt; if(hasPulse()) qrsBeep(); }
+    if (bt<=simT && bt>eng.beeped){ eng.beeped=bt; if(hasPulse() && simT>state.silencedUntil) qrsBeep(); }
   }
   // NIBP
   if (state.nibp.measuring && simT>=state.nibp.measureEnd) finishNibp();
@@ -1275,9 +1256,9 @@ function applyInstructor(){
 
 // ---------- UI 綁定 ----------
 const el = {};
-['hrVal','prVal','bpVal','bpMap','spo2Val','etco2Val','rrVal','tempVal','nibpVal','nibpTime','tbClock','tbAgeLabel',
+['hrVal','prVal','bpVal','bpMap','spo2Val','etco2Val','rrVal','tempVal','nibpTime','tbClock','tbAgeLabel',
  'alarmBanner','alarmText','hrBlock','spo2Block','bpBlock',
- 'limHrHi','limHrLo','limSpHi','limSpLo','limBpHi','limBpLo','limNibpHi','limNibpLo','limRrHi','limRrLo','limEtHi','limEtLo','limTpHi','limTpLo',
+ 'limHrHi','limHrLo','limSpHi','limSpLo','limBpHi','limBpLo','limRrHi','limRrLo','limEtHi','limEtLo','limTpHi','limTpLo',
  'iRhythm','iTrend','iHr','iSp','iSys','iDia','iRr','iEt','iTp','iEcg12','sEcg','sSp','sArt','sEt','sTp',
  'iHrV','iSpV','iSysV','iDiaV','iRrV','iEtV','iTpV','ecgLeadLabel',
 ].forEach(id=> el[id]=document.getElementById(id));
