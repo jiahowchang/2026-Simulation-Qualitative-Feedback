@@ -1571,14 +1571,15 @@ async function fetchAndShowMedia(id, nameOverride){
   }catch(e){ console.warn("media fetch failed", e); }
 }
 async function createSession(){
+  endSession();
+  // 先把遙控碼顯示出來，就算 Firebase 慢或失敗也看得到
+  remote.code = String(Math.floor(1000+Math.random()*9000));
+  remote.lastSeq = Date.now(); // 忽略舊命令
+  $("tbCodeNum").textContent = remote.code;
+  $("tbCode").style.display = "flex";
   if (!db) return;
   try{
-    endSession();
-    remote.code = String(Math.floor(1000+Math.random()*9000));
-    remote.lastSeq = Date.now(); // 忽略舊命令
     await setDoc(doc(db,SESS,remote.code), { created: serverTimestamp(), status: snapshotStatus() });
-    $("tbCodeNum").textContent = remote.code;
-    $("tbCode").style.display = "flex";
     remote.unsub = onSnapshot(doc(db,SESS,remote.code), s=>{
       const d = s.data();
       if (d && d.ctrl) applyRemoteCtrl(d.ctrl);
@@ -1587,7 +1588,7 @@ async function createSession(){
       if (!state.running || !remote.code) return;
       try{ await updateDoc(doc(db,SESS,remote.code), { status: snapshotStatus() }); }catch(e){}
     }, 4000);
-  }catch(e){ console.warn("createSession failed", e); }
+  }catch(e){ console.warn("createSession setDoc failed", e); }
 }
 function endSession(){
   if (remote.unsub){ remote.unsub(); remote.unsub=null; }
