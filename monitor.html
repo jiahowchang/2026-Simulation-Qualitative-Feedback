@@ -1514,7 +1514,7 @@ function snapshotStatus(){
     bp: $("bpVal").textContent+" "+$("bpMap").textContent,
     spo2: $("spo2Val").textContent, etco2: $("etco2Val").textContent,
     rr: $("rrVal").textContent, temp: $("tempVal").textContent,
-    nibp: $("nibpVal").textContent,
+    nibp: $("bpVal").textContent+" "+$("bpMap").textContent,
     alarm: alarmState.active ? alarmState.text : "",
     cur: { hr:Math.round(state.cur.hr), sys:Math.round(state.cur.sys), dia:Math.round(state.cur.dia),
            spo2:Math.round(state.cur.spo2), rr:Math.round(state.cur.rr), etco2:Math.round(state.cur.etco2),
