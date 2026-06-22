@@ -1415,9 +1415,17 @@ document.getElementById('alarmSaveBtn').onclick = ()=>{
   updateLimitLabels();
   closeModal('alarmsModal');
 };
+// 靜音為切換式：按一次靜音、再按一次回復
+window.setSilence = function(on){
+  state.silencedUntil = on ? simT + 1e9 : 0;
+  const b = document.getElementById('btnSilence');
+  b.classList.toggle('activeT', on);
+  b.querySelector('.ic').innerHTML = on ? '&#x1F515;' : '&#x1F507;';
+};
 document.getElementById('btnSilence').onclick = ()=>{
-  state.silencedUntil = simT + 120;
-  beep(440,.08,.1);
+  const on = !(state.silencedUntil > simT);
+  window.setSilence(on);
+  beep(on?440:680,.08,.1);
 };
 
 // Defib
@@ -1531,7 +1539,11 @@ function applyRemoteCtrl(c){
     if (c.t) applyTargets(Object.assign({}, c.t), c.trend||0);
   }
   if (c.nibpSeq && c.nibpSeq > remote.lastNibp){ remote.lastNibp = c.nibpSeq; startNibp(); }
-  if (c.silenceSeq && c.silenceSeq > remote.lastSilence){ remote.lastSilence = c.silenceSeq; state.silencedUntil = simT+120; }
+  if (c.silenceSeq && c.silenceSeq > remote.lastSilence){
+    remote.lastSilence = c.silenceSeq;
+    const on = (c.silenceOn===undefined) ? true : !!c.silenceOn;  // 舊版相容：沒帶旗標就視為靜音
+    if (window.setSilence) window.setSilence(on); else state.silencedUntil = on ? simT+1e9 : 0;
+  }
   if (c.mediaSeq && c.mediaSeq > remote.lastMedia){
     remote.lastMedia = c.mediaSeq;
     if (c.mediaId) fetchAndShowMedia(c.mediaId, c.mediaName);
@@ -1665,6 +1677,7 @@ async function connectCtrl(){
     $("ctrlActions").style.display = "flex";
     $("connDot").classList.add("on");
     $("connLabel").textContent = "已連線 "+code;
+    cSilenced = false; renderCSilence();
     loadImgGrid();
     ctrl.unsub = onSnapshot(doc(db,SESS,code), s=>{
       if (!s.exists()){
@@ -1708,10 +1721,18 @@ $("cNibp").onclick = async ()=>{
   try{ await updateDoc(doc(db,SESS,ctrl.code), { "ctrl.nibpSeq": Date.now() }); flashBtn($("cNibp"), "已送出 ✓"); }
   catch(e){ flashBtn($("cNibp"), "失敗"); }
 };
+let cSilenced = false;
+function renderCSilence(){
+  const b = $("cSilence");
+  b.textContent = cSilenced ? "🔊 取消靜音" : "靜音";
+  b.style.background = cSilenced ? "#30d158" : "#ff3b30";
+  b.style.color = cSilenced ? "#000" : "#fff";
+}
 $("cSilence").onclick = async ()=>{
   if (!db || !ctrl.code){ flashBtn($("cSilence"), "未連線"); return; }
-  try{ await updateDoc(doc(db,SESS,ctrl.code), { "ctrl.silenceSeq": Date.now() }); flashBtn($("cSilence"), "已靜音 ✓"); }
-  catch(e){ flashBtn($("cSilence"), "失敗"); }
+  cSilenced = !cSilenced; renderCSilence();  // 立即更新標籤
+  try{ await updateDoc(doc(db,SESS,ctrl.code), { "ctrl.silenceSeq": Date.now(), "ctrl.silenceOn": cSilenced }); }
+  catch(e){ cSilenced = !cSilenced; renderCSilence(); flashBtn($("cSilence"), "失敗"); }
 };
 
 // ---------- 控制台：傳送影像到監視器 ----------
