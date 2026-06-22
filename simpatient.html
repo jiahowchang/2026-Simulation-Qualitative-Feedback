@@ -112,8 +112,11 @@
   <div id="wrap">
     <header class="app">
       <h1>Sim<span>Patient</span> 3D 模擬病人平台</h1>
+      <span id="userChip" style="display:none;align-items:center;gap:6px;font-size:14px;color:#bbb"></span>
+      <button class="btn ghost" id="teacherLoginBtn">&#x1F511; 老師登入</button>
+      <button class="btn ghost" id="logoutBtn" style="display:none">登出</button>
       <button class="btn ghost" id="settingsBtn">&#x2699; API 設定</button>
-      <button class="btn primary" id="newCaseBtn">＋ 新增教案</button>
+      <button class="btn primary" id="newCaseBtn" style="display:none">＋ 新增教案</button>
     </header>
     <div class="card" style="font-size:14px;color:#bbb;line-height:1.7">
       跨職類臨床模擬訓練：教師建立教案（病人設定 + 360&deg; 實景 + 互動熱點），學員在場景中與
@@ -295,6 +298,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, doc, addDoc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, orderBy }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey:"AIzaSyBrs80vpFVe-iEh5ctzRWfYHUBb3KGvILo",
@@ -304,11 +309,42 @@ const firebaseConfig = {
   messagingSenderId:"283739023798",
   appId:"1:283739023798:web:3091ec2bcf6262b5ecb917"
 };
-let db = null;
-try{ db = getFirestore(initializeApp(firebaseConfig)); }catch(e){ console.warn("Firebase init failed", e); }
+let db = null, auth = null;
+try{ const app = initializeApp(firebaseConfig); db = getFirestore(app); auth = getAuth(app); }catch(e){ console.warn("Firebase init failed", e); }
 const $ = id => document.getElementById(id);
-const CASES = "sim_cases", MEDIA = "monitor_media", CHUNKS = "monitor_media_chunks";
+const CASES = "sim_cases", MEDIA = "monitor_media", CHUNKS = "monitor_media_chunks", USERS = "sim_users";
+const ADMIN_EMAIL = "jiahowchang@gmail.com";
+let meApproved = false;  // 老師已登入且通過審核才能新增/編輯/刪除教案
 const PROFESSIONS = ["醫學生","護理師","藥師","呼吸治療師","醫事放射師","臨床心理師","營養師","物理治療師"];
+
+// ===== 老師登入（Google，需審核）：學生執行教案/問診不需登入；新增/編輯/刪除教案才需要 =====
+async function ensureUserDoc(user){
+  const uref = doc(db, USERS, user.uid);
+  let snap = await getDoc(uref);
+  if (!snap.exists()){
+    const isAdmin = user.email===ADMIN_EMAIL;
+    await setDoc(uref, { email:user.email||"", name:user.displayName||user.email||"", photo:user.photoURL||"", role:isAdmin?"admin":"teacher", approved:isAdmin, created:Date.now(), lastLogin:Date.now() });
+    snap = await getDoc(uref);
+  } else { updateDoc(uref, {lastLogin:Date.now()}).catch(()=>{}); }
+  return snap.data();
+}
+function updateAuthUI(user, u){
+  meApproved = !!(u && u.approved);
+  $("teacherLoginBtn").style.display = user ? "none" : "";
+  $("logoutBtn").style.display = user ? "" : "none";
+  $("newCaseBtn").style.display = meApproved ? "" : "none";
+  const chip = $("userChip");
+  if (user && u){ chip.style.display="flex"; chip.innerHTML = (u.photo?`<img src="${u.photo}" style="width:22px;height:22px;border-radius:50%">`:"") + `<span>${(u.name||"")}${u.approved?"":"（待審核）"}</span>`; }
+  else chip.style.display="none";
+  if (db) loadCases();
+}
+if (auth){
+  onAuthStateChanged(auth, async (user)=>{
+    let u = null;
+    if (user){ try{ u = await ensureUserDoc(user); }catch(e){} }
+    updateAuthUI(user, u);
+  });
+}
 
 function toast(msg, bad){
   const t = $("toast");
@@ -460,6 +496,9 @@ async function loadCases(){
     div.querySelector("h3").textContent = c.title || "(未命名)";
     div.querySelector(".tags").textContent = (c.professions||[]).join("、");
     div.querySelector(".sub").textContent = (c.patient&&c.patient.name? c.patient.name+"，"+(c.patient.age||"?")+"歲 — " : "") + (c.brief||"").slice(0,50);
+    // 編輯/刪除僅限已登入審核通過的老師；學生只看到「執行」
+    div.querySelector(".edit").style.display = meApproved ? "" : "none";
+    div.querySelector(".del").style.display = meApproved ? "" : "none";
     div.querySelector(".run").onclick = ()=> promptStudentThenPlay(c);
     div.querySelector(".edit").onclick = ()=> openEditor(c);
     div.querySelector(".del").onclick = async ()=>{
@@ -651,9 +690,12 @@ $("saveCaseBtn").onclick = async ()=>{
 };
 $("editBackBtn").onclick = ()=>{ show("listScreen"); };
 $("newCaseBtn").onclick = ()=> openEditor(null);
+$("teacherLoginBtn").onclick = async ()=>{ if(!auth){ toast("無法連線",true); return; } try{ await signInWithPopup(auth, new GoogleAuthProvider()); }catch(e){ toast("登入失敗："+(e.code||e.message), true); } };
+$("logoutBtn").onclick = ()=> signOut(auth);
 
 // 範例教案
 $("demoBtn") && ($("demoBtn").onclick = async ()=>{
+  if (!meApproved){ toast("請先用右上「老師登入」並通過審核", true); return; }
   const demo = {
     title:"急性胸痛之跨職類評估與處置",
     professions:["醫學生","護理師","藥師"],
