@@ -1641,10 +1641,8 @@ async function fetchAndShowMedia(id, nameOverride){
       url = URL.createObjectURL(new Blob([u8], {type: m.mime||"application/octet-stream"}));
     }
     if (!url) return;
-    // 學生端標題用「分類」而非檔名，避免檔名洩漏診斷（檔名只在教師端的媒體庫看得到）
-    const KIND_LABEL = { image:"影像", gif:"影像", video:"影片", pdf:"文件", audio:"音訊" };
-    const safeName = m.category || KIND_LABEL[m.kind||"image"] || "檢查結果";
-    window.addInvestigation({ id, name: safeName, kind: m.kind||"image", url, thumb: m.thumb||null });
+    // 學生端完全不顯示標題（檔名/分類都不露），避免洩漏診斷；檔名只在教師端媒體庫看得到
+    window.addInvestigation({ id, name: "", kind: m.kind||"image", url, thumb: m.thumb||null });
   }catch(e){ console.warn("media fetch failed", e); }
 }
 async function createSession(){
