@@ -154,8 +154,13 @@
   <div class="page" id="mediaPage">
     <div class="card">
       <h2>上傳媒體（JPG / PNG / GIF / MP4 / MP3 / WAV / PDF，單檔 &le; 20MB）</h2>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+        <span style="font-size:13px;color:#999">上傳分類：</span>
+        <select id="uploadCat" style="background:#2c2c2e;border:1px solid #48484a;color:#fff;font-size:14px;padding:7px 10px;border-radius:8px"></select>
+      </div>
       <div id="dropZone">點擊選擇檔案，或將檔案拖曳到這裡<br><span style="font-size:12px">CT、X 光、ECG、超音波短片、檢驗報告 PDF、病人聲音（呼吸音/心音）⋯⋯可推送到學生監視器</span></div>
       <input type="file" id="fileInput" accept="image/jpeg,image/png,image/gif,video/mp4,audio/mpeg,audio/wav,audio/x-wav,application/pdf" multiple style="display:none">
+      <div id="catFilter" style="display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 4px 0"></div>
       <div id="mediaGrid"></div>
       <div class="muted" id="mediaEmpty" style="display:none">媒體庫是空的，上傳第一個檔案吧</div>
     </div>
@@ -392,6 +397,34 @@ const KIND_BY_MIME = {
 };
 const KIND_ICON = { gif:"\u{1F39E}", video:"\u{1F3AC}", audio:"\u{1F50A}", pdf:"\u{1F4C4}", image:"\u{1F5BC}" };
 
+// 媒體分類
+const CATEGORIES = ["超音波","心電圖","X光","電腦斷層","外傷照片","檢驗報告","其他"];
+let currentCat = "全部";
+// 初始化上傳分類下拉
+CATEGORIES.forEach(c=>{ const o=document.createElement("option"); o.value=c; o.textContent=c; $("uploadCat").appendChild(o); });
+// 初始化篩選列
+function renderCatFilter(){
+  const box = $("catFilter"); box.innerHTML = "";
+  ["全部", ...CATEGORIES].forEach(c=>{
+    const chip = document.createElement("span");
+    chip.textContent = c;
+    chip.style.cssText = "padding:6px 12px;border-radius:16px;border:1px solid #48484a;font-size:13px;cursor:pointer;"
+      + (currentCat===c ? "background:#0a84ff;border-color:#0a84ff;color:#fff" : "color:#ccc");
+    chip.onclick = ()=>{ currentCat = c; renderCatFilter(); applyCatFilter(); };
+    box.appendChild(chip);
+  });
+}
+function applyCatFilter(){
+  let shown = 0;
+  $("mediaGrid").querySelectorAll(".media-card").forEach(card=>{
+    const match = currentCat==="全部" || card.dataset.cat===currentCat;
+    card.style.display = match ? "" : "none";
+    if (match) shown++;
+  });
+  $("mediaEmpty").style.display = shown ? "none" : "block";
+}
+renderCatFilter();
+
 function readFileAsDataURL(file){
   return new Promise((res,rej)=>{
     const r = new FileReader();
@@ -467,7 +500,7 @@ async function uploadFiles(files){
       if (kind === "video") thumb = await makeVideoThumb(dataUrl);
 
       const b64 = dataUrl.split(",")[1];
-      const meta = { name: f.name.replace(/\.[a-z0-9]+$/i,""), kind, mime: f.type,
+      const meta = { name: f.name.replace(/\.[a-z0-9]+$/i,""), kind, mime: f.type, category: $("uploadCat").value,
                      size: f.size, created: Date.now(), thumb: thumb||null, chunks: 0 };
       if (dataUrl.length < 900000){
         meta.dataUrl = dataUrl;
@@ -548,6 +581,7 @@ function addMediaCard(m, prepend){
   const card = document.createElement("div");
   card.className = "media-card";
   card.dataset.id = m.id;
+  card.dataset.cat = m.category || "其他";
   m.kind = m.kind || "image"; // 舊資料相容
   let img;
   const thumbSrc = m.thumb || (m.kind==="image"||m.kind==="gif" ? m.dataUrl : null);
@@ -570,6 +604,15 @@ function addMediaCard(m, prepend){
   nameIn.value = m.name;
   nameIn.onchange = async ()=>{
     try{ await updateDoc(doc(db,MEDIA,m.id), { name: nameIn.value }); toast("已更名"); }catch(e){}
+  };
+  // 分類下拉（可改）
+  const catSel = document.createElement("select");
+  catSel.style.cssText = "width:calc(100% - 16px);margin:0 8px 6px 8px;background:#2c2c2e;border:1px solid #48484a;color:#8ab4f8;font-size:12px;padding:4px;border-radius:6px";
+  CATEGORIES.forEach(c=>{ const o=document.createElement("option"); o.value=c; o.textContent=c; if((m.category||"其他")===c) o.selected=true; catSel.appendChild(o); });
+  catSel.onchange = async ()=>{
+    card.dataset.cat = catSel.value;
+    try{ await updateDoc(doc(db,MEDIA,m.id), { category: catSel.value }); toast("已改分類"); }catch(e){}
+    applyCatFilter();
   };
   const acts = document.createElement("div");
   acts.className = "media-acts";
@@ -597,7 +640,9 @@ function addMediaCard(m, prepend){
     }catch(e){ toast("刪除失敗", true); }
   };
   acts.appendChild(push); acts.appendChild(del);
-  card.appendChild(img); card.appendChild(nameIn); card.appendChild(acts);
+  card.appendChild(img); card.appendChild(nameIn); card.appendChild(catSel); card.appendChild(acts);
+  // 套用目前的分類篩選
+  if (!(currentCat==="全部" || card.dataset.cat===currentCat)) card.style.display = "none";
   if (prepend) $("mediaGrid").prepend(card); else $("mediaGrid").appendChild(card);
 }
 async function loadMedia(){
@@ -607,7 +652,7 @@ async function loadMedia(){
     const qs = await getDocs(query(collection(db,MEDIA), orderBy("created","desc")));
     $("mediaGrid").innerHTML = "";
     qs.forEach(d=> addMediaCard(Object.assign({id:d.id}, d.data())));
-    $("mediaEmpty").style.display = qs.empty ? "block" : "none";
+    applyCatFilter();
   }catch(e){ toast("媒體庫載入失敗", true); }
 }
 $("lightbox").onclick = ()=>{
