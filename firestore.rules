@@ -48,6 +48,21 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // 模擬生理監視器/病人平台：老師帳號（Google 登入，需管理員審核）
+    // - 已登入者皆可讀（管理員後台列出名單、自己查自己狀態）
+    // - 使用者可建立/更新自己的資料，但不能自行改 approved/role
+    // - 管理員 (jiahowchang@gmail.com) 可管理所有人
+    match /sim_users/{userId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null &&
+        (request.auth.token.email == "jiahowchang@gmail.com" ||
+         (request.auth.uid == userId &&
+          !("approved" in request.resource.data.diff(resource.data).affectedKeys()) &&
+          !("role" in request.resource.data.diff(resource.data).affectedKeys())));
+      allow delete: if request.auth != null && request.auth.token.email == "jiahowchang@gmail.com";
+    }
+
     // 麻醉專師學習平台：使用者資料
     // - 已登入使用者只能讀寫「自己」的資料
     // - 管理員 (jiahowchang@gmail.com) 可讀寫所有人

@@ -101,7 +101,15 @@
 </style>
 </head>
 <body>
-<div id="wrap">
+<!-- 登入閘門 -->
+<div id="authGate" style="position:fixed;inset:0;background:#000;z-index:2000;display:none;align-items:center;justify-content:center;padding:24px">
+  <div style="max-width:420px;text-align:center;color:#fff">
+    <h1 style="font-size:26px;margin-bottom:8px">Sim<span style="color:#5ac8fa">Monitor</span> 教師後台</h1>
+    <div id="authBody"></div>
+  </div>
+</div>
+
+<div id="wrap" style="display:none">
   <header>
     <div class="head-row">
       <h1>Sim<span>Monitor</span> 教師後台</h1>
@@ -110,14 +118,26 @@
         <button id="connectBtn">連線</button>
         <span id="connLabel">未連線</span>
         <span class="conn-dot" id="connDot"></span>
+        <span id="userChip" style="display:flex;align-items:center;gap:6px;font-size:13px;color:#bbb;margin-left:6px"></span>
+        <button id="logoutBtn" class="ghost-btn" style="padding:6px 10px;font-size:13px">登出</button>
       </div>
     </div>
     <div class="tabs">
       <div class="tab sel" data-page="evtPage">&#x1F4DD; 事件記錄</div>
       <div class="tab" data-page="mediaPage">&#x1F5BC; 媒體庫</div>
       <div class="tab" data-page="transcriptPage">&#x1F4AC; 對話紀錄</div>
+      <div class="tab" data-page="usersPage" id="usersTab" style="display:none">&#x1F465; 使用者管理</div>
     </div>
   </header>
+
+  <!-- ============ 使用者管理（僅管理員）============ -->
+  <div class="page" id="usersPage">
+    <div class="card">
+      <h2>使用者管理 <button class="ghost-btn" id="usersReloadBtn" style="float:right;margin-top:-6px">重新整理</button></h2>
+      <div style="font-size:13px;color:#999;margin-bottom:8px">新註冊的老師預設為「待審核」，按「核准」後才能使用。可改權限或移除。</div>
+      <div id="usersList"><div class="muted">載入中…</div></div>
+    </div>
+  </div>
 
   <!-- ============ 事件記錄 ============ -->
   <div class="page sel" id="evtPage">
@@ -189,6 +209,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getFirestore, collection, doc, addDoc, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
          query, orderBy, limit, arrayUnion }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey:"AIzaSyBrs80vpFVe-iEh5ctzRWfYHUBb3KGvILo",
@@ -198,10 +220,12 @@ const firebaseConfig = {
   messagingSenderId:"283739023798",
   appId:"1:283739023798:web:3091ec2bcf6262b5ecb917"
 };
-let db = null;
-try{ db = getFirestore(initializeApp(firebaseConfig)); }catch(e){ console.warn("Firebase init failed", e); }
+let db = null, auth = null;
+try{ const app = initializeApp(firebaseConfig); db = getFirestore(app); auth = getAuth(app); }catch(e){ console.warn("Firebase init failed", e); }
 const $ = id => document.getElementById(id);
-const SESS = "monitor_sessions", EVTS = "monitor_events", MEDIA = "monitor_media", TRANSCRIPTS = "sim_transcripts";
+const SESS = "monitor_sessions", EVTS = "monitor_events", MEDIA = "monitor_media", TRANSCRIPTS = "sim_transcripts", USERS = "sim_users";
+const ADMIN_EMAIL = "jiahowchang@gmail.com";
+let me = null;  // 目前登入者 { uid, email, name, role, approved }
 
 function toast(msg, bad){
   const t = $("toast");
@@ -213,6 +237,79 @@ function toast(msg, bad){
   toast._t = setTimeout(()=> t.style.display="none", 2200);
 }
 
+// ========== 登入與權限（Google，需管理員審核）==========
+function showGate(html){ $("authGate").style.display="flex"; $("wrap").style.display="none"; $("authBody").innerHTML=html; }
+function showApp(){ $("authGate").style.display="none"; $("wrap").style.display="block"; }
+function loginScreen(){
+  showGate(`<p style="color:#bbb;margin:16px 0 24px">請用 Google 帳號登入。新帳號需管理員審核通過後才能使用。</p>
+    <button id="gLogin" style="padding:14px 26px;background:#fff;color:#000;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer">使用 Google 登入</button>
+    <div id="loginMsg" style="color:#ff9f0a;margin-top:14px;min-height:18px"></div>`);
+  $("gLogin").onclick = async ()=>{
+    try{ await signInWithPopup(auth, new GoogleAuthProvider()); }
+    catch(e){ $("loginMsg").textContent = "登入失敗："+(e.code||e.message); }
+  };
+}
+function pendingScreen(name){
+  showGate(`<p style="color:#ffd60a;font-size:18px;margin:20px 0">⏳ 你的帳號（${esc(name)}）正在等待管理員審核</p>
+    <p style="color:#999;margin-bottom:24px">審核通過後，重新整理頁面即可使用。</p>
+    <button id="poLogout" class="ghost-btn" style="padding:10px 18px">登出</button>`);
+  $("poLogout").onclick = ()=> signOut(auth);
+}
+if (auth){
+  onAuthStateChanged(auth, async (user)=>{
+    if (!user){ me=null; loginScreen(); return; }
+    try{
+      const uref = doc(db, USERS, user.uid);
+      let snap = await getDoc(uref);
+      if (!snap.exists()){
+        const isAdmin = user.email === ADMIN_EMAIL;
+        await setDoc(uref, { email:user.email||"", name:user.displayName||user.email||"", photo:user.photoURL||"",
+          role: isAdmin?"admin":"teacher", approved: isAdmin, created: Date.now(), lastLogin: Date.now() });
+        snap = await getDoc(uref);
+      } else { updateDoc(uref, { lastLogin: Date.now() }).catch(()=>{}); }
+      const u = snap.data();
+      me = Object.assign({ uid:user.uid }, u);
+      if (!u.approved){ pendingScreen(u.name); return; }
+      showApp();
+      $("userChip").innerHTML = (u.photo?`<img src="${u.photo}" style="width:22px;height:22px;border-radius:50%">`:"") + `<span>${esc(u.name)}</span>`;
+      if (u.role==="admin") $("usersTab").style.display="";
+    }catch(e){ console.warn(e); showGate(`<p style="color:#ff453a;margin:18px 0">登入檢查失敗，請重新整理</p><button class="ghost-btn" id="eo" style="padding:10px 18px">登出</button>`); const eo=$("eo"); if(eo) eo.onclick=()=>signOut(auth); }
+  });
+} else { showGate('<p style="color:#ff453a">Firebase 無法連線</p>'); }
+$("logoutBtn").onclick = ()=> signOut(auth);
+
+// 使用者管理（僅管理員）
+$("usersReloadBtn").onclick = loadUsers;
+async function loadUsers(){
+  if (!db || !me || me.role!=="admin") return;
+  $("usersList").innerHTML = '<div class="muted">載入中…</div>';
+  try{
+    const qs = await getDocs(query(collection(db,USERS), orderBy("created","desc")));
+    const box = $("usersList"); box.innerHTML="";
+    if (qs.empty){ box.innerHTML='<div class="muted">還沒有使用者</div>'; return; }
+    qs.forEach(d=>{
+      const u = d.data(), uid = d.id, isMe = uid===me.uid;
+      const row = document.createElement("div");
+      row.style.cssText = "display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid #2c2c2e;flex-wrap:wrap";
+      row.innerHTML = `${u.photo?`<img src="${u.photo}" style="width:30px;height:30px;border-radius:50%">`:""}
+        <div style="flex:1;min-width:150px"><div style="font-size:15px">${esc(u.name||"")}${u.role==="admin"?' <span style="color:#5ac8fa;font-size:12px">管理員</span>':''}${isMe?' <span style="color:#888;font-size:12px">(你)</span>':''}</div>
+        <div style="color:#888;font-size:13px">${esc(u.email||"")}</div></div>`;
+      const ctrl = document.createElement("div"); ctrl.style.cssText="display:flex;gap:8px;align-items:center;flex-wrap:wrap";
+      const status = document.createElement("span");
+      status.textContent = u.approved?"✅ 已核准":"⏳ 待審核";
+      status.style.cssText = "font-size:13px;color:"+(u.approved?"#30d158":"#ffd60a");
+      ctrl.appendChild(status);
+      if (!isMe){
+        const mk = (txt, fn, danger)=>{ const b=document.createElement("button"); b.className="ghost-btn"; b.style.cssText="font-size:13px;padding:6px 10px"+(danger?";border-color:#5a2a2a;color:#ff6b6b":""); b.textContent=txt; b.onclick=fn; ctrl.appendChild(b); };
+        mk(u.approved?"停用":"核准", async ()=>{ try{ await updateDoc(doc(db,USERS,uid),{approved:!u.approved}); toast(u.approved?"已停用":"已核准"); loadUsers(); }catch(e){ toast("失敗",true); } });
+        mk(u.role==="admin"?"降為老師":"設為管理員", async ()=>{ if(!confirm("確定改變權限？"))return; try{ await updateDoc(doc(db,USERS,uid),{role:u.role==="admin"?"teacher":"admin"}); toast("已改權限"); loadUsers(); }catch(e){ toast("失敗",true); } });
+        mk("移除", async ()=>{ if(!confirm("移除「"+(u.name||u.email)+"」？對方需重新登入註冊。"))return; try{ await deleteDoc(doc(db,USERS,uid)); toast("已移除"); loadUsers(); }catch(e){ toast("失敗",true); } }, true);
+      }
+      row.appendChild(ctrl); box.appendChild(row);
+    });
+  }catch(e){ $("usersList").innerHTML='<div class="muted">載入失敗</div>'; }
+}
+
 // ---------- 分頁 ----------
 document.querySelectorAll(".tab").forEach(tb=>{
   tb.onclick = ()=>{
@@ -222,6 +319,7 @@ document.querySelectorAll(".tab").forEach(tb=>{
     $(tb.dataset.page).classList.add("sel");
     if (tb.dataset.page==="mediaPage" && !mediaLoaded) loadMedia();
     if (tb.dataset.page==="transcriptPage") loadTranscripts();
+    if (tb.dataset.page==="usersPage") loadUsers();
   };
 });
 
