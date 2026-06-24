@@ -621,8 +621,11 @@
           <select id="iCo2">
             <option value="normal">正常</option>
             <option value="rebreathing">重複呼吸（基線未歸零）</option>
-            <option value="sharkfin">支氣管痙攣（鯊魚鰭）</option>
+            <option value="sharkfin">支氣管痙攣（鯊魚鰭/氣喘）</option>
+            <option value="emphysema">肺氣腫/低順應性</option>
             <option value="curare">箭毒裂痕</option>
+            <option value="irregular">導管位置異常（鋸齒）</option>
+            <option value="flat">窒息/無波形</option>
           </select>
         </div>
       </div>
@@ -904,6 +907,18 @@ function co2Shape(ph, morph){
       if (ph>0.12 && ph<0.50) f -= 0.5*Math.exp(-Math.pow((ph-0.30)/0.045,2));
       return Math.max(0, f);
     }
+    case 'emphysema': {            // 肺氣腫/低順應性（肥胖、孕婦）：陡斜爬升到尖峰、無平台
+      if (ph<0.60) return Math.pow(ph/0.60, 2.3);
+      if (ph<0.68) return 1-(ph-0.60)/0.08;
+      return 0;
+    }
+    case 'irregular': {            // 導管位置異常/漏氣：平台呈鋸齒不規則
+      let f = co2Normal(ph);
+      if (ph>0.10 && ph<0.55) f += 0.12*Math.sin((ph-0.10)*55);
+      return Math.max(0, f);
+    }
+    case 'flat':                   // 窒息/心跳停止/導管移位：近乎平線、無波形
+      return 0;
     default: return co2Normal(ph); // normal
   }
 }
@@ -1307,7 +1322,7 @@ function draw12Lead(){
 
 // ---------- 教師控制 ----------
 const PRESETS = [
-  { name:'恢復正常', f:()=>({rhythm:'sinus', v:Object.assign({},AGE_GROUPS[state.age].vitals)}) },
+  { name:'恢復正常', f:()=>({rhythm:'sinus', v:Object.assign({},AGE_GROUPS[state.age].vitals), co2:'normal'}) },
   { name:'低血氧', f:()=>({rhythm:'sinus', v:{hr:118,spo2:82,rr:30,etco2:30}}) },
   { name:'低血壓休克', f:()=>({rhythm:'sinus', v:{hr:132,sys:78,dia:45,spo2:94,rr:26}}) },
   { name:'敗血性休克', f:()=>({rhythm:'sinus', v:{hr:128,sys:82,dia:40,spo2:93,rr:28,temp:39.2}}) },
@@ -1315,11 +1330,11 @@ const PRESETS = [
   { name:'心搏過緩', f:()=>({rhythm:'avb3', v:{hr:38,sys:85,dia:50,spo2:93}}) },
   { name:'SVT', f:()=>({rhythm:'svt', v:{hr:185,sys:95,dia:60,spo2:95}}) },
   { name:'VT（有脈）', f:()=>({rhythm:'vtp', v:{hr:170,sys:85,dia:55,spo2:92}}) },
-  { name:'VT（無脈）', f:()=>({rhythm:'vt', v:{hr:190,etco2:12}}) },
-  { name:'VF', f:()=>({rhythm:'vfc', v:{etco2:10}}) },
-  { name:'PEA', f:()=>({rhythm:'pea', v:{hr:65,etco2:10}}) },
-  { name:'Asystole', f:()=>({rhythm:'asystole', v:{etco2:5}}) },
-  { name:'ROSC', f:()=>({rhythm:'sinus', v:{hr:108,sys:98,dia:60,spo2:94,rr:0,etco2:42}}) },
+  { name:'VT（無脈）', f:()=>({rhythm:'vt', v:{hr:190,etco2:10}, co2:'flat'}) },
+  { name:'VF', f:()=>({rhythm:'vfc', v:{etco2:10}, co2:'flat'}) },
+  { name:'PEA', f:()=>({rhythm:'pea', v:{hr:65,etco2:8}, co2:'flat'}) },
+  { name:'Asystole', f:()=>({rhythm:'asystole', v:{etco2:5}, co2:'flat'}) },
+  { name:'ROSC', f:()=>({rhythm:'sinus', v:{hr:108,sys:98,dia:60,spo2:94,rr:12,etco2:42}, co2:'normal'}) },
 ];
 function syncInstUI(){
   el.iRhythm.value = state.rhythm;
@@ -1419,6 +1434,7 @@ PRESETS.forEach(p=>{
   b.onclick = ()=>{
     const r = p.f();
     setRhythm(r.rhythm);
+    if (r.co2) state.co2morph = r.co2;
     const tgt = Object.assign({}, state.cur, r.v);
     applyTargets(tgt, +el.iTrend.value);
     syncInstUI();
@@ -1680,6 +1696,7 @@ function applyRemoteCtrl(c){
     remote.lastSeq = c.seq;
     setRhythm(c.rhythm);
     state.ecg12 = c.ecg12 || "normal";
+    if (c.co2morph !== undefined) state.co2morph = c.co2morph || "normal";
     if (c.sensors) Object.assign(state.sensors, c.sensors);
     if (c.t) applyTargets(Object.assign({}, c.t), c.trend||0);
   }
@@ -1856,6 +1873,7 @@ async function connectCtrl(){
 }
 $("connectBtn").onclick = connectCtrl;
 
+let cCo2morph = "normal";   // 控制台目前的 capnography 波形（隨情境快速鍵/波型鍵更新）
 async function sendCtrl(){
   if (!db || !ctrl.code) return;
   const payload = {
@@ -1863,6 +1881,7 @@ async function sendCtrl(){
     rhythm: $("cRhythm").value,
     trend: +$("cTrend").value,
     ecg12: $("cEcg12").value,
+    co2morph: cCo2morph,
     sensors: { ecg:$("cSEcg").checked, spo2:$("cSSp").checked, art:$("cSArt").checked, etco2:$("cSEt").checked, temp:$("cSTp").checked },
     t: { hr:+$("cHr").value, spo2:+$("cSp").value, sys:+$("cSys").value, dia:+$("cDia").value,
          rr:+$("cRr").value, etco2:+$("cEt").value, temp:+$("cTp").value },
@@ -2059,6 +2078,7 @@ PRESETS.forEach(p=>{
   b.onclick = ()=>{
     const r = p.f();
     $("cRhythm").value = r.rhythm;
+    if (r.co2) cCo2morph = r.co2;   // PEA/ROSC 等心律連動 capnography 波形
     const v = r.v || {};
     const map = { hr:"cHr", spo2:"cSp", sys:"cSys", dia:"cDia", rr:"cRr", etco2:"cEt", temp:"cTp" };
     for (const k in map) if (v[k]!==undefined) $(map[k]).value = v[k];
@@ -2072,11 +2092,14 @@ PRESETS.forEach(p=>{
 const CAPNO_PRESETS = [
   { name:'正常',             morph:'normal',      rr:14, etco2:38 },
   { name:'重複呼吸 CO₂',      morph:'rebreathing', rr:14, etco2:48 },
-  { name:'支氣管痙攣 🦈',     morph:'sharkfin',    rr:24, etco2:48 },
+  { name:'支氣管痙攣🦈(氣喘)', morph:'sharkfin',    rr:24, etco2:48 },
+  { name:'肺氣腫/低順應性',    morph:'emphysema',   rr:18, etco2:46 },
   { name:'箭毒裂痕',          morph:'curare',      rr:16, etco2:40 },
+  { name:'導管位置異常',       morph:'irregular',   rr:14, etco2:38 },
   { name:'低通氣 EtCO₂↑',     morph:'normal',      rr:8,  etco2:55 },
   { name:'過度通氣 EtCO₂↓',   morph:'normal',      rr:24, etco2:28 },
-  { name:'心跳停止 CO₂↓',     morph:'normal',      rr:8,  etco2:8  },
+  { name:'窒息/無波形',        morph:'flat',        rr:12, etco2:5  },
+  { name:'心跳停止 CO₂↓',     morph:'flat',        rr:10, etco2:6  },
   { name:'ROSC 循環恢復',     morph:'normal',      rr:12, etco2:42 },
 ];
 CAPNO_PRESETS.forEach(p=>{
@@ -2084,6 +2107,7 @@ CAPNO_PRESETS.forEach(p=>{
   b.className = "preset-btn"; b.textContent = p.name;
   b.onclick = async ()=>{
     if (!db || !ctrl.code){ flashBtn(b, "未連線"); return; }
+    cCo2morph = p.morph;   // 記住目前波形，之後按 Apply 不會被重置
     try{
       await updateDoc(doc(db,SESS,ctrl.code), { "ctrl.capnoSeq": Date.now(), "ctrl.capnoData": { morph:p.morph, rr:p.rr, etco2:p.etco2 } });
       $("cRr").value = p.rr; $("cEt").value = p.etco2; cLabels();   // 同步控制台滑桿
