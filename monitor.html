@@ -906,10 +906,10 @@ function co2Shape(ph, morph){
       const base = 0.30;
       return base + (1-base)*co2Normal(ph);
     }
-    case 'sharkfin': {             // 支氣管痙攣「鯊魚鰭」：緩斜上升、圓潤峰頂、平滑曲線下降
-      const rise = Math.pow(Math.min(1, ph/0.60), 1.25);
-      const down = 1/(1+Math.exp((ph-0.68)/0.020));
-      return rise*down;
+    case 'sharkfin': {             // 支氣管痙攣「鯊魚鰭」：緩升→圓潤峰頂→較快下降（不對稱鐘形）
+      const c = 0.46;
+      const w = ph < c ? 0.22 : 0.078;   // 左寬（緩升）、右窄（快降）
+      return Math.exp(-Math.pow((ph-c)/w, 2));
     }
     case 'curare': {               // 箭毒裂痕：平台中央向下的裂隙
       let f = co2Normal(ph);
