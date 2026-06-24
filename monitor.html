@@ -905,9 +905,9 @@ function co2Shape(ph, morph){
       const base = 0.30;
       return base + (1-base)*co2Normal(ph);
     }
-    case 'sharkfin': {             // 支氣管痙攣「鯊魚鰭」：斜上、無平台、圓潤峰頂
-      const rise = Math.pow(Math.min(1, ph/0.62), 1.4);
-      const down = 1/(1+Math.exp((ph-0.66)/0.011));
+    case 'sharkfin': {             // 支氣管痙攣「鯊魚鰭」：緩斜上升、圓潤峰頂、平滑曲線下降
+      const rise = Math.pow(Math.min(1, ph/0.60), 1.25);
+      const down = 1/(1+Math.exp((ph-0.68)/0.020));
       return rise*down;
     }
     case 'curare': {               // 箭毒裂痕：平台中央向下的裂隙
@@ -915,9 +915,9 @@ function co2Shape(ph, morph){
       if (ph>0.12 && ph<0.50) f -= 0.5*Math.exp(-Math.pow((ph-0.30)/0.045,2));
       return Math.max(0, f);
     }
-    case 'emphysema': {            // 肺氣腫/低順應性（肥胖、孕婦）：陡斜爬升到尖峰、無平台、圓潤峰頂
-      const rise = Math.pow(Math.min(1, ph/0.58), 2.2);
-      const down = 1/(1+Math.exp((ph-0.62)/0.011));
+    case 'emphysema': {            // 肺氣腫/低順應性（肥胖、孕婦）：陡斜爬升、圓潤峰頂、平滑曲線下降
+      const rise = Math.pow(Math.min(1, ph/0.58), 2.0);
+      const down = 1/(1+Math.exp((ph-0.66)/0.018));
       return rise*down;
     }
     case 'irregular': {            // 導管位置異常/漏氣：平台呈鋸齒不規則
