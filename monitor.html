@@ -9,7 +9,7 @@
 <link rel="manifest" href="monitor.webmanifest">
 <link rel="apple-touch-icon" href="icons/monitor-180.png">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
-<title>SimMonitor - 模擬生理監視器</title>
+<title>新竹台大分院擬真訓練系統 SimMonitor</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body { height:100%; background:#000; color:#fff; font-family:-apple-system,"SF Pro Display","Helvetica Neue",Arial,"PingFang TC",sans-serif; overflow:hidden; user-select:none; -webkit-user-select:none; }
@@ -27,9 +27,10 @@
   .tb-icons { display:flex; align-items:center; gap:4px; background:#2c2c2e; padding:0 10px; border-radius:0 0 8px 0; }
   .tb-icons button { background:none; border:none; color:#fff; font-size:20px; width:40px; height:40px; border-radius:8px; cursor:pointer; }
   .tb-icons button:active { background:#48484a; }
-  .tb-brand { flex:1; display:flex; align-items:center; justify-content:center; background:#2c2c2e; font-size:22px; font-weight:600; letter-spacing:.5px; }
-  .tb-brand .b1 { color:#ddd; } .tb-brand .b2 { color:#5ac8fa; }
-  .tb-brand .hearticon { color:#5ac8fa; margin-left:6px; font-size:18px; }
+  .tb-brand { flex:1; display:flex; align-items:center; justify-content:center; gap:12px; padding:0 10px; background:#2c2c2e; overflow:hidden; }
+  .tb-brand .tb-logo { height:38px; width:auto; object-fit:contain; background:#fff; border-radius:6px; padding:2px 5px; flex:0 0 auto; }
+  .tb-brand .tb-title { color:#5ac8fa; font-size:20px; font-weight:700; letter-spacing:.5px; white-space:nowrap; }
+  .tb-brand .tb-title b { color:#7ad1ff; font-weight:800; }
   .tb-right { display:flex; align-items:center; gap:0; background:#2c2c2e; border-radius:0 0 0 8px; }
   #tbPatient { display:flex; align-items:center; gap:8px; padding:0 18px; font-size:17px; font-weight:600; border-right:1px solid #48484a; height:60%; cursor:pointer; }
   #tbClock { padding:0 18px; font-size:18px; font-weight:600; font-variant-numeric:tabular-nums; }
@@ -233,6 +234,8 @@
   /* 手機橫向當「學員顯示端」：螢幕矮，壓縮各區高度與字級，避免數字互相重疊 */
   @media (max-height:540px){
     #topbar { height:40px; flex-basis:40px; }
+    .tb-brand { gap:6px; } .tb-brand .tb-logo { height:26px; } .tb-brand .tb-title { font-size:15px; }
+    .tb-brand .tb-title-full { display:none; }   /* 矮螢幕只留 SimMonitor，院名由 logo 呈現 */
     #monMain { grid-template-rows:1fr 62px; }
     #numArea { padding:0 8px 0 6px; }
     .num-block { padding-top:0; overflow:hidden; }
@@ -257,8 +260,12 @@
 <!-- ============ START SCREEN ============ -->
 <div id="startScreen" class="screen active">
   <div class="start-topbar">
-    <div style="font-size:18px;font-weight:600;white-space:nowrap;"><span class="b1" style="color:#ccc">si</span><span style="color:#9ad">m</span><span style="color:#ccc">monitor</span> <span style="color:#5ac8fa">♥</span></div>
-    <div style="display:flex;gap:12px;font-size:14px;font-weight:600;white-space:nowrap;"><span id="startAgeLabel">Adult</span><span id="startClock"></span></div>
+    <div style="flex:1;min-width:0;display:flex;align-items:center;gap:7px;">
+      <img src="images/logo-trm.png" alt="TRM" style="height:30px;background:#fff;border-radius:5px;padding:1px 3px;flex:0 0 auto" onerror="this.style.display='none'">
+      <img src="images/logo-hsinchu.png" alt="新竹台大分院" style="height:30px;background:#fff;border-radius:5px;padding:1px 3px;flex:0 0 auto" onerror="this.style.display='none'">
+      <span style="color:#5ac8fa;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">新竹台大分院擬真訓練系統<b style="color:#7ad1ff">SimMonitor</b></span>
+    </div>
+    <div style="flex:0 0 auto;display:flex;gap:12px;font-size:14px;font-weight:600;white-space:nowrap;margin-left:8px;"><span id="startAgeLabel">Adult</span><span id="startClock"></span></div>
   </div>
   <div class="start-scroll">
     <div id="startInner">
@@ -430,7 +437,11 @@
       <button id="scnBtn" title="教案 Timeline">&#x1F3AC;</button>
       <div id="tbCode">&#x21C4; <span id="tbCodeNum">----</span></div>
     </div>
-    <div class="tb-brand"><span class="b1">si</span><span class="b2">m</span><span class="b1">monitor</span><span class="hearticon">&#x2764;&#xFE0E;</span></div>
+    <div class="tb-brand">
+      <img class="tb-logo" src="images/logo-trm.png" alt="TRM" onerror="this.style.display='none'">
+      <img class="tb-logo" src="images/logo-hsinchu.png" alt="新竹台大分院" onerror="this.style.display='none'">
+      <span class="tb-title"><span class="tb-title-full">新竹台大分院擬真訓練系統</span><b>SimMonitor</b></span>
+    </div>
     <div class="tb-right">
       <div id="tbPatient"><span>&#x1F6B9;</span><span id="tbAgeLabel">Adult</span></div>
       <div id="tbClock">--:--:--</div>
