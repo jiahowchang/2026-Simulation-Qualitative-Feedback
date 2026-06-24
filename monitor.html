@@ -28,7 +28,7 @@
   .tb-icons button { background:none; border:none; color:#fff; font-size:20px; width:40px; height:40px; border-radius:8px; cursor:pointer; }
   .tb-icons button:active { background:#48484a; }
   .tb-brand { flex:1; display:flex; align-items:center; justify-content:center; gap:12px; padding:0 10px; background:#2c2c2e; overflow:hidden; }
-  .tb-brand .tb-logo { height:38px; width:auto; object-fit:contain; background:#fff; border-radius:6px; padding:2px 5px; flex:0 0 auto; }
+  .tb-brand .tb-logo { height:42px; width:auto; object-fit:contain; flex:0 0 auto; }
   .tb-brand .tb-title { color:#5ac8fa; font-size:20px; font-weight:700; letter-spacing:.5px; white-space:nowrap; }
   .tb-brand .tb-title b { color:#7ad1ff; font-weight:800; }
   .tb-right { display:flex; align-items:center; gap:0; background:#2c2c2e; border-radius:0 0 0 8px; }
@@ -261,8 +261,8 @@
 <div id="startScreen" class="screen active">
   <div class="start-topbar">
     <div style="flex:1;min-width:0;display:flex;align-items:center;gap:7px;">
-      <img src="images/logo-trm.png" alt="TRM" style="height:30px;background:#fff;border-radius:5px;padding:1px 3px;flex:0 0 auto" onerror="this.style.display='none'">
-      <img src="images/logo-hsinchu.png" alt="新竹台大分院" style="height:30px;background:#fff;border-radius:5px;padding:1px 3px;flex:0 0 auto" onerror="this.style.display='none'">
+      <img src="images/logo-trm.png" alt="TRM" style="height:34px;flex:0 0 auto" onerror="this.style.display='none'">
+      <img src="images/logo-hsinchu-white.png" alt="新竹台大分院" style="height:34px;flex:0 0 auto" onerror="this.style.display='none'">
       <span style="color:#5ac8fa;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">新竹台大分院擬真訓練系統<b style="color:#7ad1ff">SimMonitor</b></span>
     </div>
     <div style="flex:0 0 auto;display:flex;gap:12px;font-size:14px;font-weight:600;white-space:nowrap;margin-left:8px;"><span id="startAgeLabel">Adult</span><span id="startClock"></span></div>
@@ -439,7 +439,7 @@
     </div>
     <div class="tb-brand">
       <img class="tb-logo" src="images/logo-trm.png" alt="TRM" onerror="this.style.display='none'">
-      <img class="tb-logo" src="images/logo-hsinchu.png" alt="新竹台大分院" onerror="this.style.display='none'">
+      <img class="tb-logo" src="images/logo-hsinchu-white.png" alt="新竹台大分院" onerror="this.style.display='none'">
       <span class="tb-title"><span class="tb-title-full">新竹台大分院擬真訓練系統</span><b>SimMonitor</b></span>
     </div>
     <div class="tb-right">
@@ -514,15 +514,15 @@
   </div>
 
   <div id="toolbar">
-    <button class="tool-btn" id="btnLayout"><span class="ic">&#x25A6;</span>Layout</button>
-    <button class="tool-btn" id="btn12Lead"><span class="ic">&#x1F4C8;</span>12 Lead</button>
-    <button class="tool-btn" id="btnLeads"><span class="ic">&#x301C;</span>Leads</button>
-    <button class="tool-btn" id="btnDefib"><span class="ic">&#x26A1;</span>Defib</button>
-    <button class="tool-btn" id="btnPacer"><span class="ic">&#x2764;&#xFE0E;</span>Pacer</button>
-    <button class="tool-btn" id="btnNibp"><span class="ic">&#x2764;&#xFE0E;</span>Start NIBP</button>
-    <button class="tool-btn" id="btnAutoNibp"><span class="ic">&#x2764;&#xFE0E;</span>Auto NIBP</button>
-    <button class="tool-btn" id="btnAlarms"><span class="ic">&#x1F514;</span>Alarms</button>
-    <button class="tool-btn danger" id="btnSilence"><span class="ic">&#x1F507;</span>Silence</button>
+    <button class="tool-btn" id="btnLayout"><span class="ic">&#x25A6;</span>版面</button>
+    <button class="tool-btn" id="btn12Lead"><span class="ic">&#x1F4C8;</span>12導程</button>
+    <button class="tool-btn" id="btnLeads"><span class="ic">&#x301C;</span>切換導程</button>
+    <button class="tool-btn" id="btnDefib"><span class="ic">&#x26A1;</span>電擊</button>
+    <button class="tool-btn" id="btnPacer"><span class="ic">&#x2764;&#xFE0E;</span>節律器</button>
+    <button class="tool-btn" id="btnNibp"><span class="ic">&#x2764;&#xFE0E;</span>量血壓</button>
+    <button class="tool-btn" id="btnAutoNibp"><span class="ic">&#x2764;&#xFE0E;</span>自動量壓</button>
+    <button class="tool-btn" id="btnAlarms"><span class="ic">&#x1F514;</span>警報</button>
+    <button class="tool-btn danger" id="btnSilence"><span class="ic">&#x1F507;</span>靜音</button>
   </div>
 </div>
 
@@ -1466,8 +1466,8 @@ document.getElementById('btnAutoNibp').onclick = function(){
     state.nibp.nextAuto = simT;
     this.classList.add('activeT');
     this.firstElementChild.nextSibling.textContent='';
-    this.innerHTML = '<span class="ic">&#x2764;&#xFE0E;</span>Auto '+state.nibp.autoMin+'min';
-  } else { this.classList.remove('activeT'); this.innerHTML='<span class="ic">&#x2764;&#xFE0E;</span>Auto NIBP'; }
+    this.innerHTML = '<span class="ic">&#x2764;&#xFE0E;</span>自動 '+state.nibp.autoMin+'分';
+  } else { this.classList.remove('activeT'); this.innerHTML='<span class="ic">&#x2764;&#xFE0E;</span>自動量壓'; }
 };
 document.getElementById('btnAlarms').onclick = ()=>{
   const L = state.limits;
