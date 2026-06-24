@@ -65,6 +65,15 @@
     .prog-unfilled { font-size: 0.74rem; color: #c53030; margin-top: 4px; line-height: 1.5; }
 
     /* ── Calendar ── */
+    .cal-nav {
+      display: flex; gap: 6px; margin-bottom: 12px; justify-content: space-between;
+    }
+    .cal-nav-btn {
+      flex: 1; padding: 6px 8px; background: #ebf8ff; color: #2b6cb0;
+      border: 1px solid #bee3f8; border-radius: 6px;
+      font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+    }
+    .cal-nav-btn:hover { background: #3182ce; color: #fff; border-color: #3182ce; }
     .cal-month { margin-bottom: 18px; }
     .cal-month-header {
       text-align: center; font-weight: 700; color: #2b6cb0;
@@ -315,6 +324,11 @@
   <div class="right-col">
     <div class="panel">
       <div class="panel-title">📅 預約排程</div>
+      <div class="cal-nav">
+        <button class="cal-nav-btn" onclick="navCalendar(-1)">← 上一月</button>
+        <button class="cal-nav-btn" onclick="navCalendarToday()">今日</button>
+        <button class="cal-nav-btn" onclick="navCalendar(1)">下一月 →</button>
+      </div>
       <div id="calendarPanel">
         <div class="loading"><div class="loading-spinner"></div>載入中…</div>
       </div>
@@ -599,11 +613,13 @@
   }
 
   /* ══════════ Calendar ══════════ */
+  var calStartOffset = 0; // 0 = 當月+下個月，1 = 下個月+下下個月，-1 = 上個月+當月
+
   function renderCalendar() {
     var el = document.getElementById('calendarPanel');
     var now = new Date();
-    var month1 = new Date(now.getFullYear(), now.getMonth(), 1);
-    var month2 = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    var month1 = new Date(now.getFullYear(), now.getMonth() + calStartOffset, 1);
+    var month2 = new Date(now.getFullYear(), now.getMonth() + calStartOffset + 1, 1);
 
     var sessionsByDate = {};
     allSessions.forEach(function(s) {
@@ -613,6 +629,16 @@
     });
 
     el.innerHTML = renderMonth(month1, sessionsByDate) + renderMonth(month2, sessionsByDate);
+  }
+
+  function navCalendar(delta) {
+    calStartOffset += delta;
+    renderCalendar();
+  }
+
+  function navCalendarToday() {
+    calStartOffset = 0;
+    renderCalendar();
   }
 
   function renderMonth(monthStart, sessionsByDate) {
