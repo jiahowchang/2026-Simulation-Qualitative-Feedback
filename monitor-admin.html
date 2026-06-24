@@ -504,7 +504,7 @@ const KIND_BY_MIME = {
 const KIND_ICON = { gif:"\u{1F39E}", video:"\u{1F3AC}", audio:"\u{1F50A}", pdf:"\u{1F4C4}", image:"\u{1F5BC}" };
 
 // 媒體分類
-const CATEGORIES = ["超音波","心電圖","X光","電腦斷層","外傷照片","檢驗報告","其他"];
+const CATEGORIES = ["超音波","心電圖","X光","電腦斷層","病人照片","檢驗報告","聲音影像","其他"];
 let currentCat = "全部";
 // 初始化上傳分類下拉
 CATEGORIES.forEach(c=>{ const o=document.createElement("option"); o.value=c; o.textContent=c; $("uploadCat").appendChild(o); });
