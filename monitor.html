@@ -418,6 +418,12 @@
           <option value="infstemi">下壁 STEMI</option>
         </select>
       </div>
+
+      <div class="ctrl-card">
+        <h2>EtCO2 capnography 波型（按一下即套用到監視器）</h2>
+        <div class="preset-row" id="cCapnoRow"></div>
+        <div style="font-size:12px;color:#888;margin-top:8px">說明：鯊魚鰭/重複呼吸/箭毒裂痕改變波「形」；低通氣、過度通氣、心跳停止、ROSC 則調整 RR 與 EtCO2 數值。</div>
+      </div>
     </div>
   </div>
   <div class="ctrl-actions" id="ctrlActions" style="display:none">
@@ -610,6 +616,15 @@
             <option value="infstemi">下壁 STEMI</option>
           </select>
         </div>
+        <div class="inst-field">
+          <label><b>EtCO2 波形</b></label>
+          <select id="iCo2">
+            <option value="normal">正常</option>
+            <option value="rebreathing">重複呼吸（基線未歸零）</option>
+            <option value="sharkfin">支氣管痙攣（鯊魚鰭）</option>
+            <option value="curare">箭毒裂痕</option>
+          </select>
+        </div>
       </div>
 
       <div class="inst-sec">感測器連接</div>
@@ -734,6 +749,7 @@ const state = {
   limits:Object.assign({}, AGE_GROUPS.adult.limits),
   sensors:{ecg:true,spo2:true,art:true,etco2:true,temp:true},
   ecg12:'normal',
+  co2morph:'normal', // capnography 波形：normal/rebreathing/sharkfin/curare
   ecgLead:1, // 0=I 1=II 2=III
   nibp:{sys:null,dia:null,map:null,timeStr:'',measuring:false,measureEnd:0,autoMin:0,nextAuto:0},
   pacer:{on:false,rate:70,out:30},
@@ -864,17 +880,40 @@ function plethGen(t){
   const pt = lastPulseTime(t);
   return 0.12 + 0.75*pulseShape(t-pt);
 }
+// 正規化的標準 capnogram（基線 0、肺泡平台 ~1）
+function co2Normal(p){
+  if (p<0.07) return p/0.07*0.92;                 // Phase II 上升
+  if (p<0.52) return 0.92+0.08*((p-0.07)/0.45);   // Phase III 平台（微斜）
+  if (p<0.60) return 1-(p-0.52)/0.08;             // 吐氣末下降（吸氣）
+  return 0;                                        // 基線
+}
+// 依教師選擇回傳不同 capnography 波形形態
+function co2Shape(ph, morph){
+  switch(morph){
+    case 'rebreathing': {          // 基線無法歸零（CO₂滯留）：整段墊高
+      const base = 0.30;
+      return base + (1-base)*co2Normal(ph);
+    }
+    case 'sharkfin': {             // 支氣管痙攣「鯊魚鰭」：斜上、無平台
+      if (ph<0.66) return Math.pow(ph/0.66, 1.5);
+      if (ph<0.74) return 1-(ph-0.66)/0.08;
+      return 0;
+    }
+    case 'curare': {               // 箭毒裂痕：平台中央向下的裂隙
+      let f = co2Normal(ph);
+      if (ph>0.12 && ph<0.50) f -= 0.5*Math.exp(-Math.pow((ph-0.30)/0.045,2));
+      return Math.max(0, f);
+    }
+    default: return co2Normal(ph); // normal
+  }
+}
 function co2Gen(t){
   if (!state.sensors.etco2) return null;
   const rr = state.cur.rr;
   if (rr<=0 || state.cur.etco2<=0) return 0.5;
   const T = 60/rr;
   const ph = ((t-eng.breathT0)%T)/T;
-  let f = 0;
-  if (ph<0.07) f = ph/0.07*0.92;
-  else if (ph<0.52) f = 0.92+0.08*((ph-0.07)/0.45);
-  else if (ph<0.60) f = (1-(ph-0.52)/0.08);
-  else f = 0;
+  const f = co2Shape(ph, state.co2morph);
   return state.cur.etco2*Math.max(0,f) + (Math.random()-0.5)*0.4;
 }
 
@@ -1289,6 +1328,7 @@ function syncInstUI(){
   el.iRr.value = Math.round(state.cur.rr); el.iEt.value = Math.round(state.cur.etco2);
   el.iTp.value = state.cur.temp.toFixed(1);
   el.iEcg12.value = state.ecg12;
+  el.iCo2.value = state.co2morph;
   el.sEcg.checked=state.sensors.ecg; el.sSp.checked=state.sensors.spo2;
   el.sArt.checked=state.sensors.art; el.sEt.checked=state.sensors.etco2; el.sTp.checked=state.sensors.temp;
   instSliderLabels();
@@ -1307,6 +1347,7 @@ function setRhythm(r){
 function applyInstructor(){
   setRhythm(el.iRhythm.value);
   state.ecg12 = el.iEcg12.value;
+  state.co2morph = el.iCo2.value;
   state.sensors.ecg=el.sEcg.checked; state.sensors.spo2=el.sSp.checked;
   state.sensors.art=el.sArt.checked; state.sensors.etco2=el.sEt.checked; state.sensors.temp=el.sTp.checked;
   applyTargets({
@@ -1321,7 +1362,7 @@ const el = {};
 ['hrVal','prVal','bpVal','bpMap','spo2Val','etco2Val','rrVal','tempVal','nibpTime','tbClock','tbAgeLabel',
  'alarmBanner','alarmText','hrBlock','spo2Block','bpBlock',
  'limHrHi','limHrLo','limSpHi','limSpLo','limBpHi','limBpLo','limRrHi','limRrLo','limEtHi','limEtLo','limTpHi','limTpLo',
- 'iRhythm','iTrend','iHr','iSp','iSys','iDia','iRr','iEt','iTp','iEcg12','sEcg','sSp','sArt','sEt','sTp',
+ 'iRhythm','iTrend','iHr','iSp','iSys','iDia','iRr','iEt','iTp','iEcg12','iCo2','sEcg','sSp','sArt','sEt','sTp',
  'iHrV','iSpV','iSysV','iDiaV','iRrV','iEtV','iTpV','ecgLeadLabel',
 ].forEach(id=> el[id]=document.getElementById(id));
 
@@ -1616,7 +1657,7 @@ function renderCtrlGate(){
 }
 
 // ========== 監視器端 ==========
-const remote = { code:null, unsub:null, lastSeq:0, lastNibp:0, lastSilence:0, lastMedia:0, lastMediaClose:0, lastScn:0, lastEcg12:0, pubTimer:null };
+const remote = { code:null, unsub:null, lastSeq:0, lastNibp:0, lastSilence:0, lastMedia:0, lastMediaClose:0, lastScn:0, lastEcg12:0, lastCapno:0, pubTimer:null };
 
 function snapshotStatus(){
   const hr = dispHR();
@@ -1649,6 +1690,16 @@ function applyRemoteCtrl(c){
     if (window.setSilence) window.setSilence(on); else state.silencedUntil = on ? simT+1e9 : 0;
   }
   if (c.ecg12Seq && c.ecg12Seq > remote.lastEcg12){ remote.lastEcg12 = c.ecg12Seq; state.ecg12 = c.ecg12Val || "normal"; }
+  // capnography 波型（含可選的 RR / EtCO2 數值）
+  if (c.capnoSeq && c.capnoSeq > remote.lastCapno){
+    remote.lastCapno = c.capnoSeq;
+    const d = c.capnoData || {};
+    if (d.morph) state.co2morph = d.morph;
+    const tgt = {};
+    if (typeof d.rr === 'number') tgt.rr = d.rr;
+    if (typeof d.etco2 === 'number') tgt.etco2 = d.etco2;
+    if (Object.keys(tgt).length) applyTargets(tgt, 1.5);
+  }
   if (c.mediaSeq && c.mediaSeq > remote.lastMedia){
     remote.lastMedia = c.mediaSeq;
     if (c.mediaId) fetchAndShowMedia(c.mediaId, c.mediaName);
@@ -2015,6 +2066,31 @@ PRESETS.forEach(p=>{
     sendCtrl();
   };
   $("cPresetRow").appendChild(b);
+});
+
+// EtCO2 capnography 波型快速鍵（按一下即遠端套用）
+const CAPNO_PRESETS = [
+  { name:'正常',             morph:'normal',      rr:14, etco2:38 },
+  { name:'重複呼吸 CO₂',      morph:'rebreathing', rr:14, etco2:48 },
+  { name:'支氣管痙攣 🦈',     morph:'sharkfin',    rr:24, etco2:48 },
+  { name:'箭毒裂痕',          morph:'curare',      rr:16, etco2:40 },
+  { name:'低通氣 EtCO₂↑',     morph:'normal',      rr:8,  etco2:55 },
+  { name:'過度通氣 EtCO₂↓',   morph:'normal',      rr:24, etco2:28 },
+  { name:'心跳停止 CO₂↓',     morph:'normal',      rr:8,  etco2:8  },
+  { name:'ROSC 循環恢復',     morph:'normal',      rr:12, etco2:42 },
+];
+CAPNO_PRESETS.forEach(p=>{
+  const b = document.createElement("button");
+  b.className = "preset-btn"; b.textContent = p.name;
+  b.onclick = async ()=>{
+    if (!db || !ctrl.code){ flashBtn(b, "未連線"); return; }
+    try{
+      await updateDoc(doc(db,SESS,ctrl.code), { "ctrl.capnoSeq": Date.now(), "ctrl.capnoData": { morph:p.morph, rr:p.rr, etco2:p.etco2 } });
+      $("cRr").value = p.rr; $("cEt").value = p.etco2; cLabels();   // 同步控制台滑桿
+      flashBtn(b, "已送出 ✓");
+    }catch(e){ flashBtn(b, "失敗"); }
+  };
+  $("cCapnoRow").appendChild(b);
 });
 
 // ========== 教案 Timeline（AI 解析）==========
