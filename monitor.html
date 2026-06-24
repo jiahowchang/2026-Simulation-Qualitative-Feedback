@@ -430,7 +430,8 @@
           <option value="irregular">導管位置異常 Tube malposition</option>
           <option value="flat">窒息/無波形 Apnea</option>
         </select>
-        <div style="font-size:12px;color:#888;margin-top:8px">選了立即套用。心跳停止/ROSC 等心律改變時，波型會自動連動。</div>
+        <div id="cCo2Hint" style="font-size:13px;color:#9fd0ff;background:#0e2030;border-left:3px solid #0a84ff;padding:8px 10px;border-radius:0 8px 8px 0;margin-top:10px;line-height:1.45"></div>
+        <div style="font-size:11px;color:#777;margin-top:6px">選了立即套用；心跳停止/ROSC 等心律改變時波型會自動連動。</div>
       </div>
     </div>
   </div>
@@ -2095,7 +2096,7 @@ PRESETS.forEach(p=>{
   b.onclick = ()=>{
     const r = p.f();
     $("cRhythm").value = r.rhythm;
-    if (r.co2){ cCo2morph = r.co2; $("cCo2").value = r.co2; }   // PEA/ROSC 等心律連動 capnography 波形（同步下拉）
+    if (r.co2){ cCo2morph = r.co2; $("cCo2").value = r.co2; updateCo2Hint(); }   // PEA/ROSC 等心律連動 capnography 波形（同步下拉與提示）
     const v = r.v || {};
     const map = { hr:"cHr", spo2:"cSp", sys:"cSys", dia:"cDia", rr:"cRr", etco2:"cEt", temp:"cTp" };
     for (const k in map) if (v[k]!==undefined) $(map[k]).value = v[k];
@@ -2105,12 +2106,27 @@ PRESETS.forEach(p=>{
   $("cPresetRow").appendChild(b);
 });
 
+// 各波型的病態生理 / 使用時機提示
+const CO2_HINTS = {
+  normal:      "正常方波：通氣與灌流良好的基準。EtCO₂ 35–45 mmHg。",
+  sharkfin:    "鯊魚鰭（斜上、無平台）＝下呼吸道阻塞。氣喘急性發作 / COPD / 支氣管痙攣；處置：支氣管擴張劑，改善時斜坡回正。",
+  emphysema:   "斜坡無平台＝肺氣腫 / COPD，或低肺順應性（肥胖、孕婦、限制性肺病、氣胸漏氣）。",
+  rebreathing: "基線未歸零＝重複吸回 CO₂（CO₂滯留）。鈉石灰耗盡 / 吐氣閥故障 / 新鮮氣流不足 / 吐氣時間不夠；處置：換 CO₂ 吸收劑、檢查單向閥、加大氣流。",
+  curare:      "平台中央裂隙＝肌肉鬆弛（癱瘓）中病人開始自主呼吸＝肌鬆劑藥效正在退；處置：追加肌鬆劑或調整鎮靜（裂隙越深、自主呼吸越強）。",
+  irregular:   "平台呈鋸齒不規則＝氣管內管位置不良，或取樣管路有水 / 分泌物；處置：重新確認管深與聽診、檢查取樣管路。",
+  flat:        "平線、無波形＝緊急！管子滑脫/脫接、誤插食道、完全阻塞，或心跳停止（無肺血流）。依 DOPE（脫位/阻塞/氣胸/器械）排查。",
+};
+function updateCo2Hint(){
+  const el = $("cCo2Hint"); if (el) el.textContent = CO2_HINTS[$("cCo2").value] || "";
+}
 // EtCO2 波型（病理）下拉：選了就立即套用（只改波形，不動 RR/EtCO2 數值）
 $("cCo2").onchange = async ()=>{
   cCo2morph = $("cCo2").value;   // 記住目前波形，按 Apply 不會被重置
+  updateCo2Hint();
   if (!db || !ctrl.code) return;
   try{ await updateDoc(doc(db,SESS,ctrl.code), { "ctrl.capnoSeq": Date.now(), "ctrl.capnoData": { morph:cCo2morph } }); }catch(e){}
 };
+updateCo2Hint();   // 初始顯示
 
 // ========== 教案 Timeline（AI 解析）==========
 const SCEN_COLL = "monitor_scenarios";
