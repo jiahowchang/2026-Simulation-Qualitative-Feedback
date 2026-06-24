@@ -891,12 +891,12 @@ function plethGen(t){
   const pt = lastPulseTime(t);
   return 0.12 + 0.75*pulseShape(t-pt);
 }
-// 正規化的標準 capnogram（基線 0、肺泡平台 ~1）
+// 正規化的標準 capnogram（基線 0、肺泡平台 ~1）：用 sigmoid 讓上升肩部與下降圓潤平滑
 function co2Normal(p){
-  if (p<0.07) return p/0.07*0.92;                 // Phase II 上升
-  if (p<0.52) return 0.92+0.08*((p-0.07)/0.45);   // Phase III 平台（微斜）
-  if (p<0.60) return 1-(p-0.52)/0.08;             // 吐氣末下降（吸氣）
-  return 0;                                        // 基線
+  const up   = 1/(1+Math.exp(-(p-0.05)/0.013));   // 上升沿（圓潤肩部）
+  const down = 1/(1+Math.exp((p-0.56)/0.011));    // 吐氣末下降
+  const slope = 0.90 + 0.10*Math.min(1, p/0.52);  // Phase III 微斜，平台末端達 ~1.0
+  return up*down*slope;
 }
 // 依教師選擇回傳不同 capnography 波形形態
 function co2Shape(ph, morph){
@@ -905,20 +905,20 @@ function co2Shape(ph, morph){
       const base = 0.30;
       return base + (1-base)*co2Normal(ph);
     }
-    case 'sharkfin': {             // 支氣管痙攣「鯊魚鰭」：斜上、無平台
-      if (ph<0.66) return Math.pow(ph/0.66, 1.5);
-      if (ph<0.74) return 1-(ph-0.66)/0.08;
-      return 0;
+    case 'sharkfin': {             // 支氣管痙攣「鯊魚鰭」：斜上、無平台、圓潤峰頂
+      const rise = Math.pow(Math.min(1, ph/0.62), 1.4);
+      const down = 1/(1+Math.exp((ph-0.66)/0.011));
+      return rise*down;
     }
     case 'curare': {               // 箭毒裂痕：平台中央向下的裂隙
       let f = co2Normal(ph);
       if (ph>0.12 && ph<0.50) f -= 0.5*Math.exp(-Math.pow((ph-0.30)/0.045,2));
       return Math.max(0, f);
     }
-    case 'emphysema': {            // 肺氣腫/低順應性（肥胖、孕婦）：陡斜爬升到尖峰、無平台
-      if (ph<0.60) return Math.pow(ph/0.60, 2.3);
-      if (ph<0.68) return 1-(ph-0.60)/0.08;
-      return 0;
+    case 'emphysema': {            // 肺氣腫/低順應性（肥胖、孕婦）：陡斜爬升到尖峰、無平台、圓潤峰頂
+      const rise = Math.pow(Math.min(1, ph/0.58), 2.2);
+      const down = 1/(1+Math.exp((ph-0.62)/0.011));
+      return rise*down;
     }
     case 'irregular': {            // 導管位置異常/漏氣：平台呈鋸齒不規則
       let f = co2Normal(ph);
