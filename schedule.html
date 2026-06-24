@@ -10,7 +10,6 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: #f0f4f8; color: #1a202c; min-height: 100vh;
     }
-    .container { max-width: 700px; margin: 0 auto; padding: 0 16px 60px; }
 
     /* ── Header ── */
     .header {
@@ -23,6 +22,79 @@
       letter-spacing: 0.01em;
     }
     .header p { font-size: 0.9rem; color: rgba(255,255,255,0.8); margin-top: 6px; }
+
+    /* ── Layout：3-column on desktop, stack on mobile ── */
+    .layout {
+      max-width: 1400px; margin: 0 auto; padding: 0 16px 60px;
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr) 320px;
+      gap: 20px;
+      align-items: start;
+    }
+    .left-col, .right-col { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto; }
+    @media (max-width: 1100px) {
+      .layout { grid-template-columns: 1fr; max-width: 700px; }
+      .left-col, .right-col { position: static; max-height: none; }
+    }
+
+    /* ── Panel ── */
+    .panel {
+      background: #fff; border-radius: 14px; padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 16px;
+    }
+    .panel-title {
+      font-size: 0.95rem; font-weight: 700; color: #2b6cb0;
+      margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    /* ── Progress Panel ── */
+    .prog-item {
+      border-left: 3px solid #3182ce;
+      padding: 8px 10px; margin-bottom: 8px;
+      background: #f7fafc; border-radius: 6px;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .prog-item:hover { background: #ebf8ff; }
+    .prog-item.past { opacity: 0.55; border-left-color: #cbd5e0; }
+    .prog-group { font-weight: 700; font-size: 0.85rem; color: #2d3748; line-height: 1.3; }
+    .prog-date { font-size: 0.75rem; color: #718096; margin-top: 2px; }
+    .prog-bar-wrap { background: #e2e8f0; border-radius: 999px; height: 6px; margin-top: 6px; overflow: hidden; }
+    .prog-bar-fill { height: 100%; background: linear-gradient(90deg, #3182ce, #63b3ed); transition: width 0.4s; }
+    .prog-stat { font-size: 0.74rem; color: #4a5568; margin-top: 4px; font-weight: 600; }
+    .prog-unfilled { font-size: 0.74rem; color: #c53030; margin-top: 4px; line-height: 1.5; }
+
+    /* ── Calendar ── */
+    .cal-month { margin-bottom: 18px; }
+    .cal-month-header {
+      text-align: center; font-weight: 700; color: #2b6cb0;
+      margin-bottom: 8px; font-size: 0.95rem;
+    }
+    .cal-week {
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
+      font-size: 0.7rem; color: #a0aec0;
+      text-align: center; margin-bottom: 4px; font-weight: 600;
+    }
+    .cal-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px;
+    }
+    .cal-day {
+      aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+      font-size: 0.78rem; color: #4a5568; border-radius: 6px;
+      position: relative;
+    }
+    .cal-day.other-month { color: transparent; }
+    .cal-day.today { background: #fef5e7; color: #c05621; font-weight: 700; }
+    .cal-day.has-session {
+      background: #3182ce; color: #fff; font-weight: 600;
+      cursor: pointer;
+    }
+    .cal-day.has-session.today { background: #c05621; }
+    .cal-day.has-session:hover { transform: scale(1.1); }
+    .cal-day.has-session.past { background: #a0aec0; }
+    .cal-legend { font-size: 0.7rem; color: #718096; margin-top: 8px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+    .cal-legend-item { display: flex; align-items: center; gap: 4px; }
+    .cal-legend-dot { width: 10px; height: 10px; border-radius: 3px; }
 
     /* ── Filter Pills ── */
     .filter-wrap {
@@ -68,6 +140,7 @@
     .session-card:hover { box-shadow: 0 4px 16px rgba(49,130,206,0.15); }
     .session-card.past { border-left-color: #cbd5e0; opacity: 0.75; }
     .session-card.past .session-group { color: #718096; }
+    .session-card.highlight { box-shadow: 0 0 0 3px #3182ce !important; }
 
     .session-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
     .session-group { font-size: 1rem; font-weight: 800; color: #2b6cb0; line-height: 1.3; }
@@ -101,16 +174,15 @@
     .session-card.past .btn-feedback { background: #718096; }
 
     /* ── Loading / Empty ── */
-    .loading { text-align: center; padding: 60px 20px; color: #a0aec0; }
+    .loading { text-align: center; padding: 40px 20px; color: #a0aec0; font-size: 0.85rem; }
     .loading-spinner {
-      width: 36px; height: 36px; border: 3px solid #e2e8f0;
+      width: 28px; height: 28px; border: 3px solid #e2e8f0;
       border-top-color: #3182ce; border-radius: 50%;
-      animation: spin 0.8s linear infinite; margin: 0 auto 14px;
+      animation: spin 0.8s linear infinite; margin: 0 auto 10px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .empty { text-align: center; padding: 60px 20px; color: #a0aec0; }
-    .empty-icon { font-size: 3rem; margin-bottom: 12px; }
-    .empty-text { font-size: 1rem; }
+    .empty { text-align: center; padding: 40px 20px; color: #a0aec0; font-size: 0.85rem; }
+    .empty-icon { font-size: 2rem; margin-bottom: 8px; }
 
     /* ── Modal ── */
     .modal-overlay {
@@ -199,30 +271,58 @@
   <p>Simulation Training Schedule</p>
 </div>
 
-<div class="container">
+<div class="layout">
 
-  <div class="filter-wrap" id="filterWrap">
-    <button class="pill active" onclick="filterGroup('', this)">全部</button>
-    <button class="pill" onclick="filterGroup('新竹新人組', this)">新竹新人組</button>
-    <button class="pill" onclick="filterGroup('新竹急重症照護組', this)">新竹急重症照護組</button>
-    <button class="pill" onclick="filterGroup('新竹新生兒組', this)">新竹新生兒組</button>
-    <button class="pill" onclick="filterGroup('生醫急重症照護組', this)">生醫急重症照護組</button>
-    <button class="pill" onclick="filterGroup('生醫新生兒組', this)">生醫新生兒組</button>
-    <button class="pill" onclick="filterGroup('生醫醫事放射組', this)">生醫醫事放射組</button>
-    <button class="pill" onclick="filterGroup('桃竹苗競賽生醫宋仙女組', this)">桃竹苗競賽生醫宋仙女組</button>
-    <button class="pill" onclick="filterGroup('桃竹苗競賽生醫范特C組', this)">桃竹苗競賽生醫范特C組</button>
-    <button class="pill" onclick="filterGroup('桃竹苗競賽院內其他團隊', this)">桃竹苗競賽院內其他團隊</button>
-    <button class="pill" onclick="filterGroup('桃竹苗競賽院外其他團隊', this)">桃竹苗競賽院外其他團隊</button>
+  <!-- ══════════ LEFT：質性回饋進度 ══════════ -->
+  <div class="left-col">
+    <div class="panel">
+      <div class="panel-title">📊 質性回饋進度</div>
+      <div id="progressPanel">
+        <div class="loading"><div class="loading-spinner"></div>載入中…</div>
+      </div>
+    </div>
   </div>
 
-  <button class="btn-propose" onclick="openProposeModal()">
-    📅 預約練習時間　→
-  </button>
+  <!-- ══════════ CENTER：場次時間表 ══════════ -->
+  <div class="main-col">
+    <div class="filter-wrap" id="filterWrap">
+      <button class="pill active" onclick="filterGroup('', this)">全部</button>
+      <button class="pill" onclick="filterGroup('新竹新人組', this)">新竹新人組</button>
+      <button class="pill" onclick="filterGroup('新竹急重症照護組', this)">新竹急重症照護組</button>
+      <button class="pill" onclick="filterGroup('新竹新生兒組', this)">新竹新生兒組</button>
+      <button class="pill" onclick="filterGroup('生醫急重症照護組', this)">生醫急重症照護組</button>
+      <button class="pill" onclick="filterGroup('生醫新生兒組', this)">生醫新生兒組</button>
+      <button class="pill" onclick="filterGroup('生醫醫事放射組', this)">生醫醫事放射組</button>
+      <button class="pill" onclick="filterGroup('桃竹苗競賽生醫宋仙女組', this)">桃竹苗競賽生醫宋仙女組</button>
+      <button class="pill" onclick="filterGroup('桃竹苗競賽生醫范特C組', this)">桃竹苗競賽生醫范特C組</button>
+      <button class="pill" onclick="filterGroup('桃竹苗競賽院內其他團隊', this)">桃竹苗競賽院內其他團隊</button>
+      <button class="pill" onclick="filterGroup('桃竹苗競賽院外其他團隊', this)">桃竹苗競賽院外其他團隊</button>
+    </div>
 
-  <div id="scheduleContent">
-    <div class="loading">
-      <div class="loading-spinner"></div>
-      <div>載入場次中…</div>
+    <button class="btn-propose" onclick="openProposeModal()">
+      📅 預約練習時間　→
+    </button>
+
+    <div id="scheduleContent">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        <div>載入場次中…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ RIGHT：月曆 ══════════ -->
+  <div class="right-col">
+    <div class="panel">
+      <div class="panel-title">📅 兩個月月曆</div>
+      <div id="calendarPanel">
+        <div class="loading"><div class="loading-spinner"></div>載入中…</div>
+      </div>
+      <div class="cal-legend">
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#3182ce;"></div>即將到來</div>
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#a0aec0;"></div>已完成</div>
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#fef5e7;border:1px solid #c05621;"></div>今日</div>
+      </div>
     </div>
   </div>
 
@@ -261,7 +361,7 @@
     </div>
     <div class="modal-field">
       <label>地點</label>
-      <input type="text" id="pLocation" placeholder="例：急診教育訓練室">
+      <input type="text" id="pLocation" placeholder="例:急診教育訓練室">
     </div>
     <div class="modal-field">
       <label>備注</label>
@@ -305,6 +405,7 @@
 <script>
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbxry8msOCgkK26qbveQbxpZ-TTXp1y1Ps3kjHBz6QmshndyVSpFduoZdgk9UwQx4GoT/exec';
   var allSessions = [];
+  var progressData = [];
   var currentGroup = '';
   var cbIndex = 0;
 
@@ -337,6 +438,8 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
   }
+
+  function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 
   /* ── Toast ── */
   function showToast(msg, type) {
@@ -371,7 +474,7 @@
     });
 
     if (filtered.length === 0) {
-      el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">目前無場次資料</div></div>';
+      el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div>目前無場次資料</div></div>';
       return;
     }
 
@@ -409,7 +512,6 @@
     infoItems += infoItem('🧑‍💼', '助教', s.ta   || '待定');
     infoItems += infoItem('🔧', '值日生', s.duty  || '待定');
 
-    // 顯示隊員：優先用資料庫成員，否則從 GROUP_MEMBERS 帶入
     var membersHtml = '';
     try {
       var mems = typeof s.members === 'string' ? JSON.parse(s.members) : (s.members || []);
@@ -431,7 +533,7 @@
         '<a href="simulation.html" class="btn-feedback">填寫回饋 →</a>' +
       '</div>';
 
-    return '<div class="' + cls + '">' +
+    return '<div class="' + cls + '" data-sid="' + esc(s.session_id || '') + '" data-date="' + esc(s.date || '') + '">' +
       '<div class="session-top">' +
         '<div class="session-group">' + esc(s.group) + '</div>' +
         '<div class="session-date-badge">' + esc(dateText) + '</div>' +
@@ -450,48 +552,120 @@
     '</div>';
   }
 
+  /* ══════════ Progress Panel ══════════ */
+  function renderProgressPanel() {
+    var el = document.getElementById('progressPanel');
+    var today = new Date(); today.setHours(0,0,0,0);
+
+    var upcoming = progressData.filter(function(s) {
+      var d = parseDate(s.date);
+      return !d || d >= today;
+    });
+    upcoming.sort(function(a,b){ return (parseDate(a.date) || 0) - (parseDate(b.date) || 0); });
+
+    if (upcoming.length === 0) {
+      el.innerHTML = '<div class="empty" style="padding:20px;">無即將到來場次</div>';
+      return;
+    }
+
+    var html = '';
+    upcoming.forEach(function(s) {
+      var pct = s.total > 0 ? Math.round(s.filled / s.total * 100) : 0;
+      var unfilled = (s.members || []).filter(function(m) { return !m.filled; }).map(function(m) { return m.name; }).filter(Boolean);
+      var dateStr = (s.date || '').slice(5).replace('-', '/') + (s.time ? ' ' + s.time : '');
+      html += '<div class="prog-item" onclick="jumpToSession(\'' + esc(s.session_id || '') + '\',\'' + esc(s.date || '') + '\')">' +
+        '<div class="prog-group">' + esc(s.group) + '</div>' +
+        '<div class="prog-date">' + esc(dateStr) + '</div>' +
+        (s.total > 0
+          ? '<div class="prog-bar-wrap"><div class="prog-bar-fill" style="width:' + pct + '%"></div></div>' +
+            '<div class="prog-stat">' + s.filled + '/' + s.total + ' 已填 (' + pct + '%)</div>' +
+            (unfilled.length ? '<div class="prog-unfilled">⚠️ 未填：' + esc(unfilled.join('、')) + '</div>' : '<div class="prog-stat" style="color:#38a169;">✅ 全部完成</div>')
+          : '<div class="prog-stat" style="color:#a0aec0;">尚無成員名單</div>'
+        ) +
+      '</div>';
+    });
+    el.innerHTML = html;
+  }
+
+  function jumpToSession(sid, dateStr) {
+    var card = sid ? document.querySelector('.session-card[data-sid="' + sid + '"]') : null;
+    if (!card && dateStr) card = document.querySelector('.session-card[data-date="' + dateStr + '"]');
+    if (!card) return;
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.classList.add('highlight');
+    setTimeout(function() { card.classList.remove('highlight'); }, 2000);
+  }
+
+  /* ══════════ Calendar ══════════ */
+  function renderCalendar() {
+    var el = document.getElementById('calendarPanel');
+    var now = new Date();
+    var month1 = new Date(now.getFullYear(), now.getMonth(), 1);
+    var month2 = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+    var sessionsByDate = {};
+    allSessions.forEach(function(s) {
+      if (!s.date) return;
+      if (!sessionsByDate[s.date]) sessionsByDate[s.date] = [];
+      sessionsByDate[s.date].push(s);
+    });
+
+    el.innerHTML = renderMonth(month1, sessionsByDate) + renderMonth(month2, sessionsByDate);
+  }
+
+  function renderMonth(monthStart, sessionsByDate) {
+    var year = monthStart.getFullYear();
+    var month = monthStart.getMonth();
+    var monthName = year + ' 年 ' + (month + 1) + ' 月';
+
+    var firstDay = new Date(year, month, 1).getDay();
+    var lastDate = new Date(year, month + 1, 0).getDate();
+    var today = new Date(); today.setHours(0,0,0,0);
+
+    var html = '<div class="cal-month">';
+    html += '<div class="cal-month-header">' + monthName + '</div>';
+    html += '<div class="cal-week"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>';
+    html += '<div class="cal-grid">';
+
+    for (var i = 0; i < firstDay; i++) {
+      html += '<div class="cal-day other-month"></div>';
+    }
+
+    for (var d = 1; d <= lastDate; d++) {
+      var dateStr = year + '-' + pad2(month + 1) + '-' + pad2(d);
+      var hasSessions = !!sessionsByDate[dateStr];
+      var thisDate = new Date(year, month, d);
+      var isPast = thisDate < today;
+      var isToday = thisDate.getTime() === today.getTime();
+
+      var classes = 'cal-day';
+      if (hasSessions) classes += ' has-session';
+      if (hasSessions && isPast) classes += ' past';
+      if (isToday) classes += ' today';
+
+      var tooltip = '';
+      if (hasSessions) {
+        tooltip = sessionsByDate[dateStr].map(function(s){
+          return s.group + (s.time ? ' ' + s.time : '');
+        }).join('\n');
+      }
+      var click = hasSessions ? ' onclick="jumpToSession(\'\',\'' + dateStr + '\')"' : '';
+      html += '<div class="' + classes + '"' + click + ' title="' + esc(tooltip) + '">' + d + '</div>';
+    }
+
+    html += '</div></div>';
+    return html;
+  }
+
   /* ── Group Members 自動帶入 ── */
   var GROUP_MEMBERS = {
-    '新竹新人組': [
-      { name: '陳品卉', email: 'isemi891013@gmail.com' },
-      { name: '李奕儒', email: 'ortho06159@gmail.com' },
-      { name: '楊智宇', email: 'zhiyuy4@gmail.com' },
-      { name: '陳蕙瑜', email: 'ltjang1213@gmail.com' }
-    ],
-    '新竹急重症照護組': [
-      { name: '王梓學', email: 'wang831022@gmail.com' },
-      { name: '鄭治雲', email: 'james0124abc@gmail.com' },
-      { name: '蘇欣恰', email: 'jessies02221996@gmail.com' },
-      { name: '杜文志', email: 'v122763783@gmail.com' },
-      { name: '林育禎', email: 'g06136@hch.gov.tw' }
-    ],
-    '新竹新生兒組': [
-      { name: '張哲嘉', email: '' }
-    ],
-    '生醫急重症照護組': [
-      { name: '蔡于捷', email: 'th5118tw@hotmail.com' },
-      { name: '林志賢', email: '' },
-      { name: '闕早苗', email: '' },
-      { name: '宋馨妮', email: 'ni06160817@gmail.com' },
-      { name: '莊翔佯', email: 'lovely902548@gmail.com' }
-    ],
-    '生醫新生兒組': [
-      { name: '廖霙鳳', email: 'inphone6@gmail.com' },
-      { name: '李婉慈', email: '' },
-      { name: '羅秋玲', email: '' },
-      { name: '蕭翎竹', email: '' }
-    ],
-    '生醫醫事放射組': [
-      { name: '魏嘉妤', email: 'G62034@hch.gov.tw' },
-      { name: '陳惠芬', email: 'G08733@gmail.com' },
-      { name: '楊淑芳', email: 'G04159@hch.gov.tw' },
-      { name: '葉姵呈', email: 'G05835@hch.gov.tw' }
-    ],
-    '桃竹苗競賽生醫宋仙女組': [
-      { name: '鄭治雲', email: 'james0124abc@gmail.com' },
-      { name: '張院廷', email: 'j5131819@gmail.com' },
-      { name: '江立羽', email: 'lihyeu1992@gmail.com' }
-    ],
+    '新竹新人組': [],
+    '新竹急重症照護組': [],
+    '新竹新生兒組': [],
+    '生醫急重症照護組': [],
+    '生醫新生兒組': [],
+    '生醫醫事放射組': [],
+    '桃竹苗競賽生醫宋仙女組': [],
     '桃竹苗競賽生醫范特C組': [],
     '桃竹苗競賽院內其他團隊': [],
     '桃竹苗競賽院外其他團隊': []
@@ -507,8 +681,8 @@
         var row = document.createElement('div');
         row.className = 'member-input-row';
         row.innerHTML =
-          '<input type="text" placeholder="姓名" value="' + m.name + '">' +
-          '<input type="email" placeholder="Email" value="' + m.email + '">' +
+          '<input type="text" placeholder="姓名" value="' + esc(m.name||'') + '">' +
+          '<input type="email" placeholder="Email" value="' + esc(m.email||'') + '">' +
           '<button class="btn-remove-member" onclick="this.parentNode.remove()">✕</button>';
         container.appendChild(row);
       });
@@ -603,13 +777,7 @@
       } else {
         closeProposeModal();
         showToast('✅ 預約完成！通知信已發送給所有隊員', 'success');
-        // Reload sessions
-        jsonp({ action: 'getPublicSchedule' }, function(e2, d2) {
-          if (!e2 && d2 && !d2.error) {
-            allSessions = d2.sessions || [];
-            renderSchedule();
-          }
-        });
+        loadAll();
       }
     });
   }
@@ -656,16 +824,32 @@
     select.value = '';
   }
 
-  /* ── Load sessions on page load ── */
-  jsonp({ action: 'getPublicSchedule' }, function(err, data) {
-    if (err || !data || data.error) {
-      document.getElementById('scheduleContent').innerHTML =
-        '<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">載入失敗，請重新整理頁面</div></div>';
-      return;
-    }
-    allSessions = data.sessions || [];
-    renderSchedule();
-  });
+  /* ══════════ Load All Data ══════════ */
+  function loadAll() {
+    // Sessions
+    jsonp({ action: 'getPublicSchedule' }, function(err, data) {
+      if (err || !data || data.error) {
+        document.getElementById('scheduleContent').innerHTML =
+          '<div class="empty"><div class="empty-icon">⚠️</div><div>載入失敗，請重新整理頁面</div></div>';
+      } else {
+        allSessions = data.sessions || [];
+        renderSchedule();
+        renderCalendar();
+      }
+    });
+
+    // Progress
+    jsonp({ action: 'getPublicProgress' }, function(err, data) {
+      if (err || !data || data.error) {
+        document.getElementById('progressPanel').innerHTML = '<div class="empty" style="padding:20px;">無法載入進度</div>';
+      } else {
+        progressData = data.sessions || [];
+        renderProgressPanel();
+      }
+    });
+  }
+
+  loadAll();
 </script>
 </body>
 </html>
