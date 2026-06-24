@@ -317,13 +317,22 @@
       </div>
 
       <div class="ctrl-card">
-        <h2>傳送影像到監視器（jpg / png / gif）</h2>
-        <button id="cImgUploadBtn" style="width:100%;padding:13px;background:#0a84ff;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer">&#x1F4F7; 從相簿選圖 / 拍照 並傳送</button>
+        <h2>傳送檢查結果到監視器（X光 / CT / 心電圖 / 超音波 / 圖片 / 音檔 / PDF）</h2>
+        <button id="cImgUploadBtn" style="width:100%;padding:13px;background:#3a3a3c;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">&#x1F4F7; 從相簿選圖 / 拍照（加入媒體庫）</button>
         <input type="file" id="cImgFile" accept="image/*" style="display:none">
         <div id="cImgMsg" style="font-size:13px;color:#ff9f0a;margin-top:8px;min-height:18px"></div>
-        <div style="font-size:13px;color:#999;margin-top:6px">或點下方媒體庫圖片直接傳送：</div>
+        <div id="cImgCats" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px"></div>
+        <div style="font-size:13px;color:#999;margin-top:8px">點選一個媒體後，按下方「傳送」才會送到監視器：</div>
         <div id="cImgGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;margin-top:8px"></div>
-        <div id="cImgEmpty" style="font-size:13px;color:#777;padding:6px 0;display:none">媒體庫還沒有圖片，用上面的按鈕上傳吧</div>
+        <div id="cImgEmpty" style="font-size:13px;color:#777;padding:6px 0;display:none">這個分類還沒有檔案</div>
+        <div id="cImgSel" style="display:none;align-items:center;gap:10px;margin-top:12px;padding:8px;background:#2c2c2e;border-radius:10px">
+          <img id="cImgSelThumb" style="width:48px;height:48px;object-fit:cover;border-radius:6px;background:#000;flex:0 0 48px">
+          <div style="flex:1;min-width:0"><div style="font-size:11px;color:#999">已選擇</div><div id="cImgSelName" style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button id="cImgSendBtn" disabled style="flex:2;padding:14px;background:#0a84ff;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:800;cursor:pointer;opacity:.5">&#x1F4E4; 傳送到監視器</button>
+          <button id="cImgCloseBtn" style="flex:1;padding:14px;background:#3a3a3c;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">&#x2715; 關閉影像</button>
+        </div>
       </div>
 
       <div class="ctrl-card">
@@ -1426,6 +1435,8 @@ window.addInvestigation = function(m){
   openModal('ecg12Modal');
   beep(880,.15,.15); // 提示學員有新檢查結果
 };
+// 關閉檢查結果視窗（教師控制台可遠端呼叫），畫面回到監視器
+window.closeInvestigation = function(){ stopInvPlayback(); closeModal('ecg12Modal'); };
 document.querySelector('#ecg12Modal .modal-x').addEventListener('click', stopInvPlayback);
 document.getElementById('ecg12Modal').addEventListener('click', e=>{ if (e.target.id==='ecg12Modal') stopInvPlayback(); });
 document.getElementById('btn12Lead').onclick = ()=>{ selectInv('ecg12'); openModal('ecg12Modal'); };
@@ -1594,7 +1605,7 @@ function renderCtrlGate(){
 }
 
 // ========== 監視器端 ==========
-const remote = { code:null, unsub:null, lastSeq:0, lastNibp:0, lastSilence:0, lastMedia:0, lastScn:0, lastEcg12:0, pubTimer:null };
+const remote = { code:null, unsub:null, lastSeq:0, lastNibp:0, lastSilence:0, lastMedia:0, lastMediaClose:0, lastScn:0, lastEcg12:0, pubTimer:null };
 
 function snapshotStatus(){
   const hr = dispHR();
@@ -1630,6 +1641,11 @@ function applyRemoteCtrl(c){
   if (c.mediaSeq && c.mediaSeq > remote.lastMedia){
     remote.lastMedia = c.mediaSeq;
     if (c.mediaId) fetchAndShowMedia(c.mediaId, c.mediaName);
+  }
+  // 教師控制台按「關閉影像」：收回學生端影像，畫面回到監視器
+  if (c.mediaCloseSeq && c.mediaCloseSeq > remote.lastMediaClose){
+    remote.lastMediaClose = c.mediaCloseSeq;
+    if (window.closeInvestigation) window.closeInvestigation();
   }
   // 控制台遠端控制 timeline 教案
   if (c.scnSeq && c.scnSeq > remote.lastScn){
@@ -1836,6 +1852,12 @@ async function pushMediaToMonitor(mediaId, name){
   if (!ctrl.code) return;
   await updateDoc(doc(db,SESS,ctrl.code), { "ctrl.mediaSeq": Date.now(), "ctrl.mediaId": mediaId, "ctrl.mediaName": name||"" });
 }
+// 通知監視器關閉影像，學員畫面回到監視器
+async function pushMediaClose(){
+  if (!ctrl.code){ cImgMsg("請先連線監視器"); return; }
+  await updateDoc(doc(db,SESS,ctrl.code), { "ctrl.mediaCloseSeq": Date.now() });
+  cImgMsg("已關閉學生端影像，畫面回到監視器");
+}
 // 上傳影像到媒體庫（jpg/png 壓縮；gif 原樣保留動畫；>900KB 分塊）
 async function uploadImageMedia(file){
   const raw = await readDataURL(file);
@@ -1864,7 +1886,8 @@ async function uploadImageMedia(file){
   }
   return { id: ref.id, name: meta.name, thumb: thumb || (meta.dataUrl||null) };
 }
-$("cImgUploadBtn").onclick = ()=>{ if(!ctrl.code){ cImgMsg("請先連線監視器"); return; } $("cImgFile").click(); };
+// 從相簿選圖／拍照：只加入媒體庫並選取，不立即傳送（由「傳送」鈕送出）
+$("cImgUploadBtn").onclick = ()=>{ $("cImgFile").click(); };
 $("cImgFile").onchange = async (e)=>{
   const f = e.target.files[0]; e.target.value="";
   if (!f) return;
@@ -1876,46 +1899,96 @@ $("cImgFile").onchange = async (e)=>{
   try{
     cImgMsg("處理中…");
     const m = await uploadImageMedia(f);
-    await pushMediaToMonitor(m.id, m.name);
-    cImgMsg("已傳送到監視器 ✓：" + m.name);
-    addImgThumb(m, true);
+    m.kind = (f.type==="image/gif"||/\.gif$/i.test(f.name)) ? "gif" : "image";
+    m.category = "其他";
+    cImgMsg("已加入媒體庫，按下方「傳送」即可送到監視器");
+    cMediaCat = "全部"; renderMediaCats();           // 讓剛上傳的項目一定看得到
+    const el = addImgThumb(m, true);
+    applyMediaCatFilter();
+    selectConsoleMedia(m, el);
   }catch(err){
     console.warn(err);
     cImgMsg("無法讀取此圖片（若是電腦上的 HEIC，請用手機操作，或改存成 jpg/png）");
   }
   finally{ $("cImgUploadBtn").disabled = false; }
 };
+
+// 選取準備傳送的媒體（點縮圖只選取，不傳送）
+let cSelMedia = null, cMediaCat = "全部";
+const C_CATEGORIES = ["超音波","心電圖","X光","電腦斷層","外傷照片","檢驗報告","其他"];
+const C_KIND_BADGE = { video:"影片", audio:"音檔", pdf:"PDF", gif:"GIF" };
+function selectConsoleMedia(m, el){
+  cSelMedia = m;
+  document.querySelectorAll('#cImgGrid > div').forEach(x=> x.style.outline = "none");
+  if (el) el.style.outline = "3px solid #0a84ff";
+  const sel = $("cImgSel"); sel.style.display = "flex";
+  const t = $("cImgSelThumb"); const src = m.thumb || ((m.kind==="image"||m.kind==="gif") ? m.dataUrl : null);
+  if (src){ t.src = src; t.style.visibility="visible"; } else { t.removeAttribute("src"); t.style.visibility="hidden"; }
+  $("cImgSelName").textContent = (m.name||"(未命名)") + (C_KIND_BADGE[m.kind]? "（"+C_KIND_BADGE[m.kind]+"）":"");
+  const b = $("cImgSendBtn"); b.disabled = false; b.style.opacity = "1";
+}
 function addImgThumb(m, prepend){
-  if ($("cImgGrid").querySelector('[data-id="'+m.id+'"]')) return;
+  const exist = $("cImgGrid").querySelector('[data-id="'+m.id+'"]');
+  if (exist) return exist;
+  const kind = m.kind || "image";
   const d = document.createElement("div");
   d.dataset.id = m.id;
-  d.style.cssText = "border:1px solid #3a3a3c;border-radius:8px;overflow:hidden;cursor:pointer;background:#2c2c2e";
-  const src = m.thumb || m.dataUrl;
-  d.innerHTML = src ? `<img src="${src}" style="width:100%;height:56px;object-fit:cover;display:block">` : `<div style="height:56px;display:flex;align-items:center;justify-content:center;font-size:22px">&#x1F5BC;</div>`;
-  d.onclick = async ()=>{
-    if (!ctrl.code){ cImgMsg("請先連線監視器"); return; }
-    d.style.outline = "3px solid #30d158";
-    try{ await pushMediaToMonitor(m.id, m.name); cImgMsg("已傳送 ✓：" + (m.name||"")); }
-    catch(e){ cImgMsg("傳送失敗"); }
-    setTimeout(()=>{ d.style.outline = "none"; }, 800);
-  };
+  d.dataset.cat = m.category || "其他";
+  d.style.cssText = "position:relative;border:1px solid #3a3a3c;border-radius:8px;overflow:hidden;cursor:pointer;background:#2c2c2e";
+  const src = m.thumb || ((kind==="image"||kind==="gif") ? m.dataUrl : null);
+  const icon = kind==="audio"?"\u{1F50A}":kind==="video"?"\u{1F3AC}":kind==="pdf"?"\u{1F4C4}":"\u{1F5BC}";
+  d.innerHTML = src
+    ? `<img src="${src}" style="width:100%;height:56px;object-fit:cover;display:block">`
+    : `<div style="height:56px;display:flex;align-items:center;justify-content:center;font-size:24px">${icon}</div>`;
+  if (C_KIND_BADGE[kind]) d.innerHTML += `<span style="position:absolute;top:3px;left:3px;background:rgba(10,132,255,.92);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:5px">${C_KIND_BADGE[kind]}</span>`;
+  d.onclick = ()=> selectConsoleMedia(m, d);
   if (prepend) $("cImgGrid").prepend(d); else $("cImgGrid").appendChild(d);
+  return d;
+}
+function renderMediaCats(){
+  const box = $("cImgCats"); box.innerHTML = "";
+  ["全部", ...C_CATEGORIES].forEach(c=>{
+    const chip = document.createElement("span");
+    chip.textContent = c;
+    chip.style.cssText = "padding:6px 11px;border-radius:16px;border:1px solid #48484a;font-size:13px;cursor:pointer;"
+      + (cMediaCat===c ? "background:#0a84ff;border-color:#0a84ff;color:#fff" : "color:#ccc");
+    chip.onclick = ()=>{ cMediaCat = c; renderMediaCats(); applyMediaCatFilter(); };
+    box.appendChild(chip);
+  });
+}
+function applyMediaCatFilter(){
+  let n = 0;
+  document.querySelectorAll('#cImgGrid > div').forEach(d=>{
+    const show = cMediaCat==="全部" || (d.dataset.cat||"其他")===cMediaCat;
+    d.style.display = show ? "" : "none";
+    if (show) n++;
+  });
+  $("cImgEmpty").style.display = n ? "none" : "block";
 }
 async function loadImgGrid(){
   if (!db) return;
   try{
     const qs = await getDocs(query(collection(db,MEDIA_COLL), orderBy("created","desc")));
     $("cImgGrid").innerHTML = "";
-    let n = 0;
     qs.forEach(s=>{
       const m = Object.assign({id:s.id}, s.data());
-      const kind = m.kind || "image";
-      if (kind!=="image" && kind!=="gif") return; // 控制台只列圖片
-      n++; addImgThumb(m);
+      m.kind = m.kind || "image";
+      addImgThumb(m);
     });
-    $("cImgEmpty").style.display = n ? "none" : "block";
+    renderMediaCats();
+    applyMediaCatFilter();
   }catch(e){ /* 忽略 */ }
 }
+renderMediaCats();
+$("cImgSendBtn").onclick = async ()=>{
+  if (!cSelMedia){ cImgMsg("請先點選一個媒體"); return; }
+  if (!ctrl.code){ cImgMsg("請先連線監視器"); return; }
+  const b = $("cImgSendBtn"); b.disabled = true;
+  try{ await pushMediaToMonitor(cSelMedia.id, cSelMedia.name); cImgMsg("已傳送到監視器 ✓：" + (cSelMedia.name||"")); }
+  catch(e){ cImgMsg("傳送失敗"); }
+  finally{ b.disabled = false; }
+};
+$("cImgCloseBtn").onclick = ()=> pushMediaClose();
 
 // 情境快速鍵（沿用主程式的 PRESETS，按下立即送出）
 PRESETS.forEach(p=>{

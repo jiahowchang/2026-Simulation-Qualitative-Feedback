@@ -180,6 +180,14 @@
       </div>
       <div id="dropZone">點擊選擇檔案，或將檔案拖曳到這裡<br><span style="font-size:12px">CT、X 光、ECG、超音波短片、檢驗報告 PDF、病人聲音（呼吸音/心音）⋯⋯可推送到學生監視器</span></div>
       <input type="file" id="fileInput" accept="image/jpeg,image/png,image/gif,video/mp4,audio/mpeg,audio/wav,audio/x-wav,application/pdf" multiple style="display:none">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px">
+        <button id="recBtn" style="background:#0a84ff;color:#fff;border:none;padding:10px 16px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">&#x1F3A4; 開始錄音</button>
+        <span id="recTime" style="font-size:14px;color:#ff453a;font-weight:700;font-variant-numeric:tabular-nums;min-width:64px"></span>
+        <audio id="recPreview" controls style="display:none;height:34px;vertical-align:middle"></audio>
+        <button id="recSaveBtn" class="ghost-btn" style="display:none">&#x2B07; 存到媒體庫</button>
+        <button id="recDiscardBtn" class="ghost-btn" style="display:none">捨棄</button>
+      </div>
+      <div style="font-size:12px;color:#999;margin-top:4px">可自行錄製病人聲音（呼吸音 / 心音 / 咳嗽 / 主訴⋯），存檔後即可推送到學生監視器。錄音分類沿用上方「上傳分類」。</div>
       <div id="catFilter" style="display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 4px 0"></div>
       <div id="mediaGrid"></div>
       <div class="muted" id="mediaEmpty" style="display:none">媒體庫是空的，上傳第一個檔案吧</div>
@@ -673,6 +681,76 @@ $("fileInput").onchange = e=>{ uploadFiles([...e.target.files]); e.target.value=
 ["dragover","dragenter"].forEach(t=> $("dropZone").addEventListener(t, e=>{ e.preventDefault(); $("dropZone").classList.add("over"); }));
 ["dragleave","drop"].forEach(t=> $("dropZone").addEventListener(t, e=>{ e.preventDefault(); $("dropZone").classList.remove("over"); }));
 $("dropZone").addEventListener("drop", e=> uploadFiles([...e.dataTransfer.files]));
+
+// ===== 自行錄音 → 存到媒體庫（kind:"audio"）=====
+let mediaRec = null, recChunks = [], recBlob = null, recMime = "", recTimer = null, recStart = 0;
+function recReset(){
+  recBlob = null; recChunks = [];
+  $("recPreview").style.display = "none"; $("recPreview").removeAttribute("src");
+  $("recSaveBtn").style.display = "none"; $("recDiscardBtn").style.display = "none";
+  $("recTime").textContent = "";
+  $("recBtn").innerHTML = "&#x1F3A4; 開始錄音"; $("recBtn").style.background = "#0a84ff";
+}
+async function startRec(){
+  if (!navigator.mediaDevices || !window.MediaRecorder){ toast("此瀏覽器不支援錄音", true); return; }
+  let stream;
+  try{ stream = await navigator.mediaDevices.getUserMedia({audio:true}); }
+  catch(e){ toast("無法取得麥克風權限（請允許麥克風）", true); return; }
+  recChunks = [];
+  const cands = ["audio/mp4","audio/aac","audio/webm;codecs=opus","audio/webm"];  // Safari 取 mp4、Chrome 取 webm
+  const pick = cands.find(t=> window.MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t));
+  try{ mediaRec = pick ? new MediaRecorder(stream, {mimeType:pick}) : new MediaRecorder(stream); }
+  catch(e){ mediaRec = new MediaRecorder(stream); }
+  recMime = mediaRec.mimeType || pick || "audio/webm";
+  mediaRec.ondataavailable = e=>{ if (e.data && e.data.size) recChunks.push(e.data); };
+  mediaRec.onstop = ()=>{
+    stream.getTracks().forEach(t=> t.stop());
+    recBlob = new Blob(recChunks, {type: recMime});
+    $("recPreview").src = URL.createObjectURL(recBlob); $("recPreview").style.display = "inline-block";
+    $("recSaveBtn").style.display = "inline-block"; $("recDiscardBtn").style.display = "inline-block";
+  };
+  mediaRec.start();
+  recStart = Date.now();
+  $("recBtn").innerHTML = "&#x23F9; 停止錄音"; $("recBtn").style.background = "#ff3b30";
+  recTimer = setInterval(()=>{
+    const s = Math.floor((Date.now()-recStart)/1000);
+    $("recTime").textContent = "● " + String(Math.floor(s/60)).padStart(2,"0") + ":" + String(s%60).padStart(2,"0");
+    if (s >= 600) stopRec();   // 最長 10 分鐘
+  }, 250);
+}
+function stopRec(){
+  if (recTimer){ clearInterval(recTimer); recTimer = null; }
+  $("recBtn").innerHTML = "&#x1F3A4; 開始錄音"; $("recBtn").style.background = "#0a84ff";
+  if (mediaRec && mediaRec.state !== "inactive") mediaRec.stop();
+}
+$("recBtn").onclick = ()=>{ if (mediaRec && mediaRec.state==="recording") stopRec(); else startRec(); };
+$("recDiscardBtn").onclick = ()=> recReset();
+$("recSaveBtn").onclick = async ()=>{
+  if (!recBlob) return;
+  if (!db){ toast("Firebase 無法連線", true); return; }
+  $("recSaveBtn").disabled = true;
+  try{
+    const stamp = new Date().toLocaleString("zh-TW",{hour12:false}).replace(/[\/:]/g,"-").replace(/\s+/g,"_");
+    const name = "錄音_" + stamp;
+    upProgress("儲存錄音…");
+    const dataUrl = await readFileAsDataURL(recBlob);
+    const b64 = dataUrl.split(",")[1];
+    const meta = { name, kind:"audio", mime: recMime, category: $("uploadCat").value,
+                   size: recBlob.size, created: Date.now(), thumb:null, chunks:0 };
+    if (dataUrl.length < 900000) meta.dataUrl = dataUrl;
+    else meta.chunks = Math.ceil(b64.length / CHUNK_LEN);
+    const ref = await addDoc(collection(db,MEDIA), meta);
+    for (let i=0;i<meta.chunks;i++){
+      upProgress(`儲存錄音 ${i+1}/${meta.chunks}`);
+      await setDoc(doc(db,CHUNKS, ref.id+"_"+i), { mediaId:ref.id, idx:i, data:b64.slice(i*CHUNK_LEN,(i+1)*CHUNK_LEN) });
+    }
+    addMediaCard(Object.assign({id:ref.id}, meta), true);
+    $("mediaEmpty").style.display = "none";
+    toast("已存到媒體庫："+name);
+    recReset();
+  }catch(e){ console.warn(e); toast("錄音儲存失敗", true); }
+  finally{ $("recSaveBtn").disabled = false; upProgress(null); }
+};
 
 function addMediaCard(m, prepend){
   if ($("mediaGrid").querySelector('[data-id="'+m.id+'"]')) return; // 防止 query 與上傳 race 造成重複
