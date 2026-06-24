@@ -636,6 +636,7 @@
             <option value="irregular">導管位置異常（鋸齒）</option>
             <option value="flat">窒息/無波形</option>
           </select>
+          <div id="iCo2Hint" style="font-size:13px;color:#9fd0ff;background:#0e2030;border-left:3px solid #0a84ff;padding:7px 10px;border-radius:0 8px 8px 0;margin-top:8px;line-height:1.4"></div>
         </div>
       </div>
 
@@ -1362,10 +1363,17 @@ function syncInstUI(){
   el.iTp.value = state.cur.temp.toFixed(1);
   el.iEcg12.value = state.ecg12;
   el.iCo2.value = state.co2morph;
+  updateICo2Hint();
   el.sEcg.checked=state.sensors.ecg; el.sSp.checked=state.sensors.spo2;
   el.sArt.checked=state.sensors.art; el.sEt.checked=state.sensors.etco2; el.sTp.checked=state.sensors.temp;
   instSliderLabels();
 }
+// EtCO2 波形下拉的病態生理/使用時機提示（與教師控制台共用 window.CO2_HINTS）
+function updateICo2Hint(){
+  const box = document.getElementById('iCo2Hint');
+  if (box) box.textContent = (window.CO2_HINTS || {})[el.iCo2.value] || "";
+}
+document.getElementById('iCo2').addEventListener('change', updateICo2Hint);
 function instSliderLabels(){
   el.iHrV.textContent = el.iHr.value+' bpm'; el.iSpV.textContent = el.iSp.value+' %';
   el.iSysV.textContent = el.iSys.value+' mmHg'; el.iDiaV.textContent = el.iDia.value+' mmHg';
@@ -2116,6 +2124,7 @@ const CO2_HINTS = {
   irregular:   "平台呈鋸齒不規則＝氣管內管位置不良，或取樣管路有水 / 分泌物；處置：重新確認管深與聽診、檢查取樣管路。",
   flat:        "平線、無波形＝緊急！管子滑脫/脫接、誤插食道、完全阻塞，或心跳停止（無肺血流）。依 DOPE（脫位/阻塞/氣胸/器械）排查。",
 };
+window.CO2_HINTS = CO2_HINTS;   // 供監視器本機教師面板共用
 function updateCo2Hint(){
   const el = $("cCo2Hint"); if (el) el.textContent = CO2_HINTS[$("cCo2").value] || "";
 }
