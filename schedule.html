@@ -314,7 +314,7 @@
   <!-- ══════════ RIGHT：月曆 ══════════ -->
   <div class="right-col">
     <div class="panel">
-      <div class="panel-title">📅 兩個月月曆</div>
+      <div class="panel-title">📅 預約排程</div>
       <div id="calendarPanel">
         <div class="loading"><div class="loading-spinner"></div>載入中…</div>
       </div>
@@ -553,35 +553,37 @@
   }
 
   /* ══════════ Progress Panel ══════════ */
+  /* 只顯示「已完成」且「尚未全部填寫」的場次（未到的場次不列出，全部填完的也不列出） */
   function renderProgressPanel() {
     var el = document.getElementById('progressPanel');
     var today = new Date(); today.setHours(0,0,0,0);
 
-    var upcoming = progressData.filter(function(s) {
+    var pending = progressData.filter(function(s) {
       var d = parseDate(s.date);
-      return !d || d >= today;
+      if (!d || d >= today) return false;            // 還沒進行的不顯示
+      if (!s.total) return false;                    // 無成員名單的不顯示
+      if (s.filled >= s.total) return false;         // 全部已填的不顯示
+      return true;
     });
-    upcoming.sort(function(a,b){ return (parseDate(a.date) || 0) - (parseDate(b.date) || 0); });
+    // 由近到遠
+    pending.sort(function(a,b){ return (parseDate(b.date) || 0) - (parseDate(a.date) || 0); });
 
-    if (upcoming.length === 0) {
-      el.innerHTML = '<div class="empty" style="padding:20px;">無即將到來場次</div>';
+    if (pending.length === 0) {
+      el.innerHTML = '<div class="empty" style="padding:20px;">🎉 沒有待填寫的場次</div>';
       return;
     }
 
     var html = '';
-    upcoming.forEach(function(s) {
+    pending.forEach(function(s) {
       var pct = s.total > 0 ? Math.round(s.filled / s.total * 100) : 0;
       var unfilled = (s.members || []).filter(function(m) { return !m.filled; }).map(function(m) { return m.name; }).filter(Boolean);
       var dateStr = (s.date || '').slice(5).replace('-', '/') + (s.time ? ' ' + s.time : '');
       html += '<div class="prog-item" onclick="jumpToSession(\'' + esc(s.session_id || '') + '\',\'' + esc(s.date || '') + '\')">' +
         '<div class="prog-group">' + esc(s.group) + '</div>' +
         '<div class="prog-date">' + esc(dateStr) + '</div>' +
-        (s.total > 0
-          ? '<div class="prog-bar-wrap"><div class="prog-bar-fill" style="width:' + pct + '%"></div></div>' +
-            '<div class="prog-stat">' + s.filled + '/' + s.total + ' 已填 (' + pct + '%)</div>' +
-            (unfilled.length ? '<div class="prog-unfilled">⚠️ 未填：' + esc(unfilled.join('、')) + '</div>' : '<div class="prog-stat" style="color:#38a169;">✅ 全部完成</div>')
-          : '<div class="prog-stat" style="color:#a0aec0;">尚無成員名單</div>'
-        ) +
+        '<div class="prog-bar-wrap"><div class="prog-bar-fill" style="width:' + pct + '%"></div></div>' +
+        '<div class="prog-stat">' + s.filled + '/' + s.total + ' 已填 (' + pct + '%)</div>' +
+        (unfilled.length ? '<div class="prog-unfilled">⚠️ 未填：' + esc(unfilled.join('、')) + '</div>' : '') +
       '</div>';
     });
     el.innerHTML = html;
