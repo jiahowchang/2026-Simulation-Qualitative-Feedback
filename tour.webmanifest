@@ -1,0 +1,14 @@
+{
+  "name": "360 臨床情境導覽",
+  "short_name": "360情境",
+  "start_url": "tour.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    { "src": "icons/tour-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icons/tour-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

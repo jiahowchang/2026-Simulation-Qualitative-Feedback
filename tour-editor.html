@@ -119,6 +119,15 @@
 </div>
 <div id="hint">點擊畫面即可在該位置新增熱點；選取熱點後按「📍 移動位置」再點新位置即可搬移</div>
 
+<!-- 教師登入審核閘（與 SimMonitor 後台同一套 sim_users） -->
+<div id="authGate" style="position:fixed;inset:0;background:#0f172a;z-index:300;display:flex;align-items:center;justify-content:center;padding:24px">
+  <div style="text-align:center;max-width:360px;color:#fff">
+    <div style="font-size:44px;margin-bottom:6px">🏥</div>
+    <h1 style="font-size:20px;margin:0 0 4px">360 導覽編輯器</h1>
+    <div id="authBody" style="font-size:14px;color:#9aa7b8;margin-top:10px">檢查登入狀態…</div>
+  </div>
+</div>
+
 <script type="importmap">
 {
   "imports": {
@@ -133,8 +142,10 @@
 import { Viewer } from '@photo-sphere-viewer/core';
 import { MarkersPlugin } from '@photo-sphere-viewer/markers-plugin';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, serverTimestamp }
+import { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey:"AIzaSyBrs80vpFVe-iEh5ctzRWfYHUBb3KGvILo",
@@ -142,9 +153,45 @@ const firebaseConfig = {
   storageBucket:"speech-to-text-2f776.firebasestorage.app",
   messagingSenderId:"283739023798", appId:"1:283739023798:web:3091ec2bcf6262b5ecb917"
 };
-let db=null; try{ db=getFirestore(initializeApp(firebaseConfig)); }catch(e){ console.warn(e); }
+let db=null, auth=null;
+try{ const app=initializeApp(firebaseConfig); db=getFirestore(app); auth=getAuth(app); }catch(e){ console.warn(e); }
 const C_DEFS="tour_defs";
 const $ = id=>document.getElementById(id);
+
+/* ---------- 教師登入審核（與 SimMonitor 共用 sim_users：admin 核准才能編輯） ---------- */
+const USERS="sim_users", ADMIN_EMAIL="jiahowchang@gmail.com";
+async function ensureUserDoc(user){
+  const uref = doc(db, USERS, user.uid);
+  let snap = await getDoc(uref);
+  if(!snap.exists()){
+    const isAdmin = user.email===ADMIN_EMAIL;
+    await setDoc(uref, { email:user.email||"", name:user.displayName||user.email||"", photo:user.photoURL||"",
+      role:isAdmin?"admin":"teacher", approved:isAdmin, created:Date.now(), lastLogin:Date.now() });
+    snap = await getDoc(uref);
+  } else { updateDoc(uref, {lastLogin:Date.now()}).catch(()=>{}); }
+  return snap.data();
+}
+function gateView(html){ $("authBody").innerHTML = html; }
+function hideGate(){ $("authGate").style.display = "none"; }
+if(!auth){ hideGate(); }   // 連不上 auth 時不擋（與 SimMonitor 同策略）
+else onAuthStateChanged(auth, async (user)=>{
+  if(!user){
+    $("authGate").style.display="flex";
+    gateView(`<p style="margin:0 0 18px">編輯教案需教師帳號登入；新帳號需管理員審核（與 SimMonitor 後台同一套帳號）。</p>
+      <button id="agLogin" style="padding:13px 26px;background:#fff;color:#000;border:0;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer">使用 Google 登入</button>
+      <div id="agMsg" style="color:#f59e0b;margin-top:12px;min-height:18px"></div>`);
+    $("agLogin").onclick = async ()=>{ try{ await signInWithPopup(auth, new GoogleAuthProvider()); }catch(e){ $("agMsg").textContent="登入失敗："+(e.code||e.message); } };
+    return;
+  }
+  let approved=false;
+  try{ const u = await ensureUserDoc(user); approved = !!u.approved; }catch(e){}
+  if(approved){ hideGate(); return; }
+  $("authGate").style.display="flex";
+  gateView(`<p style="color:#ffd60a;font-size:16px;margin:0 0 10px">⏳ 你的帳號正在等待管理員審核</p>
+    <p style="margin:0 0 18px">審核通過後重新整理即可使用（管理員在 SimMonitor 後台「使用者管理」核准）。</p>
+    <button id="agLogout" style="padding:10px 18px;border:1px solid #ffffff44;background:none;color:#5ac8fa;border-radius:10px;font-size:14px;cursor:pointer">登出</button>`);
+  $("agLogout").onclick = ()=> signOut(auth);
+});
 
 /* ---------- 資料 ---------- */
 let tour = { id:"", title:"新教案", startSceneId:null, scenes:[] };
