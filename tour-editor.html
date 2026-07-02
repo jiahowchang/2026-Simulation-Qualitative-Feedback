@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>360 導覽編輯器</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core@5/index.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/markers-plugin@5/index.min.css">
+<style>
+  :root{ --accent:#2b7de9; --ink:#1c2733; --line:#e3e8ee; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; height:100%; font-family:-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif; color:var(--ink); }
+  #app{ display:grid; grid-template-columns:340px 1fr; height:100vh; }
+  #side{ border-right:1px solid var(--line); display:flex; flex-direction:column; min-height:0; background:#f7f9fc; }
+  #side header{ padding:12px 14px; border-bottom:1px solid var(--line); background:#fff; }
+  #side header h1{ font-size:16px; margin:0 0 8px; }
+  #side .row{ display:flex; gap:6px; }
+  #side input,#side textarea,#side select{ width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; }
+  #side textarea{ resize:vertical; min-height:56px; }
+  .sect{ padding:12px 14px; border-bottom:1px solid var(--line); }
+  .sect h2{ font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:#6b7885; margin:0 0 8px; }
+  .scroll{ overflow:auto; flex:1; min-height:0; }
+  .btn{ border:0; border-radius:8px; padding:8px 12px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; }
+  .btn.primary{ background:var(--accent); color:#fff; }
+  .btn.ghost{ background:#eef1f5; color:var(--ink); }
+  .btn.danger{ background:#fdecea; color:#c0392b; }
+  .btn.sm{ padding:5px 9px; font-size:12px; }
+  .scene-item,.hs-item{ display:flex; align-items:center; gap:6px; padding:7px 9px; border:1px solid var(--line); border-radius:8px; margin-bottom:6px; background:#fff; cursor:pointer; font-size:13px; }
+  .scene-item.active{ border-color:var(--accent); box-shadow:0 0 0 2px #2b7de933; }
+  .hs-item .tag{ font-size:11px; padding:1px 6px; border-radius:6px; color:#fff; }
+  .tag.nav{ background:#2b7de9; } .tag.info{ background:#8b5cf6; } .tag.quiz{ background:#f59e0b; }
+  .tag.branch{ background:#ec4899; } .tag.hazard{ background:#6b7885; } .tag.media{ background:#0ea5e9; } .tag.action{ background:#14b8a6; }
+  .advbox{ margin-top:10px; border-top:1px dashed var(--line); padding-top:8px; }
+  .advbox summary{ font-size:12px; color:#6b7885; cursor:pointer; }
+  .advbox code{ font-size:11px; }
+  .hs-item .grow{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #viewer{ height:100vh; background:#111; }
+  .field{ margin-bottom:8px; }
+  .field label{ display:block; font-size:12px; color:#6b7885; margin-bottom:3px; }
+  #hint{ position:fixed; top:10px; left:350px; z-index:50; background:#111d; color:#fff; padding:6px 12px; border-radius:8px; font-size:12px; display:none; }
+  .muted{ color:#6b7885; font-size:12px; }
+  .choices .row{ margin-bottom:6px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="side">
+    <header>
+      <h1>360 導覽編輯器</h1>
+      <div class="field">
+        <label>教案 ID（存檔用，英數）</label>
+        <input id="tourId" placeholder="例：ward-safety">
+      </div>
+      <div class="field"><label>教案標題</label><input id="tourTitle" placeholder="課程標題"></div>
+      <div class="row">
+        <button class="btn primary" id="saveBtn">存到雲端</button>
+        <button class="btn ghost" id="loadBtn">讀取</button>
+        <button class="btn ghost" id="exportBtn">匯出</button>
+        <button class="btn ghost" id="importBtn">匯入</button>
+      </div>
+      <input type="file" id="importFile" accept="application/json" hidden>
+      <details style="margin-top:8px">
+        <summary style="font-size:12px;color:#6b7885;cursor:pointer">情境設定（變數 / 通過門檻）</summary>
+        <div class="field" style="margin-top:8px"><label>初始變數（JSON 物件）</label><textarea id="tVars" placeholder='{"handHygiene":false,"gloves":false}'></textarea></div>
+        <div class="field"><label>通過門檻分數（除錯總結用，選填）</label><input id="tPass" type="number" placeholder="例：70"></div>
+      </details>
+    </header>
+
+    <div class="scroll">
+      <div class="sect">
+        <h2>場景</h2>
+        <div id="sceneList"></div>
+        <button class="btn ghost sm" id="addScene">＋ 新增場景</button>
+      </div>
+
+      <div class="sect" id="sceneEdit" style="display:none">
+        <h2>場景設定</h2>
+        <div class="field"><label>場景名稱</label><input id="scName"></div>
+        <div class="field"><label>環景圖網址 / 路徑</label><input id="scPano" placeholder="tours/xxx/scene1.jpg"></div>
+        <div class="muted">提示：把環景照片放進 <code>tours/</code> 資料夾，這裡填相對路徑；或貼完整網址。</div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn ghost sm" id="applyPano">套用/重載</button>
+          <button class="btn danger sm" id="delScene">刪除場景</button>
+        </div>
+      </div>
+
+      <div class="sect" id="hsSect" style="display:none">
+        <h2>熱點（點畫面新增）</h2>
+        <div id="hsList"></div>
+      </div>
+
+      <div class="sect" id="hsEdit" style="display:none">
+        <h2>熱點設定</h2>
+        <div class="field"><label>類型</label>
+          <select id="fType">
+            <option value="nav">場景跳轉 (nav)</option>
+            <option value="info">資訊 (info)</option>
+            <option value="quiz">測驗 (quiz)</option>
+            <option value="branch">分支情境 (branch)</option>
+            <option value="hazard">找危害 (hazard)</option>
+            <option value="media">媒體 (media：影像/影片/音檔/PDF)</option>
+            <option value="action">動作 (action：只跑動作)</option>
+          </select>
+        </div>
+        <div id="typeFields"></div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn ghost sm" id="saveHs">更新</button>
+          <button class="btn danger sm" id="delHs">刪除熱點</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewer"></div>
+</div>
+<div id="hint">點擊畫面即可在該位置新增熱點</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+    "@photo-sphere-viewer/core": "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core@5/index.module.js",
+    "@photo-sphere-viewer/markers-plugin": "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/markers-plugin@5/index.module.js"
+  }
+}
+</script>
+
+<script type="module">
+import { Viewer } from '@photo-sphere-viewer/core';
+import { MarkersPlugin } from '@photo-sphere-viewer/markers-plugin';
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey:"AIzaSyBrs80vpFVe-iEh5ctzRWfYHUBb3KGvILo",
+  authDomain:"speech-to-text-2f776.firebaseapp.com", projectId:"speech-to-text-2f776",
+  storageBucket:"speech-to-text-2f776.firebasestorage.app",
+  messagingSenderId:"283739023798", appId:"1:283739023798:web:3091ec2bcf6262b5ecb917"
+};
+let db=null; try{ db=getFirestore(initializeApp(firebaseConfig)); }catch(e){ console.warn(e); }
+const C_DEFS="tour_defs";
+const $ = id=>document.getElementById(id);
+
+/* ---------- 資料 ---------- */
+let tour = { id:"", title:"新教案", startSceneId:null, scenes:[] };
+let curScene=null, curHs=null;
+const DEMO_PANO="https://photo-sphere-viewer-data.netlify.app/assets/sphere.jpg";
+let seq=1; const nid=p=>`${p}${seq++}`;
+
+/* ---------- Viewer ---------- */
+let viewer, markers;
+function initViewer(pano){
+  viewer = new Viewer({ container:$("viewer"), panorama:pano||DEMO_PANO,
+    navbar:["zoom","move","fullscreen"], plugins:[[MarkersPlugin,{}]] });
+  markers = viewer.getPlugin(MarkersPlugin);
+  viewer.addEventListener("click", ({ data }) => {
+    if(!curScene || !data) return;
+    addHotspot(data.yaw, data.pitch);
+  });
+  markers.addEventListener("select-marker", ({ marker }) => selectHs(marker.id));
+}
+function iconFor(t){ return {nav:"➜",info:"ℹ️",quiz:"❓",branch:"⤢",hazard:"⚠️",media:"📎",action:"⚙️"}[t]||"•"; }
+function drawMarkers(){
+  if(!markers || !curScene) return;
+  markers.setMarkers((curScene.hotspots||[]).map(h=>({
+    id:h.id, position:{yaw:h.yaw,pitch:h.pitch},
+    html:`<div style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid #fff;background:${bg(h.type)};box-shadow:0 2px 6px #0007;cursor:pointer;font-size:18px">${iconFor(h.type)}</div>`,
+    size:{width:34,height:34}, anchor:"center center",
+    tooltip:h.label||h.title||h.question||h.type, data:{}
+  })));
+}
+function bg(t){ return {nav:"#2b7de9cc",info:"#8b5cf6cc",quiz:"#f59e0bcc",branch:"#ec4899cc",hazard:"#6b7885cc",media:"#0ea5e9cc",action:"#14b8a6cc"}[t]||"#333c"; }
+
+/* ---------- 場景 ---------- */
+function addSceneObj(){
+  const s={ id:nid("scene"), name:`場景${tour.scenes.length+1}`, panorama:DEMO_PANO, initialView:{yaw:0,pitch:0}, hotspots:[] };
+  tour.scenes.push(s); if(!tour.startSceneId) tour.startSceneId=s.id;
+  selectScene(s); renderSceneList();
+}
+function selectScene(s){
+  curScene=s; curHs=null;
+  $("sceneEdit").style.display="block"; $("hsSect").style.display="block"; $("hsEdit").style.display="none"; $("hint").style.display="block";
+  $("scName").value=s.name||""; $("scPano").value=s.panorama||"";
+  if(!viewer) initViewer(s.panorama); else viewer.setPanorama(s.panorama||DEMO_PANO).then(drawMarkers);
+  if(viewer && viewer.state?.ready) drawMarkers();
+  renderSceneList(); renderHsList();
+}
+function renderSceneList(){
+  $("sceneList").innerHTML="";
+  tour.scenes.forEach(s=>{
+    const d=document.createElement("div"); d.className="scene-item"+(s===curScene?" active":"");
+    d.innerHTML=`<span class="grow">${s.name||s.id}</span>${s.id===tour.startSceneId?'<span class="muted">起始</span>':''}`;
+    d.onclick=()=>selectScene(s); $("sceneList").appendChild(d);
+  });
+}
+$("addScene").onclick=addSceneObj;
+$("scName").oninput=e=>{ if(curScene){ curScene.name=e.target.value; renderSceneList(); } };
+$("applyPano").onclick=()=>{ if(!curScene) return; curScene.panorama=$("scPano").value.trim(); viewer.setPanorama(curScene.panorama||DEMO_PANO).then(drawMarkers); };
+$("delScene").onclick=()=>{
+  if(!curScene) return; if(!confirm("刪除此場景？")) return;
+  tour.scenes=tour.scenes.filter(s=>s!==curScene);
+  if(tour.startSceneId===curScene.id) tour.startSceneId=tour.scenes[0]?.id||null;
+  curScene=null; $("sceneEdit").style.display="none"; $("hsSect").style.display="none"; $("hsEdit").style.display="none";
+  renderSceneList();
+};
+
+/* ---------- 熱點 ---------- */
+function addHotspot(yaw,pitch){
+  const h={ id:nid("h"), type:"info", yaw, pitch, title:"新熱點", html:"" };
+  curScene.hotspots.push(h); drawMarkers(); renderHsList(); selectHs(h.id);
+}
+function renderHsList(){
+  $("hsList").innerHTML="";
+  (curScene?.hotspots||[]).forEach(h=>{
+    const d=document.createElement("div"); d.className="hs-item"+(h===curHs?" active":"");
+    d.innerHTML=`<span class="tag ${h.type}">${h.type}</span><span class="grow">${h.label||h.title||h.question||h.id}</span>`;
+    d.onclick=()=>selectHs(h.id); $("hsList").appendChild(d);
+  });
+}
+function selectHs(id){
+  curHs=curScene.hotspots.find(h=>h.id===id); if(!curHs) return;
+  $("hsEdit").style.display="block"; $("fType").value=curHs.type; renderTypeFields(); renderHsList();
+}
+$("fType").onchange=()=>{ curHs.type=$("fType").value; renderTypeFields(); drawMarkers(); renderHsList(); };
+
+function field(label,html){ return `<div class="field"><label>${label}</label>${html}</div>`; }
+function parseVal(v){ v=(v==null?"":String(v)).trim(); if(v==="true")return true; if(v==="false")return false; if(v!==""&&!isNaN(+v))return +v; return v; }
+function renderTypeFields(){
+  const h=curHs, sceneOpts=tour.scenes.map(s=>`<option value="${s.id}">${s.name||s.id}</option>`).join("");
+  let html="";
+  if(h.type==="nav"){
+    html+=field("跳轉到場景",`<select id="f_target">${sceneOpts}</select>`);
+    html+=field("標籤（滑過顯示）",`<input id="f_label" value="${h.label||""}">`);
+  } else if(h.type==="info"){
+    html+=field("標題",`<input id="f_title" value="${h.title||""}">`);
+    html+=field("內容 (可含 HTML)",`<textarea id="f_html">${h.html||""}</textarea>`);
+    html+=field("圖片網址 (選填)",`<input id="f_image" value="${h.image||""}">`);
+    html+=field("影片網址 (選填)",`<input id="f_video" value="${h.video||""}">`);
+  } else if(h.type==="quiz"){
+    html+=field("題目 (可含 HTML)",`<textarea id="f_question">${h.question||""}</textarea>`);
+    const opts=(h.options||["",""]).map((o,i)=>`<div class="row"><input class="q_opt" value="${o.replace(/"/g,'&quot;')}" placeholder="選項${i+1}"></div>`).join("");
+    html+=field("選項",`<div id="q_opts">${opts}</div><button class="btn ghost sm" id="addOpt" type="button">＋選項</button>`);
+    html+=field("正確答案（第幾個，從1起）",`<input id="f_answer" type="number" min="1" value="${(h.answerIndex??0)+1}">`);
+    html+=field("答題回饋",`<textarea id="f_feedback">${h.feedback||""}</textarea>`);
+    html+=field("分數",`<input id="f_points" type="number" value="${h.points??10}">`);
+  } else if(h.type==="branch"){
+    html+=field("情境問句",`<textarea id="f_question">${h.question||""}</textarea>`);
+    const ch=(h.choices||[{label:"",targetSceneId:""}]).map((c,i)=>
+      `<div class="row"><input class="b_label" value="${(c.label||"").replace(/"/g,'&quot;')}" placeholder="選項${i+1}"><select class="b_target">${tour.scenes.map(s=>`<option value="${s.id}" ${s.id===c.targetSceneId?"selected":""}>${s.name||s.id}</option>`).join("")}</select></div>`).join("");
+    html+=field("選項 → 前往場景",`<div class="choices" id="b_choices">${ch}</div><button class="btn ghost sm" id="addChoice" type="button">＋選項</button>`);
+  } else if(h.type==="hazard"){
+    html+=field("危害描述",`<input id="f_label" value="${h.label||""}">`);
+    html+=field("分數",`<input id="f_points" type="number" value="${h.points??5}">`);
+  } else if(h.type==="media"){
+    const m=h.media||{};
+    html+=field("標籤（滑過顯示）",`<input id="f_label" value="${(h.label||"").replace(/"/g,'&quot;')}">`);
+    html+=field("媒體類型",`<select id="f_mkind">${["image","video","audio","pdf"].map(k=>`<option value="${k}" ${(m.kind||"image")===k?"selected":""}>${k}</option>`).join("")}</select>`);
+    html+=field("媒體網址 / 路徑",`<input id="f_murl" value="${(m.url||"").replace(/"/g,'&quot;')}" placeholder="tours/x/ecg.jpg 或完整網址">`);
+    html+=field("彈窗標題",`<input id="f_mtitle" value="${(m.title||"").replace(/"/g,'&quot;')}">`);
+    html+=field("說明文字 (選填)",`<textarea id="f_mcaption">${m.caption||""}</textarea>`);
+  } else if(h.type==="action"){
+    html+=field("標籤（滑過顯示）",`<input id="f_label" value="${(h.label||"").replace(/"/g,'&quot;')}">`);
+    html+=`<div class="muted">動作型熱點只執行下方「進階」的動作序列（例如設定變數、顯示其他熱點、加分）。</div>`;
+  }
+  // 進階（擬真）：所有型別共用 —— 起始隱藏 / 條件顯示 / 動作序列
+  const cond = h.showIf ? Object.entries(h.showIf)[0]||["",""] : ["",""];
+  html+=`<details class="advbox" ${(h.startHidden||h.showIf||h.onSelect)?"open":""}>
+    <summary>進階（擬真）：條件顯示 / 動作序列</summary>
+    <div class="field" style="margin-top:8px"><label><input type="checkbox" id="f_hidden" ${h.startHidden?"checked":""}> 起始隱藏（被動作 reveal 才出現）</label></div>
+    ${field("條件顯示 showIf（變數＝值才顯示）",`<div class="row"><input id="f_condk" value="${(cond[0]||"").replace(/"/g,'&quot;')}" placeholder="變數名 如 handHygiene"><input id="f_condv" value="${cond[1]===undefined?"":String(cond[1])}" placeholder="值 如 true"></div>`)}
+    ${field("動作序列 onSelect（JSON 陣列）",`<textarea id="f_onselect" placeholder='[{"do":"setVar","name":"gloves","value":true},{"do":"reveal","id":"h9"},{"do":"addScore","points":10}]'>${h.onSelect?JSON.stringify(h.onSelect,null,1):""}</textarea>`)}
+    <div class="muted">動作：setVar(name,value) / addScore(points) / reveal(id) / hide(id) / goto(id) / media(kind,url,title) / toast(msg) / finish</div>
+  </details>`;
+  $("typeFields").innerHTML=html;
+  if(h.type==="quiz") $("addOpt").onclick=()=>{ const d=document.createElement("div"); d.className="row"; d.innerHTML=`<input class="q_opt" placeholder="新選項">`; $("q_opts").appendChild(d); };
+  if(h.type==="branch") $("addChoice").onclick=()=>{ const d=document.createElement("div"); d.className="row"; d.innerHTML=`<input class="b_label" placeholder="新選項"><select class="b_target">${tour.scenes.map(s=>`<option value="${s.id}">${s.name||s.id}</option>`).join("")}</select>`; $("b_choices").appendChild(d); };
+}
+$("saveHs").onclick=()=>{
+  const h=curHs, g=id=>$(id)?.value;
+  if(h.type==="nav"){ h.target=undefined; h.targetSceneId=g("f_target"); h.label=g("f_label"); }
+  else if(h.type==="info"){ h.title=g("f_title"); h.html=g("f_html"); h.image=g("f_image"); h.video=g("f_video"); }
+  else if(h.type==="quiz"){ h.question=g("f_question"); h.options=[...document.querySelectorAll(".q_opt")].map(i=>i.value).filter(v=>v!==""); h.answerIndex=Math.max(0,(+g("f_answer")||1)-1); h.feedback=g("f_feedback"); h.points=+g("f_points")||10; }
+  else if(h.type==="branch"){ h.question=g("f_question"); const labels=[...document.querySelectorAll(".b_label")], targets=[...document.querySelectorAll(".b_target")]; h.choices=labels.map((l,i)=>({label:l.value,targetSceneId:targets[i].value})).filter(c=>c.label!==""); }
+  else if(h.type==="hazard"){ h.label=g("f_label"); h.points=+g("f_points")||5; }
+  else if(h.type==="media"){ h.label=g("f_label"); h.media={ kind:g("f_mkind"), url:(g("f_murl")||"").trim(), title:g("f_mtitle"), caption:g("f_mcaption") }; }
+  else if(h.type==="action"){ h.label=g("f_label"); }
+  // 進階（擬真）共用欄位
+  h.startHidden = !!$("f_hidden")?.checked;
+  const ck=(g("f_condk")||"").trim();
+  if(ck){ h.showIf = { [ck]: parseVal(g("f_condv")) }; } else { delete h.showIf; }
+  const os=(g("f_onselect")||"").trim();
+  if(os){ try{ h.onSelect = JSON.parse(os); }catch(e){ alert("動作序列 JSON 格式錯誤，未儲存該欄位："+e.message); } }
+  else { delete h.onSelect; }
+  drawMarkers(); renderHsList(); alert("已更新（記得按『存到雲端』儲存整份教案）");
+};
+$("delHs").onclick=()=>{ if(!confirm("刪除此熱點？")) return; curScene.hotspots=curScene.hotspots.filter(h=>h!==curHs); curHs=null; $("hsEdit").style.display="none"; drawMarkers(); renderHsList(); };
+
+/* ---------- 存 / 讀 / 匯出入 ---------- */
+$("tourTitle").oninput=e=>tour.title=e.target.value;
+$("saveBtn").onclick=async()=>{
+  const id=($("tourId").value||"").trim().replace(/[^a-zA-Z0-9_-]/g,"-");
+  if(!id){ alert("請先填教案 ID"); return; }
+  if(!db){ alert("Firebase 未連線"); return; }
+  tour.id=id; tour.title=$("tourTitle").value||tour.title;
+  // 情境設定：變數 + 通過門檻
+  const vt=($("tVars").value||"").trim();
+  if(vt){ try{ tour.variables=JSON.parse(vt); }catch(e){ alert("初始變數 JSON 格式錯誤"); return; } } else { delete tour.variables; }
+  const ps=($("tPass").value||"").trim();
+  if(ps!==""){ tour.debrief=Object.assign({}, tour.debrief, { passScore:+ps }); } else if(tour.debrief){ delete tour.debrief.passScore; }
+  try{ await setDoc(doc(db,C_DEFS,id),{ ...tour, updatedAt:serverTimestamp() });
+    alert(`已存到雲端！\n學員連結： tour.html?tour=${id}`); }
+  catch(e){ alert("存檔失敗："+e.message); }
+};
+$("loadBtn").onclick=async()=>{
+  const id=prompt("輸入要讀取的教案 ID："); if(!id||!db) return;
+  try{ const s=await getDoc(doc(db,C_DEFS,id.trim()));
+    if(!s.exists()){ alert("找不到"); return; }
+    loadTourObj(s.data());
+  }catch(e){ alert("讀取失敗："+e.message); }
+};
+$("exportBtn").onclick=()=>{
+  const blob=new Blob([JSON.stringify(tour,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=(tour.id||"tour")+".json"; a.click();
+};
+$("importBtn").onclick=()=>$("importFile").click();
+$("importFile").onchange=e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ loadTourObj(JSON.parse(r.result)); }catch(err){ alert("JSON 解析失敗"); } }; r.readAsText(f); };
+
+function loadTourObj(t){
+  tour=t; if(typeof tour.scenes==="string") tour.scenes=JSON.parse(tour.scenes);
+  $("tourId").value=tour.id||""; $("tourTitle").value=tour.title||"";
+  $("tVars").value = tour.variables ? JSON.stringify(tour.variables) : "";
+  $("tPass").value = tour.debrief?.passScore ?? "";
+  // 重算 seq 避免 id 衝突
+  let max=1; tour.scenes.forEach(s=>{ (s.hotspots||[]).forEach(()=>{}); });
+  renderSceneList(); if(tour.scenes[0]) selectScene(tour.scenes[0]);
+}
+
+/* ---------- 啟動 ---------- */
+initViewer(DEMO_PANO);
+addSceneObj();
+</script>
+</body>
+</html>

@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>360 情境導覽</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core@5/index.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/markers-plugin@5/index.min.css">
+<style>
+  :root{ --accent:#2b7de9; --ok:#22a06b; --bad:#e0533d; --ink:#1c2733; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; height:100%; font-family:-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif; color:var(--ink); background:#000; overflow:hidden; }
+  #viewer{ width:100vw; height:100vh; }
+
+  /* 頂部資訊列 */
+  #topbar{ position:fixed; top:0; left:0; right:0; z-index:30; display:flex; align-items:center; gap:12px;
+    padding:10px 14px; background:linear-gradient(#000a,#0000); color:#fff; pointer-events:none; }
+  #topbar .title{ font-weight:700; font-size:16px; text-shadow:0 1px 3px #000; }
+  #topbar .scene{ font-size:13px; opacity:.85; text-shadow:0 1px 3px #000; }
+  #score{ margin-left:auto; background:#0008; border:1px solid #fff3; border-radius:20px;
+    padding:6px 14px; font-size:14px; font-weight:600; pointer-events:auto; }
+  #score b{ color:#ffd76a; }
+
+  /* 場景清單（左下） */
+  #scenes{ position:fixed; left:12px; bottom:12px; z-index:30; display:flex; gap:8px; flex-wrap:wrap; max-width:60vw; }
+  #scenes button{ background:#000a; color:#fff; border:1px solid #fff4; border-radius:8px;
+    padding:6px 12px; font-size:13px; cursor:pointer; backdrop-filter:blur(4px); }
+  #scenes button.active{ background:var(--accent); border-color:var(--accent); }
+
+  /* 找危害進度（右下） */
+  #hazardbar{ position:fixed; right:12px; bottom:12px; z-index:30; background:#000a; color:#fff;
+    border:1px solid #fff3; border-radius:10px; padding:8px 14px; font-size:13px; display:none; }
+  #hazardbar b{ color:var(--ok); }
+
+  /* 熱點外觀 */
+  .hs{ width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:20px; cursor:pointer; border:2px solid #fff; box-shadow:0 2px 8px #0007;
+    transition:transform .15s; animation:pulse 2s infinite; }
+  .hs:hover{ transform:scale(1.15); }
+  .hs.nav{ background:#2b7de9cc; }
+  .hs.info{ background:#8b5cf6cc; }
+  .hs.quiz{ background:#f59e0bcc; }
+  .hs.branch{ background:#ec4899cc; }
+  .hs.hazard{ background:#ffffff33; border-style:dashed; }
+  .hs.media{ background:#0ea5e9cc; }
+  .hs.action{ background:#14b8a6cc; }
+  .hs.found{ background:var(--ok); animation:none; }
+  @keyframes pulse{ 0%{ box-shadow:0 0 0 0 #ffffff88; } 70%{ box-shadow:0 0 0 12px #ffffff00; } 100%{ box-shadow:0 0 0 0 #ffffff00; } }
+
+  /* 彈窗 */
+  #modal{ position:fixed; inset:0; z-index:60; background:#0009; display:none; align-items:center; justify-content:center; padding:20px; }
+  #modal.show{ display:flex; }
+  .card{ background:#fff; border-radius:16px; max-width:520px; width:100%; max-height:86vh; overflow:auto; box-shadow:0 20px 60px #000a; }
+  .card .head{ padding:16px 20px; border-bottom:1px solid #eee; font-weight:700; font-size:17px; display:flex; align-items:center; gap:8px; }
+  .card .body{ padding:20px; font-size:15px; line-height:1.7; }
+  .card .body img,.card .body video{ max-width:100%; border-radius:10px; margin:10px 0; }
+  .card .body iframe{ width:100%; height:60vh; border:0; border-radius:10px; margin:10px 0; background:#fff; }
+  .card .body audio{ width:100%; margin:10px 0; }
+  .card .foot{ padding:14px 20px; border-top:1px solid #eee; display:flex; gap:10px; justify-content:flex-end; }
+  .btn{ border:0; border-radius:10px; padding:10px 18px; font-size:15px; font-weight:600; cursor:pointer; }
+  .btn.primary{ background:var(--accent); color:#fff; }
+  .btn.ghost{ background:#eef1f5; color:var(--ink); }
+  .opt{ display:block; width:100%; text-align:left; margin:8px 0; padding:12px 14px; border:2px solid #e3e8ee;
+    background:#fff; border-radius:10px; font-size:15px; cursor:pointer; }
+  .opt:hover{ border-color:var(--accent); }
+  .opt.correct{ border-color:var(--ok); background:#eafaf2; }
+  .opt.wrong{ border-color:var(--bad); background:#fdecea; }
+  .feedback{ margin-top:12px; padding:12px 14px; border-radius:10px; font-size:14px; }
+  .feedback.ok{ background:#eafaf2; color:#146c47; }
+  .feedback.bad{ background:#fdecea; color:#a32a17; }
+
+  /* 開場輸入 */
+  #gate{ position:fixed; inset:0; z-index:80; background:#0f172a; color:#fff; display:flex; align-items:center; justify-content:center; }
+  #gate .box{ text-align:center; max-width:360px; padding:24px; }
+  #gate h1{ font-size:22px; margin:0 0 6px; }
+  #gate p{ opacity:.8; font-size:14px; margin:0 0 20px; }
+  #gate input{ width:100%; padding:12px 14px; border-radius:10px; border:1px solid #ffffff33; background:#ffffff14; color:#fff; font-size:16px; text-align:center; }
+  #gate button{ margin-top:14px; width:100%; }
+  #toast{ position:fixed; bottom:70px; left:50%; transform:translateX(-50%); z-index:90; background:#111d; color:#fff; padding:10px 18px; border-radius:20px; font-size:14px; opacity:0; transition:opacity .3s; pointer-events:none; }
+  #toast.show{ opacity:1; }
+  #finishBtn{ background:#0008; border:1px solid #fff3; color:#fff; border-radius:20px; padding:6px 14px; font-size:14px; font-weight:600; cursor:pointer; pointer-events:auto; margin-left:8px; }
+
+  /* 除錯總結畫面 */
+  #debrief{ position:fixed; inset:0; z-index:70; background:#0f172a; color:#fff; display:none; align-items:center; justify-content:center; padding:20px; overflow:auto; }
+  #debrief.show{ display:flex; }
+  #debrief .dcard{ background:#111827; border:1px solid #ffffff1a; border-radius:16px; max-width:520px; width:100%; padding:24px; }
+  #debrief h2{ margin:0 0 4px; font-size:22px; }
+  #debrief .big{ font-size:46px; font-weight:800; margin:6px 0 2px; }
+  #debrief .pass{ color:#22c55e; } #debrief .fail{ color:#f87171; }
+  #debrief .verdict{ font-size:15px; opacity:.85; margin-bottom:14px; }
+  #debrief .stat{ display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid #ffffff14; font-size:15px; }
+  #debrief .stat b{ font-variant-numeric:tabular-nums; }
+  #debrief .mist{ margin:14px 0 0; padding:0 0 0 2px; list-style:none; font-size:14px; }
+  #debrief .mist li{ margin:6px 0; color:#fca5a5; }
+  #debrief .mist li.okitem{ color:#86efac; }
+  #debrief .foot{ margin-top:18px; display:flex; gap:10px; }
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="box">
+    <h1 id="gateTitle">360 情境導覽</h1>
+    <p>請輸入你的姓名或學號開始</p>
+    <input id="gateName" placeholder="姓名 / 學號" autocomplete="off">
+    <button class="btn primary" id="gateStart">開始</button>
+  </div>
+</div>
+
+<div id="viewer"></div>
+
+<div id="topbar">
+  <div>
+    <div class="title" id="tTitle">—</div>
+    <div class="scene" id="tScene">—</div>
+  </div>
+  <div id="score">得分 <b id="scoreVal">0</b></div>
+  <button id="finishBtn">結束情境</button>
+</div>
+
+<div id="scenes"></div>
+<div id="hazardbar">找出危害 <b id="hzFound">0</b> / <span id="hzTotal">0</span></div>
+
+<div id="modal"><div class="card">
+  <div class="head" id="mHead">標題</div>
+  <div class="body" id="mBody"></div>
+  <div class="foot" id="mFoot"></div>
+</div></div>
+
+<div id="toast"></div>
+
+<div id="debrief"><div class="dcard" id="debriefBody"></div></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+    "@photo-sphere-viewer/core": "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core@5/index.module.js",
+    "@photo-sphere-viewer/markers-plugin": "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/markers-plugin@5/index.module.js"
+  }
+}
+</script>
+
+<script type="module">
+import { Viewer } from '@photo-sphere-viewer/core';
+import { MarkersPlugin } from '@photo-sphere-viewer/markers-plugin';
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, addDoc, collection, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* ---------- Firebase（沿用現有專案，新增獨立集合） ---------- */
+const firebaseConfig = {
+  apiKey:"AIzaSyBrs80vpFVe-iEh5ctzRWfYHUBb3KGvILo",
+  authDomain:"speech-to-text-2f776.firebaseapp.com",
+  projectId:"speech-to-text-2f776",
+  storageBucket:"speech-to-text-2f776.firebasestorage.app",
+  messagingSenderId:"283739023798",
+  appId:"1:283739023798:web:3091ec2bcf6262b5ecb917"
+};
+let db = null;
+try { db = getFirestore(initializeApp(firebaseConfig)); } catch(e){ console.warn("Firebase init failed", e); }
+const C_DEFS="tour_defs", C_PROG="tour_progress", C_EVT="tour_events";
+
+/* ---------- 內建 Demo 教案（無 ?tour= 時使用；用公開測試環景） ---------- */
+const DEMO = {
+  id:"demo", title:"病房安全查核（Demo）",
+  startSceneId:"room1",
+  variables:{ handHygiene:false },
+  debrief:{ passScore:20, showMistakes:true },
+  scenes:[
+    { id:"room1", name:"病室入口",
+      panorama:"https://photo-sphere-viewer-data.netlify.app/assets/sphere.jpg",
+      initialView:{ yaw:0, pitch:0 },
+      hotspots:[
+        { id:"h1", type:"action", yaw:0.3, pitch:-0.1, label:"執行手部衛生",
+          onSelect:[
+            { do:"setVar", name:"handHygiene", value:true },
+            { do:"addScore", points:5 },
+            { do:"reveal", id:"h_touch" },
+            { do:"toast", msg:"已完成手部衛生，可接觸病人" }
+          ] },
+        { id:"h_touch", type:"info", yaw:0.9, pitch:-0.15, startHidden:true, title:"接觸病人",
+          html:"手部衛生完成後才可接觸病人。此熱點洗手後才出現。" },
+        { id:"h_media", type:"media", yaw:-1.9, pitch:-0.1, label:"查看胸部 X 光",
+          media:{ kind:"image", title:"胸部 X 光", url:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Chest_Xray_PA_3-8-2010.png/640px-Chest_Xray_PA_3-8-2010.png", caption:"正常胸部 X 光。" } },
+        { id:"h2", type:"quiz", yaw:-0.6, pitch:0.05, points:10,
+          question:"執行手部衛生的五個時機，下列何者<b>不</b>包含？",
+          options:["接觸病人前","無菌操作前","接觸病人後","交班寫紀錄前"],
+          answerIndex:3, feedback:"WHO 五時機：接觸病人前後、無菌操作前、體液暴露後、接觸病人周遭環境後。" },
+        { id:"h3", type:"hazard", yaw:1.4, pitch:-0.3, points:5,
+          label:"地面濕滑未放警示牌" },
+        { id:"h4", type:"branch", yaw:2.4, pitch:0.0,
+          question:"病人主訴胸悶，你先做什麼？",
+          choices:[
+            { label:"立即評估生命徵象", targetSceneId:"room2" },
+            { label:"先去找醫師", targetSceneId:"room1" }
+          ] },
+        { id:"nav1", type:"nav", yaw:3.0, pitch:-0.1, targetSceneId:"room2", label:"走到床邊" }
+      ] },
+    { id:"room2", name:"床邊",
+      panorama:"https://photo-sphere-viewer-data.netlify.app/assets/sphere-test.jpg",
+      initialView:{ yaw:0, pitch:0 },
+      hotspots:[
+        { id:"h5", type:"info", yaw:0.2, pitch:0.0, title:"床邊監視器",
+          html:"確認導程與警報上下限設定是否正確。" },
+        { id:"h6", type:"hazard", yaw:-1.2, pitch:-0.2, points:5, label:"床欄未拉起" },
+        { id:"nav2", type:"nav", yaw:3.0, pitch:0.0, targetSceneId:"room1", label:"返回入口" }
+      ] }
+  ]
+};
+
+/* ---------- 狀態 ---------- */
+let tour = DEMO, student="", curScene=null, score=0, startTime=0;
+const done = new Set();           // 已完成/已作答的熱點 id
+const foundHazards = new Set();    // 已找到的危害 id
+let vars = {};                     // 擬真情境變數（洗手了嗎、戴手套了嗎…）
+const revealed = new Set();        // 被動作顯示出來的熱點 id
+const hiddenSet = new Set();       // 被動作隱藏的熱點 id
+const mistakes = [];               // 錯誤紀錄（除錯總結用）
+let quizTotal=0, quizCorrect=0;
+const $ = id => document.getElementById(id);
+function condMatch(cond){ return Object.keys(cond||{}).every(k => vars[k] === cond[k]); }
+function hsVisible(h){
+  if(hiddenSet.has(h.id)) return false;
+  if(h.startHidden && !revealed.has(h.id)) return false;
+  if(h.showIf && !condMatch(h.showIf)) return false;
+  return true;
+}
+
+/* ---------- 進度儲存（獨立集合，不動現有資料） ---------- */
+const progressId = () => `${tour.id}__${student}`.replace(/[^a-zA-Z0-9_一-鿿-]/g,"_");
+async function saveProgress(){
+  if(!db) return;
+  try{
+    await setDoc(doc(db, C_PROG, progressId()), {
+      tourId:tour.id, student, score,
+      done:[...done], foundHazards:[...foundHazards], curScene,
+      vars, revealed:[...revealed], hiddenSet:[...hiddenSet], quizTotal, quizCorrect,
+      updatedAt: serverTimestamp()
+    }, { merge:true });
+  }catch(e){ console.warn("saveProgress", e); }
+}
+async function logEvent(type, data){
+  if(!db) return;
+  try{ await addDoc(collection(db, C_EVT), { tourId:tour.id, student, type, data, at:serverTimestamp() }); }
+  catch(e){ console.warn("logEvent", e); }
+}
+async function loadProgress(){
+  if(!db) return;
+  try{
+    const s = await getDoc(doc(db, C_PROG, progressId()));
+    if(s.exists()){
+      const d = s.data();
+      score = d.score||0; (d.done||[]).forEach(x=>done.add(x)); (d.foundHazards||[]).forEach(x=>foundHazards.add(x));
+      if(d.vars) vars = Object.assign(vars, d.vars);
+      (d.revealed||[]).forEach(x=>revealed.add(x)); (d.hiddenSet||[]).forEach(x=>hiddenSet.add(x));
+      quizTotal=d.quizTotal||0; quizCorrect=d.quizCorrect||0;
+      $("scoreVal").textContent = score;
+      return d.curScene;
+    }
+  }catch(e){ console.warn("loadProgress", e); }
+}
+
+/* ---------- Viewer ---------- */
+let viewer, markers;
+function initViewer(scene){
+  viewer = new Viewer({
+    container: $("viewer"),
+    panorama: scene.panorama,
+    defaultYaw: scene.initialView?.yaw||0,
+    defaultPitch: scene.initialView?.pitch||0,
+    navbar: ["zoom","move","fullscreen"],
+    plugins: [[MarkersPlugin, {}]]
+  });
+  markers = viewer.getPlugin(MarkersPlugin);
+  markers.addEventListener("select-marker", ({ marker }) => onHotspot(marker.data));
+}
+
+function curSceneObj(){ return tour.scenes.find(s=>s.id===curScene); }
+function iconFor(t){ return {nav:"➜",info:"ℹ️",quiz:"❓",branch:"⤢",hazard:"⚠️",media:"📎",action:"⚙️"}[t]||"•"; }
+
+// 只重畫熱點（不重載環景），變數改變 / 顯示隱藏熱點時使用
+function drawMarkers(){
+  const scene = curSceneObj(); if(!scene || !markers) return;
+  const ms = (scene.hotspots||[]).filter(hsVisible).map(h => {
+    const foundCls = (h.type==="hazard" && foundHazards.has(h.id)) ? " found" : "";
+    return {
+      id: h.id,
+      position: { yaw:h.yaw, pitch:h.pitch },
+      html: `<div class="hs ${h.type}${foundCls}">${(h.type==="hazard"&&foundHazards.has(h.id))?"✓":iconFor(h.type)}</div>`,
+      size: { width:38, height:38 }, anchor:"center center",
+      tooltip: h.label || h.title || h.question || h.type,
+      data: h
+    };
+  });
+  markers.setMarkers(ms);
+  updateHazardBar(scene);
+}
+
+function renderScene(scene){
+  curScene = scene.id;
+  $("tScene").textContent = scene.name || scene.id;
+  if(!viewer){ initViewer(scene); }
+  else { viewer.setPanorama(scene.panorama, { position:{ yaw:scene.initialView?.yaw||0, pitch:scene.initialView?.pitch||0 } }); }
+
+  const apply = () => drawMarkers();
+  if(viewer.state?.ready) apply(); else viewer.addEventListener("ready", apply, { once:true });
+
+  renderSceneButtons();
+}
+
+function renderSceneButtons(){
+  $("scenes").innerHTML = "";
+  tour.scenes.forEach(s => {
+    const b = document.createElement("button");
+    b.textContent = s.name || s.id;
+    if(s.id===curScene) b.className="active";
+    b.onclick = () => go(s.id);
+    $("scenes").appendChild(b);
+  });
+}
+function updateHazardBar(scene){
+  const hz = (scene.hotspots||[]).filter(h=>h.type==="hazard");
+  if(!hz.length){ $("hazardbar").style.display="none"; return; }
+  $("hazardbar").style.display="block";
+  $("hzTotal").textContent = hz.length;
+  $("hzFound").textContent = hz.filter(h=>foundHazards.has(h.id)).length;
+}
+function go(sceneId){
+  const s = tour.scenes.find(x=>x.id===sceneId); if(!s) return;
+  logEvent("enter_scene",{sceneId});
+  renderScene(s); saveProgress();
+}
+
+/* ---------- 熱點互動 ---------- */
+function addScore(n){ score+=n; $("scoreVal").textContent=score; toast(`+${n} 分`); }
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),1400); }
+
+function onHotspot(h){
+  // quiz / branch 自帶互動流程（onSelect 於答對後才觸發）
+  if(h.type==="quiz"){ openQuiz(h); return; }
+  if(h.type==="branch"){ openBranch(h); return; }
+
+  if(h.type==="nav"){ logEvent("nav",{to:h.targetSceneId}); }
+  else if(h.type==="hazard"){ onHazard(h); }
+  else if(h.type==="media"){ openMedia(h.media||h); logEvent("media",{id:h.id}); }
+  else if(h.type==="info"){ openInfo(h); logEvent("info",{id:h.id}); }
+
+  // 通用動作序列（任何型別皆可掛）
+  if(Array.isArray(h.onSelect) && h.onSelect.length) runActions(h.onSelect, h);
+  // nav 的跳轉放最後，讓 onSelect（如設定變數）先生效
+  if(h.type==="nav" && h.targetSceneId) go(h.targetSceneId);
+  saveProgress();
+}
+
+/* ---------- 擬真情境：動作序列 ---------- */
+function runActions(actions, h){
+  let needRedraw = false;
+  for(const a of actions){
+    const verb = a.do || a.action;
+    if(verb==="setVar"){ vars[a.name] = a.value; needRedraw = true; logEvent("set_var",{name:a.name,value:a.value}); }
+    else if(verb==="score" || verb==="addScore"){ addScore(a.points||0); }
+    else if(verb==="reveal" || verb==="showHotspot"){ (Array.isArray(a.id)?a.id:[a.id]).forEach(id=>{ revealed.add(id); hiddenSet.delete(id); }); needRedraw = true; }
+    else if(verb==="hide" || verb==="hideHotspot"){ (Array.isArray(a.id)?a.id:[a.id]).forEach(id=>hiddenSet.add(id)); needRedraw = true; }
+    else if(verb==="toast"){ toast(a.msg||""); }
+    else if(verb==="media" || verb==="openMedia"){ openMedia(a); }
+    else if(verb==="info"){ openInfo(a); }
+    else if(verb==="goto" || verb==="gotoScene"){ if(a.id) { if(needRedraw) drawMarkers(); go(a.id); return; } }
+    else if(verb==="finish"){ showDebrief(); }
+  }
+  if(needRedraw) drawMarkers();
+}
+
+/* ---------- 媒體彈窗（影像 / 影片 / 音檔 / PDF） ---------- */
+function openMedia(m){
+  const kind = m.kind || "image", url = m.url || m.src || "";
+  let body = "";
+  if(kind==="video") body += `<video src="${url}" controls autoplay playsinline></video>`;
+  else if(kind==="audio") body += `<audio src="${url}" controls autoplay></audio>`;
+  else if(kind==="pdf") body += `<iframe src="${url}"></iframe>`;
+  else body += `<img src="${url}" alt="">`;
+  if(m.caption||m.html) body += `<div>${m.caption||m.html||""}</div>`;
+  openModal(`📎 ${m.title||"檢查結果"}`, body, [btn("關閉","primary",closeModal)]);
+}
+
+function onHazard(h){
+  if(foundHazards.has(h.id)){ toast("這個危害已找到"); return; }
+  foundHazards.add(h.id); addScore(h.points||5);
+  logEvent("hazard_found",{id:h.id,label:h.label});
+  drawMarkers();
+  openModal("⚠️ 找到危害", `<b>${h.label||"危害"}</b><div class="feedback ok" style="margin-top:12px">已記錄，繼續找出其他危害。</div>`,
+    [btn("繼續","primary",closeModal)]);
+}
+
+function openInfo(h){
+  let body = "";
+  if(h.image) body += `<img src="${h.image}" alt="">`;
+  if(h.video) body += `<video src="${h.video}" controls playsinline></video>`;
+  if(h.audio) body += `<audio src="${h.audio}" controls></audio>`;
+  if(h.pdf) body += `<iframe src="${h.pdf}"></iframe>`;
+  body += `<div>${h.html||""}</div>`;
+  openModal(`ℹ️ ${h.title||"說明"}`, body, [btn("關閉","primary",closeModal)]);
+}
+
+function openQuiz(h){
+  const answered = done.has(h.id);
+  let html = `<div style="margin-bottom:10px">${h.question}</div><div id="opts">`;
+  (h.options||[]).forEach((o,i)=> html += `<button class="opt" data-i="${i}">${o}</button>`);
+  html += `</div><div id="fb"></div>`;
+  openModal("❓ 測驗", html, [btn("關閉","ghost",closeModal)]);
+  if(answered){ toast("此題已作答過"); }
+  $("mBody").querySelectorAll(".opt").forEach(btnEl=>{
+    btnEl.onclick = () => {
+      const i = +btnEl.dataset.i, correct = (i===h.answerIndex);
+      $("mBody").querySelectorAll(".opt").forEach(b=>b.disabled=true);
+      btnEl.classList.add(correct?"correct":"wrong");
+      if(!correct) $("mBody").querySelector(`.opt[data-i="${h.answerIndex}"]`).classList.add("correct");
+      $("fb").innerHTML = `<div class="feedback ${correct?"ok":"bad"}">${correct?"答對！":"再想想。"} ${h.feedback||""}</div>`;
+      logEvent("quiz_answer",{id:h.id,choice:i,correct});
+      if(!done.has(h.id)){
+        done.add(h.id); quizTotal++;
+        if(correct){ quizCorrect++; addScore(h.points||10); if(Array.isArray(h.onSelect)) runActions(h.onSelect,h); }
+        else mistakes.push(`測驗答錯：${(h.question||"").replace(/<[^>]+>/g,"").slice(0,40)}`);
+      }
+      saveProgress();
+    };
+  });
+}
+
+function openBranch(h){
+  let html = `<div style="margin-bottom:10px">${h.question}</div>`;
+  (h.choices||[]).forEach((c,i)=> html += `<button class="opt" data-i="${i}">${c.label}</button>`);
+  openModal("⤢ 情境選擇", html, []);
+  $("mBody").querySelectorAll(".opt").forEach(btnEl=>{
+    btnEl.onclick = () => {
+      const c = h.choices[+btnEl.dataset.i];
+      logEvent("branch",{id:h.id,choice:c.label,to:c.targetSceneId});
+      closeModal();
+      if(c.targetSceneId) go(c.targetSceneId);
+    };
+  });
+}
+
+/* ---------- Modal helpers ---------- */
+function btn(label,cls,fn){ const b=document.createElement("button"); b.className=`btn ${cls}`; b.textContent=label; b.onclick=fn; return b; }
+function openModal(head, bodyHtml, footBtns){
+  $("mHead").textContent = head; $("mBody").innerHTML = bodyHtml;
+  $("mFoot").innerHTML=""; (footBtns||[]).forEach(b=>$("mFoot").appendChild(b));
+  $("modal").classList.add("show");
+}
+function closeModal(){ $("modal").classList.remove("show"); }
+$("modal").addEventListener("click", e=>{ if(e.target.id==="modal") closeModal(); });
+
+/* ---------- 除錯總結畫面 ---------- */
+function showDebrief(){
+  closeModal();
+  const secs = startTime ? Math.round((Date.now()-startTime)/1000) : 0;
+  const mmss = `${String(Math.floor(secs/60)).padStart(2,"0")}:${String(secs%60).padStart(2,"0")}`;
+  // 全教案危害統計
+  let hzTotal=0; tour.scenes.forEach(s=>hzTotal += (s.hotspots||[]).filter(h=>h.type==="hazard").length);
+  const pass = score >= (tour.debrief?.passScore ?? 0);
+  const showMist = tour.debrief?.showMistakes !== false;
+  let html = `<h2>情境總結</h2>`;
+  html += `<div class="big ${pass?'pass':'fail'}">${score} 分</div>`;
+  if(tour.debrief?.passScore!=null) html += `<div class="verdict">${pass?"✅ 通過":"❌ 未達標"}（通過門檻 ${tour.debrief.passScore} 分）</div>`;
+  html += `<div class="stat"><span>花費時間</span><b>${mmss}</b></div>`;
+  html += `<div class="stat"><span>測驗答對</span><b>${quizCorrect} / ${quizTotal||0}</b></div>`;
+  if(hzTotal) html += `<div class="stat"><span>找到危害</span><b>${foundHazards.size} / ${hzTotal}</b></div>`;
+  if(showMist){
+    html += `<ul class="mist">`;
+    if(mistakes.length) mistakes.forEach(m=> html += `<li>⚠️ ${m}</li>`);
+    else html += `<li class="okitem">👍 沒有記錄到錯誤，表現良好！</li>`;
+    html += `</ul>`;
+  }
+  html += `<div class="foot">
+    <button class="btn ghost" id="dbClose">繼續情境</button>
+    <button class="btn primary" id="dbRestart">重新開始</button>
+  </div>`;
+  $("debriefBody").innerHTML = html;
+  $("debrief").classList.add("show");
+  $("dbClose").onclick = ()=> $("debrief").classList.remove("show");
+  $("dbRestart").onclick = ()=> location.reload();
+  logEvent("finish",{ score, secs, quizCorrect, quizTotal, hazards:foundHazards.size, hzTotal, pass });
+  saveProgress();
+}
+$("finishBtn").onclick = showDebrief;
+
+/* ---------- 載入教案 ---------- */
+async function loadTour(){
+  const params = new URLSearchParams(location.search);
+  const tid = params.get("tour");
+  if(tid && db){
+    try{
+      const s = await getDoc(doc(db, C_DEFS, tid));
+      if(s.exists()){ tour = s.data(); if(typeof tour.scenes==="string") tour.scenes=JSON.parse(tour.scenes); }
+      else { alert("找不到教案 "+tid+"，改用 Demo"); }
+    }catch(e){ console.warn("loadTour",e); }
+  }
+}
+
+/* ---------- 啟動 ---------- */
+$("gateStart").onclick = start;
+$("gateName").addEventListener("keydown", e=>{ if(e.key==="Enter") start(); });
+async function start(){
+  student = ($("gateName").value||"").trim();
+  if(!student){ $("gateName").focus(); return; }
+  await loadTour();
+  vars = Object.assign({}, tour.variables || {});   // 初始化情境變數
+  startTime = Date.now();
+  $("gateTitle").textContent = tour.title;
+  $("tTitle").textContent = tour.title;
+  const resumeScene = await loadProgress();
+  $("gate").style.display="none";
+  const startId = resumeScene || tour.startSceneId || tour.scenes[0].id;
+  logEvent("start",{});
+  renderScene(tour.scenes.find(s=>s.id===startId) || tour.scenes[0]);
+}
+// 預載教案標題到 gate（若指定 ?tour=）
+loadTour().then(()=>{ $("gateTitle").textContent = tour.title; });
+</script>
+</body>
+</html>
