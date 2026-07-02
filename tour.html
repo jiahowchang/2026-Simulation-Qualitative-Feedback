@@ -161,50 +161,43 @@ let db = null;
 try { db = getFirestore(initializeApp(firebaseConfig)); } catch(e){ console.warn("Firebase init failed", e); }
 const C_DEFS="tour_defs", C_PROG="tour_progress", C_EVT="tour_events";
 
-/* ---------- 內建 Demo 教案（無 ?tour= 時使用；用公開測試環景） ---------- */
+/* ---------- 內建 Demo 教案：急救室 OHCA（環景圖放在 tours/er/resus.jpg） ---------- */
 const DEMO = {
-  id:"demo", title:"病房安全查核（Demo）",
-  startSceneId:"room1",
+  id:"er-resus", title:"急救室 — 到院前心跳停止（OHCA）",
+  startSceneId:"er",
   variables:{ handHygiene:false },
-  debrief:{ passScore:20, showMistakes:true },
+  debrief:{ passScore:30, showMistakes:true },
   scenes:[
-    { id:"room1", name:"病室入口",
-      panorama:"https://photo-sphere-viewer-data.netlify.app/assets/sphere.jpg",
-      initialView:{ yaw:0, pitch:0 },
+    { id:"er", name:"急救室",
+      panorama:"tours/er/resus.jpg",
+      initialView:{ yaw:0.2, pitch:-0.1 },
       hotspots:[
-        { id:"h1", type:"action", yaw:0.3, pitch:-0.1, label:"執行手部衛生",
+        { id:"hh", type:"action", yaw:-2.36, pitch:-0.19, label:"手部衛生（洗手台）",
           onSelect:[
             { do:"setVar", name:"handHygiene", value:true },
             { do:"addScore", points:5 },
-            { do:"reveal", id:"h_touch" },
-            { do:"toast", msg:"已完成手部衛生，可接觸病人" }
+            { do:"reveal", id:"assess" },
+            { do:"toast", msg:"完成手部衛生，可接觸病人" }
           ] },
-        { id:"h_touch", type:"info", yaw:0.9, pitch:-0.15, startHidden:true, title:"接觸病人",
-          html:"手部衛生完成後才可接觸病人。此熱點洗手後才出現。" },
-        { id:"h_media", type:"media", yaw:-1.9, pitch:-0.1, label:"查看胸部 X 光",
-          media:{ kind:"image", title:"胸部 X 光", url:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Chest_Xray_PA_3-8-2010.png/640px-Chest_Xray_PA_3-8-2010.png", caption:"正常胸部 X 光。" } },
-        { id:"h2", type:"quiz", yaw:-0.6, pitch:0.05, points:10,
-          question:"執行手部衛生的五個時機，下列何者<b>不</b>包含？",
-          options:["接觸病人前","無菌操作前","接觸病人後","交班寫紀錄前"],
-          answerIndex:3, feedback:"WHO 五時機：接觸病人前後、無菌操作前、體液暴露後、接觸病人周遭環境後。" },
-        { id:"h3", type:"hazard", yaw:1.4, pitch:-0.3, points:5,
-          label:"地面濕滑未放警示牌" },
-        { id:"h4", type:"branch", yaw:2.4, pitch:0.0,
-          question:"病人主訴胸悶，你先做什麼？",
-          choices:[
-            { label:"立即評估生命徵象", targetSceneId:"room2" },
-            { label:"先去找醫師", targetSceneId:"room1" }
-          ] },
-        { id:"nav1", type:"nav", yaw:3.0, pitch:-0.1, targetSceneId:"room2", label:"走到床邊" }
-      ] },
-    { id:"room2", name:"床邊",
-      panorama:"https://photo-sphere-viewer-data.netlify.app/assets/sphere-test.jpg",
-      initialView:{ yaw:0, pitch:0 },
-      hotspots:[
-        { id:"h5", type:"info", yaw:0.2, pitch:0.0, title:"床邊監視器",
-          html:"確認導程與警報上下限設定是否正確。" },
-        { id:"h6", type:"hazard", yaw:-1.2, pitch:-0.2, points:5, label:"床欄未拉起" },
-        { id:"nav2", type:"nav", yaw:3.0, pitch:0.0, targetSceneId:"room1", label:"返回入口" }
+        { id:"assess", type:"info", yaw:0.41, pitch:-0.24, startHidden:true, title:"評估病人 ABC",
+          html:"確認意識、呼吸、脈搏。<b>此病人無反應、無呼吸、無脈搏</b> → 立即開始高品質 CPR，並接上監視器。（此熱點洗手後才出現）" },
+        { id:"mon", type:"info", yaw:0.09, pitch:-0.10, title:"床邊監視器",
+          html:"接上心電圖導極。監視器顯示 <b>心室顫動 VF</b>（可電擊心律）。" },
+        { id:"ecg", type:"media", yaw:0.94, pitch:-0.05, label:"查看 12 導程",
+          media:{ kind:"image", title:"12 導程 ECG",
+            url:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Chest_Xray_PA_3-8-2010.png/640px-Chest_Xray_PA_3-8-2010.png",
+            caption:"（範例圖片，之後可在編輯器換成院內實際 VF / 12 導程影像）" } },
+        { id:"cart", type:"info", yaw:-2.92, pitch:-0.41, title:"急救車 / 除顫器",
+          html:"取出除顫器與腎上腺素。<b>可電擊心律 → 立即 200J 去顫</b>，之後不中斷 CPR。" },
+        { id:"q1", type:"quiz", yaw:0.62, pitch:-0.10, points:15,
+          question:"監視器顯示 <b>VF</b>，下一步<b>最優先</b>？",
+          options:["立即電擊（去顫）200J","先給腎上腺素 1mg","先氣管插管","先量血壓"],
+          answerIndex:0,
+          feedback:"VF/無脈性 VT 為可電擊心律，最優先立即去顫，之後持續高品質 CPR（壓胸不中斷）。",
+          onSelect:[ { do:"reveal", id:"rosc" } ] },
+        { id:"rosc", type:"info", yaw:1.30, pitch:-0.15, startHidden:true, title:"ROSC 循環恢復",
+          html:"去顫後恢復自發性循環（ROSC）。持續監測、找可逆病因（H's & T's），準備後送。" },
+        { id:"hz1", type:"hazard", yaw:-0.16, pitch:-0.55, points:5, label:"地面線材 / 床欄未拉起（絆倒與墜床風險）" }
       ] }
   ]
 };
