@@ -103,6 +103,7 @@
     <h1 id="gateTitle">360 情境導覽</h1>
     <p>請輸入你的姓名或學號開始</p>
     <input id="gateName" placeholder="姓名 / 學號" autocomplete="off">
+    <input id="gateMon" placeholder="監視器遙控碼（選填，連動生命徵象）" inputmode="numeric" autocomplete="off" style="margin-top:10px">
     <button class="btn primary" id="gateStart">開始</button>
   </div>
 </div>
@@ -114,6 +115,7 @@
     <div class="title" id="tTitle">—</div>
     <div class="scene" id="tScene">—</div>
   </div>
+  <div id="monLink" style="display:none;background:#0a84ff22;border:1px solid #0a84ff88;color:#8fd0ff;border-radius:20px;padding:6px 12px;font-size:13px;font-weight:600;pointer-events:auto">🔗 監視器 <b id="monCodeVal"></b></div>
   <div id="score">得分 <b id="scoreVal">0</b></div>
   <button id="finishBtn">結束情境</button>
 </div>
@@ -145,7 +147,7 @@
 import { Viewer } from '@photo-sphere-viewer/core';
 import { MarkersPlugin } from '@photo-sphere-viewer/markers-plugin';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, addDoc, collection, serverTimestamp }
+import { getFirestore, doc, getDoc, setDoc, updateDoc, addDoc, collection, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ---------- Firebase（沿用現有專案，新增獨立集合） ---------- */
@@ -182,7 +184,8 @@ const DEMO = {
         { id:"assess", type:"info", yaw:0.41, pitch:-0.24, startHidden:true, title:"評估病人 ABC",
           html:"確認意識、呼吸、脈搏。<b>此病人無反應、無呼吸、無脈搏</b> → 立即開始高品質 CPR，並接上監視器。（此熱點洗手後才出現）" },
         { id:"mon", type:"info", yaw:0.09, pitch:-0.10, title:"床邊監視器",
-          html:"接上心電圖導極。監視器顯示 <b>心室顫動 VF</b>（可電擊心律）。" },
+          html:"接上心電圖導極。監視器顯示 <b>心室顫動 VF</b>（可電擊心律）。（連動的 SimMonitor 會同步變成 VF）",
+          onSelect:[ { do:"pushMonitor", rhythm:"vfc", co2:"flat", trend:0, t:{ etco2:8 } } ] },
         { id:"ecg", type:"media", yaw:0.94, pitch:-0.05, label:"查看 12 導程",
           media:{ kind:"image", title:"12 導程 ECG",
             url:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Chest_Xray_PA_3-8-2010.png/640px-Chest_Xray_PA_3-8-2010.png",
@@ -194,7 +197,8 @@ const DEMO = {
           options:["立即電擊（去顫）200J","先給腎上腺素 1mg","先氣管插管","先量血壓"],
           answerIndex:0,
           feedback:"VF/無脈性 VT 為可電擊心律，最優先立即去顫，之後持續高品質 CPR（壓胸不中斷）。",
-          onSelect:[ { do:"reveal", id:"rosc" } ] },
+          onSelect:[ { do:"reveal", id:"rosc" },
+            { do:"pushMonitor", rhythm:"sinus", co2:"normal", trend:1, t:{ hr:108, sys:98, dia:60, spo2:94, rr:12, etco2:42 } } ] },
         { id:"rosc", type:"info", yaw:1.30, pitch:-0.15, startHidden:true, title:"ROSC 循環恢復",
           html:"去顫後恢復自發性循環（ROSC）。持續監測、找可逆病因（H's & T's），準備後送。" },
         { id:"hz1", type:"hazard", yaw:-0.16, pitch:-0.55, points:5, label:"地面線材 / 床欄未拉起（絆倒與墜床風險）" }
@@ -203,7 +207,7 @@ const DEMO = {
 };
 
 /* ---------- 狀態 ---------- */
-let tour = DEMO, student="", curScene=null, score=0, startTime=0;
+let tour = DEMO, student="", curScene=null, score=0, startTime=0, monCode="";
 const done = new Set();           // 已完成/已作答的熱點 id
 const foundHazards = new Set();    // 已找到的危害 id
 let vars = {};                     // 擬真情境變數（洗手了嗎、戴手套了嗎…）
@@ -359,9 +363,29 @@ function runActions(actions, h){
     else if(verb==="media" || verb==="openMedia"){ openMedia(a); }
     else if(verb==="info"){ openInfo(a); }
     else if(verb==="goto" || verb==="gotoScene"){ if(a.id) { if(needRedraw) drawMarkers(); go(a.id); return; } }
+    else if(verb==="pushMonitor" || verb==="monitor"){ pushMonitor(a); }
     else if(verb==="finish"){ showDebrief(); }
   }
   if(needRedraw) drawMarkers();
+}
+
+/* ---------- 連動 SimMonitor：把生命徵象推到監視器場次 ---------- */
+async function pushMonitor(spec){
+  if(!db || !monCode){ toast("尚未連動監視器（開始時可填遙控碼）"); return; }
+  const payload = {
+    seq: Date.now(),
+    rhythm: spec.rhythm || "sinus",
+    trend: spec.trend ?? 1,
+    ecg12: spec.ecg12 || "normal",
+    co2morph: spec.co2 || spec.co2morph || "normal",
+    sensors: spec.sensors || { ecg:true, spo2:true, art:true, etco2:true, temp:true },
+    t: spec.t || {}
+  };
+  try{
+    await updateDoc(doc(db, "monitor_sessions", String(monCode)), { ctrl: payload });
+    toast("已更新監視器生命徵象");
+    logEvent("push_monitor", { code:monCode, rhythm:payload.rhythm });
+  }catch(e){ console.warn("pushMonitor", e); toast("監視器連動失敗（確認遙控碼與監視器已 START）"); }
 }
 
 /* ---------- 媒體彈窗（影像 / 影片 / 音檔 / PDF） ---------- */
@@ -497,6 +521,9 @@ $("gateName").addEventListener("keydown", e=>{ if(e.key==="Enter") start(); });
 async function start(){
   student = ($("gateName").value||"").trim();
   if(!student){ $("gateName").focus(); return; }
+  const monParam = new URLSearchParams(location.search).get("mon");
+  monCode = (($("gateMon").value||"") || monParam || "").trim().replace(/\D/g,"");
+  if(monCode){ $("monCodeVal").textContent = monCode; $("monLink").style.display="block"; }
   await loadTour();
   vars = Object.assign({}, tour.variables || {});   // 初始化情境變數
   startTime = Date.now();
