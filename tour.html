@@ -46,11 +46,21 @@
   .hs.action{ background:#14b8a6cc; }
   .hs.found{ background:var(--ok); animation:none; }
   @keyframes pulse{ 0%{ box-shadow:0 0 0 0 #ffffff88; } 70%{ box-shadow:0 0 0 12px #ffffff00; } 100%{ box-shadow:0 0 0 0 #ffffff00; } }
+  /* 熱點下方常駐文字標籤（iPad 無 hover 也看得到） */
+  .hswrap{ position:relative; width:38px; height:38px; }
+  .hslabel{ position:absolute; top:42px; left:50%; transform:translateX(-50%); white-space:nowrap;
+    background:#000b; color:#fff; font-size:12px; font-weight:600; padding:3px 9px; border-radius:9px;
+    text-shadow:0 1px 2px #000; pointer-events:none; }
 
   /* 彈窗 */
   #modal{ position:fixed; inset:0; z-index:60; background:#0009; display:none; align-items:center; justify-content:center; padding:20px; }
   #modal.show{ display:flex; }
   .card{ background:#fff; border-radius:16px; max-width:520px; width:100%; max-height:86vh; overflow:auto; box-shadow:0 20px 60px #000a; }
+  .card.wide{ max-width:min(1150px,96vw); background:#000; }
+  .card.wide .head{ background:#111; color:#fff; border-bottom-color:#222; }
+  .card.wide .foot{ background:#111; border-top-color:#222; }
+  .card.wide .body{ padding:0; }
+  .moniframe{ width:100%; height:min(72vh,640px); border:0; display:block; background:#000; }
   .card .head{ padding:16px 20px; border-bottom:1px solid #eee; font-weight:700; font-size:17px; display:flex; align-items:center; gap:8px; }
   .card .body{ padding:20px; font-size:15px; line-height:1.7; }
   .card .body img,.card .body video{ max-width:100%; border-radius:10px; margin:10px 0; }
@@ -183,9 +193,11 @@ const DEMO = {
           ] },
         { id:"assess", type:"info", yaw:0.41, pitch:-0.24, startHidden:true, title:"評估病人 ABC",
           html:"確認意識、呼吸、脈搏。<b>此病人無反應、無呼吸、無脈搏</b> → 立即開始高品質 CPR，並接上監視器。（此熱點洗手後才出現）" },
-        { id:"mon", type:"info", yaw:0.09, pitch:-0.10, title:"床邊監視器",
-          html:"接上心電圖導極。監視器顯示 <b>心室顫動 VF</b>（可電擊心律）。（連動的 SimMonitor 會同步變成 VF）",
-          onSelect:[ { do:"pushMonitor", rhythm:"vfc", co2:"flat", trend:0, t:{ etco2:8 } } ] },
+        { id:"mon", type:"action", yaw:0.50, pitch:0.13, label:"床邊監視器",
+          onSelect:[
+            { do:"pushMonitor", rhythm:"vfc", co2:"flat", trend:0, t:{ etco2:8 } },
+            { do:"openMonitor" }
+          ] },
         { id:"ecg", type:"media", yaw:0.94, pitch:-0.05, label:"查看 12 導程",
           media:{ kind:"image", title:"12 導程 ECG",
             url:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Chest_Xray_PA_3-8-2010.png/640px-Chest_Xray_PA_3-8-2010.png",
@@ -280,11 +292,13 @@ function iconFor(t){ return {nav:"➜",info:"ℹ️",quiz:"❓",branch:"⤢",haz
 function drawMarkers(){
   const scene = curSceneObj(); if(!scene || !markers) return;
   const ms = (scene.hotspots||[]).filter(hsVisible).map(h => {
-    const foundCls = (h.type==="hazard" && foundHazards.has(h.id)) ? " found" : "";
+    const found = (h.type==="hazard" && foundHazards.has(h.id));
+    // 危害未找到前不顯示標籤（避免直接洩題）；其餘顯示 label / title
+    const label = h.type==="hazard" ? (found ? (h.label||"") : "") : (h.label || h.title || "");
     return {
       id: h.id,
       position: { yaw:h.yaw, pitch:h.pitch },
-      html: `<div class="hs ${h.type}${foundCls}">${(h.type==="hazard"&&foundHazards.has(h.id))?"✓":iconFor(h.type)}</div>`,
+      html: `<div class="hswrap"><div class="hs ${h.type}${found?" found":""}">${found?"✓":iconFor(h.type)}</div>${label?`<div class="hslabel">${label}</div>`:""}</div>`,
       size: { width:38, height:38 }, anchor:"center center",
       tooltip: h.label || h.title || h.question || h.type,
       data: h
@@ -364,14 +378,23 @@ function runActions(actions, h){
     else if(verb==="info"){ openInfo(a); }
     else if(verb==="goto" || verb==="gotoScene"){ if(a.id) { if(needRedraw) drawMarkers(); go(a.id); return; } }
     else if(verb==="pushMonitor" || verb==="monitor"){ pushMonitor(a); }
+    else if(verb==="openMonitor"){ openMonitorPopup(); }
     else if(verb==="finish"){ showDebrief(); }
   }
   if(needRedraw) drawMarkers();
 }
 
 /* ---------- 連動 SimMonitor：把生命徵象推到監視器場次 ---------- */
+function ensureMonCode(){
+  if(!monCode){
+    monCode = String(Math.floor(1000+Math.random()*9000));   // 沒填碼就自動開一個場次
+    $("monCodeVal").textContent = monCode; $("monLink").style.display="block";
+  }
+  return monCode;
+}
 async function pushMonitor(spec){
-  if(!db || !monCode){ toast("尚未連動監視器（開始時可填遙控碼）"); return; }
+  if(!db){ toast("Firebase 未連線"); return; }
+  ensureMonCode();
   const payload = {
     seq: Date.now(),
     rhythm: spec.rhythm || "sinus",
@@ -382,10 +405,19 @@ async function pushMonitor(spec){
     t: spec.t || {}
   };
   try{
-    await updateDoc(doc(db, "monitor_sessions", String(monCode)), { ctrl: payload });
-    toast("已更新監視器生命徵象");
+    // setDoc merge：監視器還沒加入也能先寫入，之後 join 會套用最新狀態
+    await setDoc(doc(db, "monitor_sessions", String(monCode)), { ctrl: payload }, { merge:true });
     logEvent("push_monitor", { code:monCode, rhythm:payload.rhythm });
-  }catch(e){ console.warn("pushMonitor", e); toast("監視器連動失敗（確認遙控碼與監視器已 START）"); }
+  }catch(e){ console.warn("pushMonitor", e); toast("監視器連動失敗"); }
+}
+/* ---------- 內嵌 SimMonitor 彈窗（點環景中的監視器 → 跳出即時監視器） ---------- */
+function openMonitorPopup(){
+  ensureMonCode();
+  document.querySelector("#modal .card").classList.add("wide");
+  openModal("🖥️ 生理監視器",
+    `<iframe class="moniframe" src="monitor.html?join=${monCode}" allow="autoplay"></iframe>`,
+    [btn("關閉","primary",closeModal)]);
+  logEvent("open_monitor",{ code:monCode });
 }
 
 /* ---------- 媒體彈窗（影像 / 影片 / 音檔 / PDF） ---------- */
@@ -465,7 +497,7 @@ function openModal(head, bodyHtml, footBtns){
   $("mFoot").innerHTML=""; (footBtns||[]).forEach(b=>$("mFoot").appendChild(b));
   $("modal").classList.add("show");
 }
-function closeModal(){ $("modal").classList.remove("show"); }
+function closeModal(){ $("modal").classList.remove("show"); document.querySelector("#modal .card").classList.remove("wide"); $("mBody").innerHTML=""; }
 $("modal").addEventListener("click", e=>{ if(e.target.id==="modal") closeModal(); });
 
 /* ---------- 除錯總結畫面 ---------- */

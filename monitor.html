@@ -1787,16 +1787,18 @@ async function fetchAndShowMedia(id, nameOverride){
     window.addInvestigation({ id, name: "", kind: m.kind||"image", url, thumb: m.thumb||null });
   }catch(e){ console.warn("media fetch failed", e); }
 }
+// 加入模式：?join=1234 → 用指定場次碼、套用現有 ctrl 狀態（供 360 情境內嵌 / 鏡像顯示用）
+const JOIN_CODE = (new URLSearchParams(location.search).get("join")||"").replace(/\D/g,"").slice(0,4);
 async function createSession(){
   endSession();
   // 先把遙控碼顯示出來，就算 Firebase 慢或失敗也看得到
-  remote.code = String(Math.floor(1000+Math.random()*9000));
-  remote.lastSeq = Date.now(); // 忽略舊命令
+  remote.code = JOIN_CODE || String(Math.floor(1000+Math.random()*9000));
+  remote.lastSeq = JOIN_CODE ? 0 : Date.now(); // join 模式要套用場次現有的 ctrl 狀態
   $("tbCodeNum").textContent = remote.code;
   $("tbCode").style.display = "flex";
   if (!db) return;
   try{
-    await setDoc(doc(db,SESS,remote.code), { created: serverTimestamp(), status: snapshotStatus() });
+    await setDoc(doc(db,SESS,remote.code), { created: serverTimestamp(), status: snapshotStatus() }, { merge: !!JOIN_CODE });
     remote.unsub = onSnapshot(doc(db,SESS,remote.code), s=>{
       const d = s.data();
       if (d && d.ctrl) applyRemoteCtrl(d.ctrl);
@@ -1810,12 +1812,14 @@ async function createSession(){
 function endSession(){
   if (remote.unsub){ remote.unsub(); remote.unsub=null; }
   if (remote.pubTimer){ clearInterval(remote.pubTimer); remote.pubTimer=null; }
-  if (db && remote.code){ deleteDoc(doc(db,SESS,remote.code)).catch(()=>{}); }
+  if (db && remote.code && !JOIN_CODE){ deleteDoc(doc(db,SESS,remote.code)).catch(()=>{}); } // join 模式不刪共用場次
   remote.code = null;
   $("tbCode").style.display = "none";
 }
 // classic script 的 onclick 先執行（property handler 註冊較早），這裡是附加行為
 $("startBtn").addEventListener("click", ()=>{ if (state.running) createSession(); });
+// join 模式自動按 START（給 360 情境 iframe 內嵌用，免手動操作）
+if (JOIN_CODE) setTimeout(()=>{ if (!state.running) $("startBtn").click(); }, 250);
 $("exitBtn").addEventListener("click", ()=>{ if (!state.running) endSession(); });
 window.addEventListener("beforeunload", ()=>{ endSession(); });
 

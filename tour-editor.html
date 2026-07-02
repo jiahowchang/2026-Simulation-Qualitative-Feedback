@@ -270,7 +270,7 @@ function renderTypeFields(){
     <div class="field" style="margin-top:8px"><label><input type="checkbox" id="f_hidden" ${h.startHidden?"checked":""}> 起始隱藏（被動作 reveal 才出現）</label></div>
     ${field("條件顯示 showIf（變數＝值才顯示）",`<div class="row"><input id="f_condk" value="${(cond[0]||"").replace(/"/g,'&quot;')}" placeholder="變數名 如 handHygiene"><input id="f_condv" value="${cond[1]===undefined?"":String(cond[1])}" placeholder="值 如 true"></div>`)}
     ${field("動作序列 onSelect（JSON 陣列）",`<textarea id="f_onselect" placeholder='[{"do":"setVar","name":"gloves","value":true},{"do":"reveal","id":"h9"},{"do":"addScore","points":10}]'>${h.onSelect?JSON.stringify(h.onSelect,null,1):""}</textarea>`)}
-    <div class="muted">動作：setVar(name,value) / addScore(points) / reveal(id) / hide(id) / goto(id) / media(kind,url,title) / toast(msg) / finish / pushMonitor(rhythm,co2,t:{hr,sys,dia,spo2,rr,etco2})</div>
+    <div class="muted">動作：setVar(name,value) / addScore(points) / reveal(id) / hide(id) / goto(id) / media(kind,url,title) / toast(msg) / finish / pushMonitor(rhythm,co2,t:{hr,sys,dia,spo2,rr,etco2}) / openMonitor（彈出內嵌 SimMonitor）</div>
   </details>`;
   $("typeFields").innerHTML=html;
   if(h.type==="quiz") $("addOpt").onclick=()=>{ const d=document.createElement("div"); d.className="row"; d.innerHTML=`<input class="q_opt" placeholder="新選項">`; $("q_opts").appendChild(d); };
