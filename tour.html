@@ -56,6 +56,23 @@
   #modal{ position:fixed; inset:0; z-index:60; background:#0009; display:none; align-items:center; justify-content:center; padding:20px; }
   #modal.show{ display:flex; }
   .card{ background:#fff; border-radius:16px; max-width:520px; width:100%; max-height:86vh; overflow:auto; box-shadow:0 20px 60px #000a; }
+  /* AI 病人/家屬對話面板（右下角，共用 SimPatient proxy） */
+  #chatPanel{ position:fixed; right:14px; bottom:14px; z-index:45; width:min(380px,92vw); background:#101826;
+    border:1px solid #ffffff26; border-radius:14px; box-shadow:0 12px 40px #000c; display:none; flex-direction:column; overflow:hidden; }
+  #chatPanel.show{ display:flex; }
+  #chatPanel .cp-head{ display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:#0b1220; color:#fff; font-size:14px; font-weight:700; }
+  #chatPanel .cp-head button{ background:none; border:0; color:#fff; font-size:16px; cursor:pointer; padding:0 4px; }
+  #chatPanel .cp-head button.off{ opacity:.35; }
+  #cpMsgs{ height:min(36vh,300px); overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:8px; }
+  .cp-msg{ max-width:86%; padding:8px 11px; border-radius:12px; font-size:14px; line-height:1.55; color:#fff; white-space:pre-wrap; }
+  .cp-msg.user{ align-self:flex-end; background:#2b7de9; }
+  .cp-msg.ai{ align-self:flex-start; background:#243144; }
+  .cp-msg.sys{ align-self:center; background:none; color:#9aa7b8; font-size:12px; }
+  #cpRow{ display:flex; gap:6px; padding:8px; background:#0b1220; }
+  #cpInput{ flex:1; min-width:0; padding:9px 11px; border-radius:9px; border:1px solid #ffffff22; background:#101826; color:#fff; font-size:14px; }
+  #cpRow button{ border:0; border-radius:9px; padding:0 12px; font-size:16px; cursor:pointer; background:#2b7de9; color:#fff; }
+  #cpMic.on{ background:#e0533d; animation:pulse 1.2s infinite; }
+
   /* 內嵌 SimMonitor 小面板：貼著監視器熱點、跟隨視角、不擋環景操作 */
   #monPanel{ position:fixed; z-index:40; width:clamp(260px,23vw,360px); background:#000;
     border:1px solid #444; border-radius:12px; box-shadow:0 10px 30px #000c; overflow:hidden; display:none; }
@@ -149,6 +166,16 @@
   <div class="mp-body"><iframe id="monPanelFrame" allow="autoplay"></iframe></div>
 </div>
 
+<div id="chatPanel">
+  <div class="cp-head"><span id="cpTitle">🗣️ 對話</span><span><button id="cpVoice" title="語音朗讀開/關">🔊</button><button id="cpX">✕</button></span></div>
+  <div id="cpMsgs"></div>
+  <div id="cpRow">
+    <button id="cpMic" title="語音輸入">🎤</button>
+    <input id="cpInput" placeholder="輸入要說的話…" autocomplete="off">
+    <button id="cpSend">➤</button>
+  </div>
+</div>
+
 <div id="debrief"><div class="dcard" id="debriefBody"></div></div>
 
 <script type="importmap">
@@ -201,6 +228,14 @@ const DEMO = {
           ] },
         { id:"assess", type:"info", yaw:0.41, pitch:-0.24, startHidden:true, title:"評估病人 ABC",
           html:"確認意識、呼吸、脈搏。<b>此病人無反應、無呼吸、無脈搏</b> → 立即開始高品質 CPR，並接上監視器。（此熱點洗手後才出現）" },
+        { id:"talk", type:"action", yaw:0.24, pitch:-0.30, label:"與家屬對話（問病史）",
+          onSelect:[ { do:"openPatient", title:"病人太太（家屬）",
+            patient:{ name:"病人太太", age:"58", sex:"女",
+              hpi:"你先生 60 歲，晚餐後突然說胸口很痛、冒冷汗，幾分鐘後就倒下叫不醒，你打 119 送到急診。你是陪同的家屬。",
+              pmh:"先生有高血壓、糖尿病，抽菸 30 多年；藥有時忘記吃。對盤尼西林過敏。",
+              persona:"非常慌張、帶哭腔，一直問「他會不會怎麼樣」，回答問題斷斷續續但盡力配合。",
+              mental:"你是焦急的家屬（不是病人本人），意識清楚。",
+              hidden:"倒下前先生有說左手臂麻麻的。最後一餐是晚上 7 點的晚餐。以前沒有這樣發作過。上個月健檢說膽固醇偏高。" } } ] },
         { id:"mon", type:"action", yaw:0.50, pitch:0.13, label:"床邊監視器",
           onSelect:[
             { do:"pushMonitor", rhythm:"vfc", co2:"flat", trend:0, t:{ etco2:8 } },
@@ -387,6 +422,7 @@ function runActions(actions, h){
     else if(verb==="goto" || verb==="gotoScene"){ if(a.id) { if(needRedraw) drawMarkers(); go(a.id); return; } }
     else if(verb==="pushMonitor" || verb==="monitor"){ pushMonitor(a); }
     else if(verb==="openMonitor"){ openMonitorPopup(h); }
+    else if(verb==="openPatient" || verb==="patient"){ openPatientChat(a, h); }
     else if(verb==="finish"){ showDebrief(); }
   }
   if(needRedraw) drawMarkers();
@@ -437,6 +473,93 @@ function closeMonitorPanel(){
   cancelAnimationFrame(mpRAF);
 }
 $("monPanelX").onclick = closeMonitorPanel;
+/* ---------- AI 病人/家屬對話（共用 SimPatient 的 Cloud Function proxy 與 sim_cases） ---------- */
+const PROXY_URL = "https://patient-mkargc7maa-uc.a.run.app";
+const chatState = { hsId:null, sysPrompt:"", messages:[], busy:false, voice:true };
+function patientSystemPrompt(p){
+  return `你是臨床模擬訓練中由 AI 扮演的「標準化病人或家屬」。以下是你的角色設定，全程以第一人稱、台灣口語繁體中文扮演，絕不跳出角色。
+姓名：${p.name||"（未設定）"}，${p.age||"?"} 歲，${p.sex||""}
+主訴/現況：${p.hpi||"（未設定）"}
+過去病史/用藥/過敏：${p.pmh||"（未設定）"}
+個性與說話風格：${p.persona||"一般"}
+意識/身分：${p.mental||"清醒"}
+隱藏劇本（學員問到才透露，不可主動全盤托出）：${p.hidden||"（無）"}
+規則：一次回覆 1-3 句，像真實對話；只回答被問到的事；用一般民眾詞彙描述症狀；對學員態度有真實情緒反應；可偶爾用（簡短動作）描述；若被問「你是 AI 嗎」以角色身分困惑回應。`;
+}
+function cpAddMsg(cls, text){
+  const d = document.createElement("div");
+  d.className = "cp-msg " + cls; d.textContent = text;
+  $("cpMsgs").appendChild(d); $("cpMsgs").scrollTop = $("cpMsgs").scrollHeight;
+  return d;
+}
+async function openPatientChat(a, h){
+  let p = a.patient || null;
+  if(!p && a.caseId && db){   // 可直接引用 SimPatient 教案庫 sim_cases 的病人設定
+    try{ const s = await getDoc(doc(db,"sim_cases",a.caseId)); if(s.exists()) p = (s.data().patient)||{}; }catch(e){}
+  }
+  if(!p) p = { name:a.title||"病人", persona:a.persona||"" };
+  const id = (h&&h.id) || a.caseId || "chat";
+  if(chatState.hsId !== id){ chatState.messages = []; $("cpMsgs").innerHTML = ""; }
+  chatState.hsId = id;
+  chatState.sysPrompt = patientSystemPrompt(p);
+  $("cpTitle").textContent = "🗣️ " + (a.title || p.name || "對話");
+  $("chatPanel").classList.add("show");
+  if(!chatState.messages.length) cpAddMsg("sys","開始對話：輸入文字或按 🎤 說話");
+  setTimeout(()=>$("cpInput").focus(), 100);
+  logEvent("open_patient",{ id });
+}
+async function cpSend(){
+  const t = $("cpInput").value.trim();
+  if(!t || chatState.busy) return;
+  $("cpInput").value = ""; cpAddMsg("user", t);
+  chatState.messages.push({ role:"user", content:t });
+  chatState.busy = true;
+  const wait = cpAddMsg("ai","…");
+  try{
+    const r = await fetch(PROXY_URL, { method:"POST", headers:{ "content-type":"application/json" },
+      body: JSON.stringify({ model:"claude-opus-4-8", max_tokens:600, system:chatState.sysPrompt, messages:chatState.messages }) });
+    const d = await r.json();
+    const text = (d.content && d.content[0] && d.content[0].text) || (d.error && d.error.message) || "（沒有回應）";
+    wait.textContent = text;
+    chatState.messages.push({ role:"assistant", content:text });
+    cpSpeak(text);
+    logEvent("patient_chat", { q:t, a:text.slice(0,300) });
+  }catch(e){ wait.textContent = "連線失敗，請再試一次"; chatState.messages.pop(); }
+  chatState.busy = false;
+  $("cpMsgs").scrollTop = $("cpMsgs").scrollHeight;
+}
+$("cpSend").onclick = cpSend;
+$("cpInput").addEventListener("keydown", e=>{ if(e.key==="Enter") cpSend(); });
+$("cpX").onclick = ()=>{ $("chatPanel").classList.remove("show"); if("speechSynthesis" in window) speechSynthesis.cancel(); };
+$("cpVoice").onclick = ()=>{
+  chatState.voice = !chatState.voice;
+  $("cpVoice").classList.toggle("off", !chatState.voice);
+  if(!chatState.voice && "speechSynthesis" in window) speechSynthesis.cancel();
+};
+function cpSpeak(t){
+  if(!chatState.voice || !("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(t.replace(/（[^）]*）/g,""));
+  u.lang = "zh-TW"; u.rate = 1.05;
+  const v = speechSynthesis.getVoices().find(v=>v.lang && v.lang.startsWith("zh"));
+  if(v) u.voice = v;
+  speechSynthesis.speak(u);
+}
+// 語音輸入（Chrome/Edge/Safari 的 webkitSpeechRecognition）
+const CP_SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let cpRec = null;
+$("cpMic").onclick = ()=>{
+  if(!CP_SR){ cpAddMsg("sys","此瀏覽器不支援語音輸入，請改用文字"); return; }
+  if(cpRec){ cpRec.stop(); return; }
+  cpRec = new CP_SR();
+  cpRec.lang = "zh-TW"; cpRec.interimResults = false;
+  $("cpMic").classList.add("on");
+  cpRec.onresult = e=>{ $("cpInput").value = e.results[0][0].transcript; cpSend(); };
+  cpRec.onend = ()=>{ cpRec = null; $("cpMic").classList.remove("on"); };
+  cpRec.onerror = ()=>{ cpRec = null; $("cpMic").classList.remove("on"); };
+  cpRec.start();
+};
+
 function followMonPanel(){
   cancelAnimationFrame(mpRAF);
   const step = ()=>{

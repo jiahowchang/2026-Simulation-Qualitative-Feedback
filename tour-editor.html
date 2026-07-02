@@ -282,7 +282,7 @@ function renderTypeFields(){
     <div class="field" style="margin-top:8px"><label><input type="checkbox" id="f_hidden" ${h.startHidden?"checked":""}> 起始隱藏（被動作 reveal 才出現）</label></div>
     ${field("條件顯示 showIf（變數＝值才顯示）",`<div class="row"><input id="f_condk" value="${(cond[0]||"").replace(/"/g,'&quot;')}" placeholder="變數名 如 handHygiene"><input id="f_condv" value="${cond[1]===undefined?"":String(cond[1])}" placeholder="值 如 true"></div>`)}
     ${field("動作序列 onSelect（JSON 陣列）",`<textarea id="f_onselect" placeholder='[{"do":"setVar","name":"gloves","value":true},{"do":"reveal","id":"h9"},{"do":"addScore","points":10}]'>${h.onSelect?JSON.stringify(h.onSelect,null,1):""}</textarea>`)}
-    <div class="muted">動作：setVar(name,value) / addScore(points) / reveal(id) / hide(id) / goto(id) / media(kind,url,title) / toast(msg) / finish / pushMonitor(rhythm,co2,t:{hr,sys,dia,spo2,rr,etco2}) / openMonitor（彈出內嵌 SimMonitor）</div>
+    <div class="muted">動作：setVar(name,value) / addScore(points) / reveal(id) / hide(id) / goto(id) / media(kind,url,title) / toast(msg) / finish / pushMonitor(rhythm,co2,t:{hr,sys,dia,spo2,rr,etco2}) / openMonitor（彈出內嵌 SimMonitor） / openPatient(title, patient:{name,age,sex,hpi,pmh,persona,mental,hidden} 或 caseId:"SimPatient教案ID")（AI 病人/家屬對話）</div>
   </details>`;
   $("typeFields").innerHTML=html;
   if(h.type==="quiz") $("addOpt").onclick=()=>{ const d=document.createElement("div"); d.className="row"; d.innerHTML=`<input class="q_opt" placeholder="新選項">`; $("q_opts").appendChild(d); };
@@ -341,6 +341,14 @@ const ER_TEMPLATE = {
           ] },
         { id:"assess", type:"info", yaw:0.41, pitch:-0.24, startHidden:true, title:"評估病人 ABC",
           html:"確認意識、呼吸、脈搏。<b>此病人無反應、無呼吸、無脈搏</b> → 立即開始高品質 CPR，並接上監視器。（此熱點洗手後才出現）" },
+        { id:"talk", type:"action", yaw:0.24, pitch:-0.30, label:"與家屬對話（問病史）",
+          onSelect:[ { do:"openPatient", title:"病人太太（家屬）",
+            patient:{ name:"病人太太", age:"58", sex:"女",
+              hpi:"你先生 60 歲，晚餐後突然說胸口很痛、冒冷汗，幾分鐘後就倒下叫不醒，你打 119 送到急診。你是陪同的家屬。",
+              pmh:"先生有高血壓、糖尿病，抽菸 30 多年；藥有時忘記吃。對盤尼西林過敏。",
+              persona:"非常慌張、帶哭腔，一直問「他會不會怎麼樣」，回答問題斷斷續續但盡力配合。",
+              mental:"你是焦急的家屬（不是病人本人），意識清楚。",
+              hidden:"倒下前先生有說左手臂麻麻的。最後一餐是晚上 7 點的晚餐。以前沒有這樣發作過。上個月健檢說膽固醇偏高。" } } ] },
         { id:"mon", type:"action", yaw:0.50, pitch:0.13, label:"床邊監視器",
           onSelect:[
             { do:"pushMonitor", rhythm:"vfc", co2:"flat", trend:0, t:{ etco2:8 } },
