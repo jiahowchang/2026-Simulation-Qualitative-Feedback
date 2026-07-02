@@ -56,11 +56,14 @@
   #modal{ position:fixed; inset:0; z-index:60; background:#0009; display:none; align-items:center; justify-content:center; padding:20px; }
   #modal.show{ display:flex; }
   .card{ background:#fff; border-radius:16px; max-width:520px; width:100%; max-height:86vh; overflow:auto; box-shadow:0 20px 60px #000a; }
-  .card.wide{ max-width:min(760px,94vw); background:#000; }
-  .card.wide .head{ background:#111; color:#fff; border-bottom-color:#222; padding:10px 16px; font-size:15px; }
-  .card.wide .foot{ background:#111; border-top-color:#222; padding:8px 14px; }
-  .card.wide .body{ padding:0; }
-  .moniframe{ width:100%; height:min(48vh,420px); border:0; display:block; background:#000; }
+  /* 內嵌 SimMonitor 小面板：貼著監視器熱點、跟隨視角、不擋環景操作 */
+  #monPanel{ position:fixed; z-index:40; width:clamp(260px,23vw,360px); background:#000;
+    border:1px solid #444; border-radius:12px; box-shadow:0 10px 30px #000c; overflow:hidden; display:none; }
+  #monPanel .mp-head{ display:flex; align-items:center; justify-content:space-between; padding:3px 10px; background:#111; color:#fff; font-size:12px; }
+  #monPanel .mp-x{ background:none; border:0; color:#fff; font-size:16px; cursor:pointer; padding:0 4px; }
+  /* iframe 以 2 倍尺寸渲染再縮小 0.5：監視器用手機橫向版面呈現，縮小後依然清晰 */
+  #monPanel .mp-body{ width:100%; aspect-ratio:16/10; overflow:hidden; position:relative; background:#000; }
+  #monPanel iframe{ width:200%; height:200%; transform:scale(.5); transform-origin:0 0; border:0; display:block; background:#000; pointer-events:none; }
   .card .head{ padding:16px 20px; border-bottom:1px solid #eee; font-weight:700; font-size:17px; display:flex; align-items:center; gap:8px; }
   .card .body{ padding:20px; font-size:15px; line-height:1.7; }
   .card .body img,.card .body video{ max-width:100%; border-radius:10px; margin:10px 0; }
@@ -140,6 +143,11 @@
 </div></div>
 
 <div id="toast"></div>
+
+<div id="monPanel">
+  <div class="mp-head"><span>🖥️ 生理監視器 <b id="mpCode"></b></span><button class="mp-x" id="monPanelX">✕</button></div>
+  <div class="mp-body"><iframe id="monPanelFrame" allow="autoplay"></iframe></div>
+</div>
 
 <div id="debrief"><div class="dcard" id="debriefBody"></div></div>
 
@@ -298,7 +306,7 @@ function drawMarkers(){
     return {
       id: h.id,
       position: { yaw:h.yaw, pitch:h.pitch },
-      html: `<div class="hswrap"><div class="hs ${h.type}${found?" found":""}">${found?"✓":iconFor(h.type)}</div>${label?`<div class="hslabel">${label}</div>`:""}</div>`,
+      html: `<div class="hswrap" data-hs="${h.id}"><div class="hs ${h.type}${found?" found":""}">${found?"✓":iconFor(h.type)}</div>${label?`<div class="hslabel">${label}</div>`:""}</div>`,
       size: { width:38, height:38 }, anchor:"center center",
       tooltip: h.label || h.title || h.question || h.type,
       data: h
@@ -378,7 +386,7 @@ function runActions(actions, h){
     else if(verb==="info"){ openInfo(a); }
     else if(verb==="goto" || verb==="gotoScene"){ if(a.id) { if(needRedraw) drawMarkers(); go(a.id); return; } }
     else if(verb==="pushMonitor" || verb==="monitor"){ pushMonitor(a); }
-    else if(verb==="openMonitor"){ openMonitorPopup(); }
+    else if(verb==="openMonitor"){ openMonitorPopup(h); }
     else if(verb==="finish"){ showDebrief(); }
   }
   if(needRedraw) drawMarkers();
@@ -410,14 +418,46 @@ async function pushMonitor(spec){
     logEvent("push_monitor", { code:monCode, rhythm:payload.rhythm });
   }catch(e){ console.warn("pushMonitor", e); toast("監視器連動失敗"); }
 }
-/* ---------- 內嵌 SimMonitor 彈窗（點環景中的監視器 → 跳出即時監視器） ---------- */
-function openMonitorPopup(){
+/* ---------- 內嵌 SimMonitor 小面板：貼著熱點、跟隨視角、離開視線自動隱藏 ---------- */
+let mpAnchorId = null, mpRAF = 0;
+function openMonitorPopup(h){
   ensureMonCode();
-  document.querySelector("#modal .card").classList.add("wide");
-  openModal("🖥️ 生理監視器",
-    `<iframe class="moniframe" src="monitor.html?join=${monCode}" allow="autoplay"></iframe>`,
-    [btn("關閉","primary",closeModal)]);
+  if(h && h.id) mpAnchorId = h.id;
+  const f = $("monPanelFrame"), src = `monitor.html?join=${monCode}`;
+  if(f.getAttribute("src") !== src) f.setAttribute("src", src);
+  $("mpCode").textContent = monCode;
+  $("monPanel").dataset.open = "1";
+  followMonPanel();
   logEvent("open_monitor",{ code:monCode });
+}
+function closeMonitorPanel(){
+  const p = $("monPanel");
+  delete p.dataset.open; p.style.display = "none";
+  $("monPanelFrame").removeAttribute("src");   // 停掉 iframe（音效/連線）
+  cancelAnimationFrame(mpRAF);
+}
+$("monPanelX").onclick = closeMonitorPanel;
+function followMonPanel(){
+  cancelAnimationFrame(mpRAF);
+  const step = ()=>{
+    const p = $("monPanel");
+    if(!p.dataset.open) return;
+    const a = document.querySelector(`.hswrap[data-hs="${mpAnchorId}"]`);
+    const r = a ? a.getBoundingClientRect() : null;
+    const inView = r && r.width>0 && r.right>0 && r.left<innerWidth && r.bottom>0 && r.top<innerHeight;
+    if(!inView){ p.style.display="none"; }          // 監視器離開視線 → 隱藏（iframe 保持運作）
+    else{
+      p.style.display="block";
+      const pw = p.offsetWidth || 320, ph = p.offsetHeight || 270;
+      let x = r.right + 12;                          // 預設貼在熱點右側
+      if(x + pw > innerWidth - 8) x = r.left - pw - 12;   // 右邊放不下改放左側
+      x = Math.max(8, Math.min(x, innerWidth - pw - 8));
+      let y = Math.max(56, Math.min(r.top - 40, innerHeight - ph - 12));
+      p.style.left = x + "px"; p.style.top = y + "px";
+    }
+    mpRAF = requestAnimationFrame(step);
+  };
+  mpRAF = requestAnimationFrame(step);
 }
 
 /* ---------- 媒體彈窗（影像 / 影片 / 音檔 / PDF） ---------- */
