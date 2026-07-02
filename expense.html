@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>家庭手帳</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="家庭手帳">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#2b6cb0">
+<link rel="manifest" href="expense.webmanifest">
+<link rel="apple-touch-icon" href="icons/expense-180.png">
+<style>
+  :root{
+    --blue:#2b6cb0; --blue-dark:#1a4e8a; --blue-light:#ebf4ff;
+    --green:#38a169; --red:#e53e3e; --orange:#dd6b20; --purple:#805ad5; --gray:#718096;
+    --bg:#f5f7fa; --card:#ffffff; --text:#2d3748; --muted:#718096; --border:#e2e8f0;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans TC",sans-serif;
+    background:var(--bg); color:var(--text); padding-bottom:calc(64px + env(safe-area-inset-bottom));}
+  .hidden{display:none !important;}
+
+  /* ===== 登入畫面 ===== */
+  #loginView{position:fixed; inset:0; background:linear-gradient(160deg,#2b6cb0,#1a4e8a); z-index:100;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; padding:24px; text-align:center;}
+  #loginView h1{color:#fff; font-size:28px; margin:0;}
+  #loginView p{color:#bee3f8; margin:0; font-size:14px; line-height:1.7;}
+  #loginBtn{background:#fff; color:var(--blue-dark); border:none; border-radius:12px; padding:14px 28px;
+    font-size:17px; font-weight:700; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,.2);}
+  #loginDenied{color:#fed7d7; font-size:14px;}
+
+  /* ===== 頂部 ===== */
+  header{background:var(--blue); color:#fff; padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
+    display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:10;}
+  header h1{font-size:18px; margin:0; font-weight:700;}
+  header .user{font-size:12px; opacity:.85;}
+
+  /* ===== 底部分頁 ===== */
+  nav{position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid var(--border);
+    display:flex; z-index:20; padding-bottom:env(safe-area-inset-bottom);}
+  nav button{flex:1; border:none; background:none; padding:9px 0 7px; font-size:11px; color:var(--muted);
+    cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:2px;}
+  nav button .ic{font-size:22px; line-height:1;}
+  nav button.active{color:var(--blue); font-weight:700;}
+
+  main{max-width:640px; margin:0 auto; padding:14px;}
+  .card{background:var(--card); border-radius:14px; padding:16px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.06);}
+  .card h2{font-size:15px; margin:0 0 10px; color:var(--muted); font-weight:600;}
+  .btn{border:none; border-radius:10px; padding:12px 18px; font-size:16px; font-weight:600; cursor:pointer;}
+  .btn-blue{background:var(--blue); color:#fff;}
+  .btn-gray{background:#edf2f7; color:var(--text);}
+  .btn-red{background:#fff5f5; color:var(--red);}
+  .btn-green{background:var(--green); color:#fff;}
+  .btn:disabled{opacity:.5;}
+
+  /* ===== 記帳頁 ===== */
+  #micBtn{width:110px; height:110px; border-radius:50%; border:none; background:var(--blue); color:#fff;
+    font-size:44px; cursor:pointer; display:block; margin:6px auto 4px; box-shadow:0 6px 18px rgba(43,108,176,.35);
+    transition:transform .15s;}
+  #micBtn:active{transform:scale(.94);}
+  #micBtn.recording{background:var(--red); animation:pulse 1.2s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(229,62,62,.5);}70%{box-shadow:0 0 0 22px rgba(229,62,62,0);}100%{box-shadow:0 0 0 0 rgba(229,62,62,0);}}
+  #micHint{text-align:center; color:var(--muted); font-size:13px; margin:2px 0 12px; min-height:20px;}
+  #speechText{width:100%; border:1.5px solid var(--border); border-radius:12px; padding:12px; font-size:16px;
+    min-height:76px; resize:vertical; font-family:inherit;}
+  #speechText:focus{outline:none; border-color:var(--blue);}
+  .inputRow{display:flex; gap:8px; margin-top:10px;}
+  .inputRow .btn{flex:1;}
+  #parseStatus{text-align:center; color:var(--blue); font-size:14px; margin-top:8px; min-height:20px;}
+
+  /* 確認卡片 */
+  .confirmCard{border:2px solid var(--blue); border-radius:14px; padding:14px; margin-top:12px; background:var(--blue-light);}
+  .confirmCard .fields{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .confirmCard label{font-size:12px; color:var(--muted); display:block; margin-bottom:2px;}
+  .confirmCard input,.confirmCard select{width:100%; border:1px solid var(--border); border-radius:8px; padding:8px;
+    font-size:15px; background:#fff; font-family:inherit;}
+  .confirmCard .full{grid-column:1/-1;}
+  .confirmCard .rowBtns{display:flex; gap:8px; margin-top:12px;}
+  .confirmCard .rowBtns .btn{flex:1;}
+
+  /* 最近紀錄 */
+  .recItem{display:flex; align-items:center; gap:10px; padding:10px 2px; border-bottom:1px solid var(--border);}
+  .recItem:last-child{border-bottom:none;}
+  .recItem .cat{width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+    font-size:15px; font-weight:700; color:#fff; flex-shrink:0;}
+  .recItem .info{flex:1; min-width:0;}
+  .recItem .name{font-size:15px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .recItem .meta{font-size:12px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .recItem .amt{font-size:16px; font-weight:700; white-space:nowrap;}
+  .recItem .del{border:none; background:none; color:#cbd5e0; font-size:18px; cursor:pointer; padding:4px;}
+
+  /* ===== 儀表板 ===== */
+  .statGrid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:12px;}
+  .statCard{background:var(--card); border-radius:14px; padding:14px 10px; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,.06);}
+  .statCard .lbl{font-size:12px; color:var(--muted);}
+  .statCard .val{font-size:19px; font-weight:800; margin-top:4px; letter-spacing:-.5px;}
+  .loanCard{display:flex; flex-direction:column; gap:6px; margin-bottom:10px;}
+  .loanCard .top{display:flex; justify-content:space-between; align-items:baseline;}
+  .loanCard .nm{font-size:14px; font-weight:600;}
+  .loanCard .bal{font-size:20px; font-weight:800; color:var(--blue-dark);}
+  .loanCard .bar{height:8px; border-radius:4px; background:#e2e8f0; overflow:hidden;}
+  .loanCard .bar>div{height:100%; background:var(--green); border-radius:4px;}
+  .loanCard .sub{font-size:12px; color:var(--muted); display:flex; justify-content:space-between;}
+  .segBtns{display:flex; background:#edf2f7; border-radius:10px; padding:3px; margin-bottom:12px;}
+  .segBtns button{flex:1; border:none; background:none; border-radius:8px; padding:7px 0; font-size:14px; color:var(--muted); cursor:pointer;}
+  .segBtns button.active{background:#fff; color:var(--blue); font-weight:700; box-shadow:0 1px 3px rgba(0,0,0,.1);}
+  .catRow{margin-bottom:10px; cursor:pointer;}
+  .catRow .top{display:flex; justify-content:space-between; font-size:14px; margin-bottom:4px;}
+  .catRow .top .n{font-weight:600;}
+  .catRow .bar{height:14px; border-radius:7px; background:#edf2f7; overflow:hidden;}
+  .catRow .bar>div{height:100%; border-radius:7px; transition:width .4s;}
+  .catDetail{padding:6px 0 2px 8px; font-size:13px; color:var(--muted);}
+  .catDetail div{display:flex; justify-content:space-between; padding:3px 0;}
+  .trend{display:flex; align-items:flex-end; gap:4px; height:120px; margin-top:6px;}
+  .trend .m{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end;}
+  .trend .m .b{width:100%; background:var(--blue); border-radius:4px 4px 0 0; min-height:2px;}
+  .trend .m .t{font-size:10px; color:var(--muted);}
+  .trend .m .v{font-size:9px; color:var(--muted);}
+
+  /* ===== 設定 ===== */
+  .setRow{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;}
+  .setRow label{font-size:12px; color:var(--muted); display:block; margin-bottom:2px;}
+  .setRow input{width:100%; border:1px solid var(--border); border-radius:8px; padding:9px; font-size:15px; font-family:inherit;}
+  .setRow .full{grid-column:1/-1;}
+  #importArea{width:100%; border:1.5px dashed var(--border); border-radius:10px; padding:10px; font-size:12px;
+    min-height:90px; font-family:monospace; resize:vertical;}
+  .note{font-size:12px; color:var(--muted); line-height:1.6; margin-top:8px;}
+
+  /* toast */
+  #toast{position:fixed; bottom:calc(80px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%);
+    background:rgba(45,55,72,.95); color:#fff; padding:10px 20px; border-radius:10px; font-size:14px; z-index:99;
+    opacity:0; transition:opacity .25s; pointer-events:none; max-width:88vw; text-align:center;}
+  #toast.show{opacity:1;}
+  #toast.err{background:rgba(197,48,48,.95);}
+</style>
+</head>
+<body>
+
+<!-- 登入 -->
+<div id="loginView">
+  <div style="font-size:64px">💰</div>
+  <h1>家庭手帳</h1>
+  <p>用說的就能記帳<br>家庭支出儀表板隨時看</p>
+  <button id="loginBtn">使用 Google 登入</button>
+  <div id="loginDenied" class="hidden"></div>
+</div>
+
+<div id="appView" class="hidden">
+<header>
+  <h1 id="pageTitle">記帳</h1>
+  <span class="user" id="userLabel"></span>
+</header>
+
+<main>
+  <!-- ===== 記帳 ===== -->
+  <section id="tab-record">
+    <div class="card">
+      <button id="micBtn" type="button">🎤</button>
+      <div id="micHint">按一下開始說話</div>
+      <textarea id="speechText" placeholder="例：我今天晚餐在新竹周記滷肉飯吃了250元&#10;（也可以按鍵盤上的 🎤 用 iPhone 聽寫輸入）"></textarea>
+      <div class="inputRow">
+        <button class="btn btn-blue" id="parseBtn">AI 解析記帳</button>
+        <button class="btn btn-gray" id="clearBtn">清除</button>
+      </div>
+      <div id="parseStatus"></div>
+      <div id="confirmZone"></div>
+    </div>
+    <div class="card">
+      <h2>最近紀錄</h2>
+      <div id="recentList"><div class="note">載入中…</div></div>
+    </div>
+  </section>
+
+  <!-- ===== 儀表板 ===== -->
+  <section id="tab-dash" class="hidden">
+    <div class="statGrid">
+      <div class="statCard"><div class="lbl">今天支出</div><div class="val" id="stToday">–</div></div>
+      <div class="statCard"><div class="lbl">本月支出</div><div class="val" id="stMonth">–</div></div>
+      <div class="statCard"><div class="lbl">今年支出</div><div class="val" id="stYear">–</div></div>
+    </div>
+    <div class="card" id="loanZone">
+      <h2>貸款剩餘款</h2>
+      <div id="loanCards"><div class="note">尚未設定貸款，請到「設定」輸入貸款條件</div></div>
+    </div>
+    <div class="card">
+      <h2>分類支出</h2>
+      <div class="segBtns">
+        <button data-range="month" class="active">本月</button>
+        <button data-range="year">今年</button>
+      </div>
+      <div id="catBars"></div>
+    </div>
+    <div class="card">
+      <h2>月度趨勢（今年）</h2>
+      <div class="trend" id="trendZone"></div>
+    </div>
+  </section>
+
+  <!-- ===== 設定 ===== -->
+  <section id="tab-set" class="hidden">
+    <div class="card">
+      <h2>🏠 房貸設定</h2>
+      <div class="setRow">
+        <div><label>貸款總額（元）</label><input id="mo_principal" type="number" inputmode="numeric" placeholder="例 8000000"></div>
+        <div><label>年利率（%）</label><input id="mo_rate" type="number" step="0.001" inputmode="decimal" placeholder="例 2.185"></div>
+        <div><label>總期數（月）</label><input id="mo_months" type="number" inputmode="numeric" placeholder="例 360"></div>
+        <div><label>首次還款日</label><input id="mo_start" type="date"></div>
+        <div><label>手動校正餘額（選填）</label><input id="mo_ovbal" type="number" inputmode="numeric" placeholder="銀行對帳單餘額"></div>
+        <div><label>校正基準日</label><input id="mo_ovdate" type="date"></div>
+      </div>
+      <button class="btn btn-blue" style="width:100%" onclick="saveLoan('mortgage')">儲存房貸設定</button>
+    </div>
+    <div class="card">
+      <h2>💳 信貸設定</h2>
+      <div class="setRow">
+        <div><label>貸款總額（元）</label><input id="cr_principal" type="number" inputmode="numeric" placeholder="例 1000000"></div>
+        <div><label>年利率（%）</label><input id="cr_rate" type="number" step="0.001" inputmode="decimal" placeholder="例 3.5"></div>
+        <div><label>總期數（月）</label><input id="cr_months" type="number" inputmode="numeric" placeholder="例 84"></div>
+        <div><label>首次還款日</label><input id="cr_start" type="date"></div>
+        <div><label>手動校正餘額（選填）</label><input id="cr_ovbal" type="number" inputmode="numeric" placeholder="銀行對帳單餘額"></div>
+        <div><label>校正基準日</label><input id="cr_ovdate" type="date"></div>
+      </div>
+      <button class="btn btn-blue" style="width:100%" onclick="saveLoan('credit')">儲存信貸設定</button>
+    </div>
+    <div class="card">
+      <h2>📥 匯入試算表舊資料</h2>
+      <div class="note" style="margin-top:0">到 Google 試算表全選（⌘A / 長按選擇全部）→ 複製 → 貼到下面 → 按匯入。<br>欄位順序需為：時間戳記、支出時間、金額、名稱、方式、分類、地點、備註。</div>
+      <textarea id="importArea" placeholder="在這裡貼上試算表內容…"></textarea>
+      <div class="inputRow">
+        <button class="btn btn-blue" id="importBtn">解析並匯入</button>
+        <button class="btn btn-red" id="clearImportedBtn">刪除已匯入資料</button>
+      </div>
+      <div class="note" id="importStatus"></div>
+    </div>
+    <div class="card">
+      <h2>帳號</h2>
+      <div class="note" id="accInfo" style="margin-top:0"></div>
+      <div class="note">新增記帳會同步回填原 Google 表單（試算表持續有完整備份）；修改與刪除只影響 App 內資料。</div>
+      <button class="btn btn-gray" style="width:100%; margin-top:10px" id="logoutBtn">登出</button>
+    </div>
+  </section>
+</main>
+
+<nav>
+  <button data-tab="record" class="active"><span class="ic">🎤</span>記帳</button>
+  <button data-tab="dash"><span class="ic">📊</span>儀表板</button>
+  <button data-tab="set"><span class="ic">⚙️</span>設定</button>
+</nav>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, doc, addDoc, setDoc, getDoc, updateDoc, deleteDoc, getDocs,
+         onSnapshot, query, where, orderBy, writeBatch, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+/* ================= 基本設定 ================= */
+const firebaseConfig = {
+  apiKey:"AIzaSyBrs80vpFVe-iEh5ctzRWfYHUBb3KGvILo",
+  authDomain:"speech-to-text-2f776.firebaseapp.com",
+  projectId:"speech-to-text-2f776",
+  storageBucket:"speech-to-text-2f776.firebasestorage.app",
+  messagingSenderId:"283739023798",
+  appId:"1:283739023798:web:3091ec2bcf6262b5ecb917"
+};
+// 家人白名單（要同步修改 firestore.rules 的 isFamily 名單）
+const FAMILY_EMAILS = ["jiahowchang@gmail.com"];
+const PROXY_URL = "https://patient-mkargc7maa-uc.a.run.app";
+const COL_RECORDS = "expense_records";
+const COL_LOANS   = "expense_loans";
+
+/* Google 表單回填（entry ID 來自表單 FB_PUBLIC_LOAD_DATA_） */
+const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSdxp7RiJ62Bf7-fd3_l0wGey5p-rOSY5LNamN0PWWyTAN8_nw/formResponse";
+const FORM_ENTRY = { date:"1504579072", amount:"1829840410", name:"620429022",
+                     method:"161956799", category:"1461021842", place:"1565428407", note:"973023603" };
+const FORM_METHOD_OPTS = ["現金","刷卡(包含App)","網銀轉帳"];
+const FORM_CAT_OPTS = ["食","衣","住","行","育","樂"];
+const FORM_PLACE_OPTS = ["7-11","全家","全聯/大全聯","家樂福","線上購物(PChome，蝦皮...)","Costco","高鐵/台鐵","捷運","Ubike","夜市","新竹"];
+
+/* 分類 */
+const CATEGORIES = ["食","衣","住","行","育","樂","健康","醫療","孝親","人際","過年紅包","夢想","美儀","家庭","其他"];
+const MAJOR_ORDER = ["食","衣","住","行","其他"];
+const MAJOR_COLOR = { "食":"#38a169","衣":"#805ad5","住":"#dd6b20","行":"#3182ce","其他":"#718096" };
+function majorOf(cat){ return ["食","衣","住","行"].includes(cat) ? cat : "其他"; }
+
+/* ================= 小工具 ================= */
+const $ = id => document.getElementById(id);
+let toastTimer=null;
+function toast(msg, isErr){ const t=$("toast"); t.textContent=msg; t.className="show"+(isErr?" err":"");
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.className="",2600); }
+function money(n){ return "$" + Math.round(n).toLocaleString("zh-TW"); }
+function pad(n){ return String(n).padStart(2,"0"); }
+function dstr(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function todayStr(){ return dstr(new Date()); }
+function esc(s){ return String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+/* ================= Firebase 初始化 & 登入 ================= */
+let db=null, auth=null, me=null;
+try{ const app=initializeApp(firebaseConfig); db=getFirestore(app); auth=getAuth(app); }
+catch(e){ console.warn("Firebase init failed", e); }
+
+$("loginBtn").onclick = async ()=>{
+  try{ await signInWithPopup(auth, new GoogleAuthProvider()); }
+  catch(e){ toast("登入失敗："+(e.code||e.message), true); }
+};
+$("logoutBtn").onclick = ()=> signOut(auth);
+
+onAuthStateChanged(auth, user=>{
+  if (user && FAMILY_EMAILS.includes(user.email)){
+    me = user;
+    $("loginView").classList.add("hidden");
+    $("appView").classList.remove("hidden");
+    $("userLabel").textContent = user.displayName || user.email;
+    $("accInfo").textContent = "已登入："+(user.displayName||"")+"（"+user.email+"）";
+    subscribeYear();
+    loadLoans();
+  } else {
+    me = null;
+    $("appView").classList.add("hidden");
+    $("loginView").classList.remove("hidden");
+    const d=$("loginDenied");
+    if (user){ d.textContent = user.email+" 不在家庭白名單內，請聯絡管理員"; d.classList.remove("hidden"); signOut(auth); }
+    else d.classList.add("hidden");
+  }
+});
+
+/* ================= 分頁切換 ================= */
+const TAB_TITLES = { record:"記帳", dash:"家庭支出儀表板", set:"設定" };
+document.querySelectorAll("nav button").forEach(b=>{
+  b.onclick = ()=>{
+    document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active", x===b));
+    ["record","dash","set"].forEach(t=> $("tab-"+t).classList.toggle("hidden", t!==b.dataset.tab));
+    $("pageTitle").textContent = TAB_TITLES[b.dataset.tab];
+    window.scrollTo(0,0);
+  };
+});
+
+/* ================= 語音輸入 ================= */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec=null, recOn=false;
+if (!SR){
+  $("micBtn").style.display="none";
+  $("micHint").textContent = "此瀏覽器不支援語音辨識，請點文字框後按鍵盤上的 🎤 聽寫";
+}
+$("micBtn").onclick = ()=>{
+  if (!SR) return;
+  if (recOn){ try{rec.stop();}catch(_){} return; }
+  rec = new SR();
+  rec.lang = "zh-TW";
+  rec.interimResults = true;
+  rec.continuous = false;
+  let finalText = "";
+  rec.onstart = ()=>{ recOn=true; $("micBtn").classList.add("recording"); $("micHint").textContent="聆聽中…再按一下結束"; };
+  rec.onresult = e=>{
+    let interim="";
+    for (let i=e.resultIndex;i<e.results.length;i++){
+      if (e.results[i].isFinal) finalText += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    $("speechText").value = finalText + interim;
+  };
+  rec.onerror = e=>{ if(e.error!=="aborted") toast("語音辨識錯誤："+e.error, true); };
+  rec.onend = ()=>{
+    recOn=false; $("micBtn").classList.remove("recording"); $("micHint").textContent="按一下開始說話";
+    if ($("speechText").value.trim()) parseNow();
+  };
+  try{ rec.start(); }catch(e){ toast("無法啟動語音辨識", true); }
+};
+$("clearBtn").onclick = ()=>{ $("speechText").value=""; $("confirmZone").innerHTML=""; $("parseStatus").textContent=""; };
+$("parseBtn").onclick = ()=> parseNow();
+
+/* ================= AI 解析 ================= */
+function buildSystemPrompt(){
+  const now = new Date();
+  const weekday = ["日","一","二","三","四","五","六"][now.getDay()];
+  return `你是家庭記帳助理。使用者會用台灣中文口語描述一筆或多筆支出，你要解析成結構化 JSON。
+今天是 ${dstr(now)}（星期${weekday}），請據此換算「今天、昨天、前天、上週五」等相對日期。
+
+只輸出一個 JSON 物件，不要任何其他文字，格式：
+{"records":[{"date":"YYYY-MM-DD","amount":數字,"name":"支出名稱(簡短)","method":"付款方式","category":"分類","place":"地點","note":"備註"}]}
+
+規則：
+- 一句話可能包含多筆支出，每筆一個物件
+- amount 是新台幣數字；沒說日期就用今天
+- method 只能是：現金、刷卡(包含App)、網銀轉帳 三選一；沒提到就填「現金」；有說是哪張卡（台新卡、中國信託等）附加在 note
+- category 從這個清單選最合適的一個：${CATEGORIES.join("、")}。吃喝→食；衣物鞋帽剪髮→衣；房租房貸水電瓦斯管理費日用品家具→住；交通加油停車高鐵捷運→行；學費書籍課程補習→育；娛樂旅遊訂閱→樂；健身運動→健康；看醫生買藥→醫療；給父母長輩→孝親；彩券→夢想
+- place 填店名或地點，沒提到留空字串
+- name 精簡（例：晚餐、加油、水費），不要重複地點`;
+}
+async function parseNow(){
+  const text = $("speechText").value.trim();
+  if (!text){ toast("請先說話或輸入文字", true); return; }
+  $("parseBtn").disabled = true;
+  $("parseStatus").textContent = "AI 解析中…";
+  try{
+    const r = await fetch(PROXY_URL, {
+      method:"POST", headers:{ "content-type":"application/json" },
+      body: JSON.stringify({ model:"claude-haiku-4-5", max_tokens:1000,
+        system: buildSystemPrompt(), messages:[{role:"user", content:text}] })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data?.error?.message || ("HTTP "+r.status));
+    const raw = (data.content||[]).map(c=>c.text||"").join("");
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (!m) throw new Error("AI 回覆無法解析");
+    const parsed = JSON.parse(m[0]);
+    const recs = Array.isArray(parsed.records) ? parsed.records : [parsed];
+    if (!recs.length) throw new Error("沒有解析到支出");
+    $("parseStatus").textContent = "";
+    renderConfirm(recs, text);
+  }catch(e){
+    $("parseStatus").textContent = "";
+    toast("解析失敗："+e.message, true);
+  }finally{
+    $("parseBtn").disabled = false;
+  }
+}
+
+/* ================= 確認卡片 ================= */
+function confirmCardHTML(r, i){
+  const catOpts = CATEGORIES.map(c=>`<option ${c===majorSafe(r.category)?"selected":""}>${c}</option>`).join("");
+  const methodOpts = ["現金","刷卡(包含App)","網銀轉帳"].map(mm=>`<option ${mm===(r.method||"現金")?"selected":""}>${mm}</option>`).join("");
+  return `<div class="confirmCard" data-i="${i}">
+    <div class="fields">
+      <div><label>日期</label><input type="date" class="f-date" value="${esc(r.date||todayStr())}"></div>
+      <div><label>金額</label><input type="number" inputmode="numeric" class="f-amount" value="${esc(r.amount??"")}"></div>
+      <div class="full"><label>名稱</label><input class="f-name" value="${esc(r.name||"")}"></div>
+      <div><label>分類</label><select class="f-cat">${catOpts}</select></div>
+      <div><label>付款方式</label><select class="f-method">${methodOpts}</select></div>
+      <div class="full"><label>地點</label><input class="f-place" value="${esc(r.place||"")}"></div>
+      <div class="full"><label>備註</label><input class="f-note" value="${esc(r.note||"")}"></div>
+    </div>
+  </div>`;
+}
+function majorSafe(c){ return CATEGORIES.includes(c) ? c : "其他"; }
+function renderConfirm(recs, rawText, editId){
+  const zone = $("confirmZone");
+  zone.innerHTML = recs.map((r,i)=>confirmCardHTML(r,i)).join("") +
+    `<div class="rowBtns" style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-green" id="saveAllBtn" style="flex:2">${editId?"更新這筆":"儲存 "+recs.length+" 筆記帳"}</button>
+      <button class="btn btn-gray" id="cancelConfirmBtn" style="flex:1">取消</button>
+    </div>`;
+  $("cancelConfirmBtn").onclick = ()=>{ zone.innerHTML=""; };
+  $("saveAllBtn").onclick = async ()=>{
+    $("saveAllBtn").disabled = true;
+    try{
+      const cards = [...zone.querySelectorAll(".confirmCard")];
+      let saved = 0;
+      for (const c of cards){
+        const rec = {
+          date: c.querySelector(".f-date").value || todayStr(),
+          amount: parseFloat(c.querySelector(".f-amount").value),
+          name: c.querySelector(".f-name").value.trim() || "支出",
+          method: c.querySelector(".f-method").value,
+          category: c.querySelector(".f-cat").value,
+          place: c.querySelector(".f-place").value.trim(),
+          note: c.querySelector(".f-note").value.trim(),
+        };
+        if (!(rec.amount>0)){ toast("金額必須大於 0", true); $("saveAllBtn").disabled=false; return; }
+        rec.majorCat = majorOf(rec.category);
+        if (editId){
+          await updateDoc(doc(db, COL_RECORDS, editId), rec);
+        } else {
+          rec.rawText = rawText||"";
+          rec.createdBy = me.email;
+          rec.created = serverTimestamp();
+          rec.imported = false;
+          rec.formSynced = true; // 樂觀標記（no-cors 拿不到結果）
+          await addDoc(collection(db, COL_RECORDS), rec);
+          submitToForm(rec); // fire-and-forget 回填 Google 表單
+        }
+        saved++;
+      }
+      zone.innerHTML=""; $("speechText").value="";
+      toast(editId ? "已更新" : "已記帳 "+saved+" 筆 ✓");
+    }catch(e){ toast("儲存失敗："+e.message, true); }
+    finally{ if($("saveAllBtn")) $("saveAllBtn").disabled=false; }
+  };
+}
+
+/* ================= Google 表單回填 ================= */
+function submitToForm(rec){
+  try{
+    const p = new URLSearchParams();
+    const d = new Date(rec.date+"T12:00:00");
+    p.append(`entry.${FORM_ENTRY.date}_year`, d.getFullYear());
+    p.append(`entry.${FORM_ENTRY.date}_month`, d.getMonth()+1);
+    p.append(`entry.${FORM_ENTRY.date}_day`, d.getDate());
+    p.append(`entry.${FORM_ENTRY.amount}`, rec.amount);
+    p.append(`entry.${FORM_ENTRY.name}`, rec.name);
+    if (FORM_METHOD_OPTS.includes(rec.method)) p.append(`entry.${FORM_ENTRY.method}`, rec.method);
+    else { p.append(`entry.${FORM_ENTRY.method}`, "__other_option__"); p.append(`entry.${FORM_ENTRY.method}.other_option_response`, rec.method); }
+    if (FORM_CAT_OPTS.includes(rec.category)) p.append(`entry.${FORM_ENTRY.category}`, rec.category);
+    else { p.append(`entry.${FORM_ENTRY.category}`, "__other_option__"); p.append(`entry.${FORM_ENTRY.category}.other_option_response`, rec.category); }
+    const place = rec.place || "未填寫";  // 表單的地點是必填，空白會被整筆拒絕
+    if (FORM_PLACE_OPTS.includes(place)) p.append(`entry.${FORM_ENTRY.place}`, place);
+    else { p.append(`entry.${FORM_ENTRY.place}`, "__other_option__"); p.append(`entry.${FORM_ENTRY.place}.other_option_response`, place); }
+    if (rec.note) p.append(`entry.${FORM_ENTRY.note}`, rec.note);
+    fetch(FORM_URL, { method:"POST", mode:"no-cors",
+      headers:{ "content-type":"application/x-www-form-urlencoded" }, body:p.toString() })
+      .catch(e=>console.warn("form sync failed", e));
+  }catch(e){ console.warn("form sync failed", e); }
+}
+
+/* ================= 年度資料訂閱 & 儀表板 ================= */
+let allRecords = [];   // 今年所有紀錄
+let catRange = "month";
+let unsubYear = null;
+function subscribeYear(){
+  if (unsubYear) unsubYear();
+  const yearStart = new Date().getFullYear()+"-01-01";
+  const q = query(collection(db, COL_RECORDS), where("date", ">=", yearStart), orderBy("date","desc"));
+  unsubYear = onSnapshot(q, snap=>{
+    allRecords = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+    renderRecent();
+    renderDashboard();
+  }, e=>{ console.warn(e); toast("讀取資料失敗："+e.code, true); });
+}
+
+function renderRecent(){
+  const list = allRecords.slice()
+    .sort((a,b)=> (b.date.localeCompare(a.date)) || ((b.created?.seconds||0)-(a.created?.seconds||0)))
+    .slice(0,10);
+  if (!list.length){ $("recentList").innerHTML = '<div class="note">還沒有紀錄，說一句話開始記帳吧！</div>'; return; }
+  $("recentList").innerHTML = list.map(r=>`
+    <div class="recItem" data-id="${r.id}">
+      <div class="cat" style="background:${MAJOR_COLOR[r.majorCat||"其他"]}">${esc(r.category||"?")}</div>
+      <div class="info">
+        <div class="name">${esc(r.name)}</div>
+        <div class="meta">${esc(r.date)}${r.place?" · "+esc(r.place):""}</div>
+      </div>
+      <div class="amt">${money(r.amount)}</div>
+      <button class="del" title="刪除">✕</button>
+    </div>`).join("");
+  $("recentList").querySelectorAll(".recItem").forEach(el=>{
+    el.querySelector(".del").onclick = async (ev)=>{
+      ev.stopPropagation();
+      if (!confirm("刪除這筆紀錄？（表單/試算表中的資料不會刪除）")) return;
+      try{ await deleteDoc(doc(db, COL_RECORDS, el.dataset.id)); toast("已刪除"); }
+      catch(e){ toast("刪除失敗："+e.message, true); }
+    };
+    el.onclick = ()=>{
+      const r = allRecords.find(x=>x.id===el.dataset.id);
+      if (!r) return;
+      renderConfirm([r], r.rawText||"", r.id);
+      window.scrollTo({top:0, behavior:"smooth"});
+    };
+  });
+}
+
+function renderDashboard(){
+  const t = todayStr();
+  const monthStart = t.slice(0,7)+"-01";
+  let sToday=0, sMonth=0, sYear=0;
+  for (const r of allRecords){
+    const a = +r.amount||0;
+    sYear += a;
+    if (r.date >= monthStart) sMonth += a;
+    if (r.date === t) sToday += a;
+  }
+  $("stToday").textContent = money(sToday);
+  $("stMonth").textContent = money(sMonth);
+  $("stYear").textContent  = money(sYear);
+  renderCatBars();
+  renderTrend();
+  renderLoans();
+}
+
+document.querySelectorAll(".segBtns button").forEach(b=>{
+  b.onclick = ()=>{
+    document.querySelectorAll(".segBtns button").forEach(x=>x.classList.toggle("active", x===b));
+    catRange = b.dataset.range;
+    renderCatBars();
+  };
+});
+
+let openMajor = null;
+function renderCatBars(){
+  const t = todayStr();
+  const from = catRange==="month" ? t.slice(0,7)+"-01" : t.slice(0,4)+"-01-01";
+  const byMajor = {}, byCat = {};
+  for (const r of allRecords){
+    if (r.date < from) continue;
+    const a = +r.amount||0;
+    const mj = r.majorCat || majorOf(r.category);
+    byMajor[mj] = (byMajor[mj]||0)+a;
+    (byCat[mj] = byCat[mj]||{})[r.category||"其他"] = (byCat[mj][r.category||"其他"]||0)+a;
+  }
+  const max = Math.max(1, ...Object.values(byMajor));
+  const total = Object.values(byMajor).reduce((s,v)=>s+v,0) || 1;
+  $("catBars").innerHTML = MAJOR_ORDER.filter(mj=>byMajor[mj]).map(mj=>{
+    const v = byMajor[mj];
+    const detail = openMajor===mj
+      ? `<div class="catDetail">${Object.entries(byCat[mj]).sort((a,b)=>b[1]-a[1])
+          .map(([c,cv])=>`<div><span>${esc(c)}</span><span>${money(cv)}</span></div>`).join("")}</div>` : "";
+    return `<div class="catRow" data-mj="${mj}">
+      <div class="top"><span class="n">${mj}</span><span>${money(v)}（${Math.round(v/total*100)}%）</span></div>
+      <div class="bar"><div style="width:${Math.round(v/max*100)}%; background:${MAJOR_COLOR[mj]}"></div></div>
+      ${detail}</div>`;
+  }).join("") || '<div class="note">這段期間沒有紀錄</div>';
+  $("catBars").querySelectorAll(".catRow").forEach(el=>{
+    el.onclick = ()=>{ openMajor = openMajor===el.dataset.mj ? null : el.dataset.mj; renderCatBars(); };
+  });
+}
+
+function renderTrend(){
+  const year = new Date().getFullYear();
+  const sums = Array(12).fill(0);
+  for (const r of allRecords){
+    const m = parseInt(r.date.slice(5,7),10)-1;
+    if (r.date.slice(0,4)==String(year) && m>=0 && m<12) sums[m] += +r.amount||0;
+  }
+  const max = Math.max(1,...sums);
+  $("trendZone").innerHTML = sums.map((v,i)=>`
+    <div class="m">
+      <div class="v">${v? (v>=10000? (v/10000).toFixed(1)+"萬" : Math.round(v/1000)+"k") :""}</div>
+      <div class="b" style="height:${Math.max(2, Math.round(v/max*84))}px; ${v?"":"background:#e2e8f0"}"></div>
+      <div class="t">${i+1}月</div>
+    </div>`).join("");
+}
+
+/* ================= 貸款 ================= */
+const LOANS = { mortgage:null, credit:null };
+const LOAN_LABEL = { mortgage:"🏠 房貸剩餘款", credit:"💳 信貸剩餘款" };
+async function loadLoans(){
+  for (const t of ["mortgage","credit"]){
+    try{
+      const snap = await getDoc(doc(db, COL_LOANS, t));
+      LOANS[t] = snap.exists() ? snap.data() : null;
+    }catch(e){ console.warn(e); }
+    fillLoanForm(t);
+  }
+  renderLoans();
+}
+function loanPrefix(t){ return t==="mortgage" ? "mo" : "cr"; }
+function fillLoanForm(t){
+  const p = loanPrefix(t), L = LOANS[t];
+  if (!L) return;
+  $(p+"_principal").value = L.principal||"";
+  $(p+"_rate").value = L.annualRate||"";
+  $(p+"_months").value = L.months||"";
+  $(p+"_start").value = L.startDate||"";
+  $(p+"_ovbal").value = L.override?.balance ?? "";
+  $(p+"_ovdate").value = L.override?.asOf ?? "";
+}
+window.saveLoan = async function(t){
+  const p = loanPrefix(t);
+  const principal = parseFloat($(p+"_principal").value);
+  const annualRate = parseFloat($(p+"_rate").value);
+  const months = parseInt($(p+"_months").value,10);
+  const startDate = $(p+"_start").value;
+  if (!(principal>0) || !(annualRate>=0) || !(months>0) || !startDate){
+    toast("請完整填寫：總額、利率、期數、首次還款日", true); return;
+  }
+  const ovbal = parseFloat($(p+"_ovbal").value);
+  const ovdate = $(p+"_ovdate").value;
+  const data = {
+    name: t==="mortgage"?"房貸":"信貸", type:t,
+    principal, annualRate, months, startDate,
+    override: (ovbal>0 && ovdate) ? { balance:ovbal, asOf:ovdate } : null,
+    updated: serverTimestamp(), updatedBy: me.email,
+  };
+  try{ await setDoc(doc(db, COL_LOANS, t), data); LOANS[t]=data; renderLoans(); toast("已儲存 ✓"); }
+  catch(e){ toast("儲存失敗："+e.message, true); }
+};
+/* 等額本息：期付金 = P*r/(1-(1+r)^-n)；k 期後餘額 = P*(1+r)^k - pmt*((1+r)^k-1)/r */
+function monthsBetween(fromStr, to){
+  const f = new Date(fromStr+"T00:00:00");
+  let k = (to.getFullYear()-f.getFullYear())*12 + (to.getMonth()-f.getMonth());
+  if (to.getDate() >= f.getDate()) k += 1;  // 本月還款日已過 → 本月這期已繳
+  return Math.max(0, k);
+}
+function loanStatus(L){
+  const now = new Date();
+  const r = L.annualRate/100/12;
+  const pmt = r>0 ? L.principal*r/(1-Math.pow(1+r,-L.months)) : L.principal/L.months;
+  let balance, paidK;
+  if (L.override){
+    const k = Math.min(monthsBetween(L.override.asOf, now), L.months);
+    balance = r>0 ? L.override.balance*Math.pow(1+r,k) - pmt*(Math.pow(1+r,k)-1)/r
+                  : L.override.balance - pmt*k;
+    paidK = monthsBetween(L.startDate, now);
+  } else {
+    const k = Math.min(monthsBetween(L.startDate, now), L.months);
+    balance = r>0 ? L.principal*Math.pow(1+r,k) - pmt*(Math.pow(1+r,k)-1)/r
+                  : L.principal - pmt*k;
+    paidK = k;
+  }
+  balance = Math.max(0, balance);
+  return { balance, pmt, paidK: Math.min(paidK, L.months) };
+}
+function renderLoans(){
+  const zone = $("loanCards");
+  const items = ["mortgage","credit"].filter(t=>LOANS[t]);
+  if (!items.length){ zone.innerHTML = '<div class="note">尚未設定貸款，請到「設定」輸入貸款條件</div>'; return; }
+  zone.innerHTML = items.map(t=>{
+    const L = LOANS[t], s = loanStatus(L);
+    const pct = Math.min(100, Math.round((1 - s.balance/L.principal)*100));
+    return `<div class="loanCard">
+      <div class="top"><span class="nm">${LOAN_LABEL[t]}</span><span class="bal">${money(s.balance)}</span></div>
+      <div class="bar"><div style="width:${pct}%"></div></div>
+      <div class="sub"><span>已還 ${pct}%（${s.paidK}/${L.months} 期）</span><span>月付約 ${money(s.pmt)}</span></div>
+    </div>`;
+  }).join("");
+}
+
+/* ================= 試算表匯入 ================= */
+function parseSheetDate(s){
+  const m = String(s).trim().match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+  if (!m) return null;
+  return m[1]+"-"+pad(+m[2])+"-"+pad(+m[3]);
+}
+function parseTSV(text){
+  const rows = text.split(/\r?\n/).map(l=>l.split("\t"));
+  const out = [], skipped = [];
+  for (const c of rows){
+    if (c.length < 4) continue;
+    if (/時間戳記/.test(c[0])) continue;               // 標題列
+    const date = parseSheetDate(c[1]) || parseSheetDate(c[0]);
+    const amount = parseFloat(String(c[2]).replace(/[,$\s]/g,""));
+    if (!date || !(amount>0)){ if(c.join("").trim()) skipped.push(c.join(" ")); continue; }
+    const cats = String(c[5]||"").split(",").map(s=>s.trim()).filter(Boolean);
+    const category = cats[0] || "其他";
+    out.push({
+      date, amount,
+      name: (c[3]||"").trim() || "支出",
+      method: (c[4]||"").trim(),
+      category,
+      majorCat: majorOf(category),
+      place: (c[6]||"").trim(),
+      note: [(c[7]||"").trim(), cats.length>1 ? "分類:"+cats.join(",") : ""].filter(Boolean).join(" "),
+      rawText:"", imported:true, formSynced:true,
+    });
+  }
+  return { out, skipped };
+}
+$("importBtn").onclick = async ()=>{
+  const text = $("importArea").value;
+  if (!text.trim()){ toast("請先貼上試算表內容", true); return; }
+  const { out, skipped } = parseTSV(text);
+  if (!out.length){ toast("解析不到有效資料，請確認是從試算表複製", true); return; }
+  const total = out.reduce((s,r)=>s+r.amount,0);
+  if (!confirm(`解析到 ${out.length} 筆、總金額 ${money(total)}${skipped.length?`（略過 ${skipped.length} 列無效資料）`:""}\n確定匯入？`)) return;
+  $("importBtn").disabled = true;
+  $("importStatus").textContent = "匯入中…";
+  try{
+    for (let i=0; i<out.length; i+=400){
+      const batch = writeBatch(db);
+      out.slice(i,i+400).forEach(r=>{
+        batch.set(doc(collection(db, COL_RECORDS)), { ...r, createdBy:me.email, created:serverTimestamp() });
+      });
+      await batch.commit();
+      $("importStatus").textContent = `匯入中… ${Math.min(i+400,out.length)}/${out.length}`;
+    }
+    $("importStatus").textContent = `✓ 已匯入 ${out.length} 筆（總金額 ${money(total)}）`;
+    $("importArea").value = "";
+    toast("匯入完成 ✓");
+  }catch(e){ $("importStatus").textContent=""; toast("匯入失敗："+e.message, true); }
+  finally{ $("importBtn").disabled=false; }
+};
+$("clearImportedBtn").onclick = async ()=>{
+  if (!confirm("刪除所有「匯入」來的紀錄？（語音/手動記的不受影響，可重新貼上匯入）")) return;
+  $("clearImportedBtn").disabled = true;
+  try{
+    const snap = await getDocs(query(collection(db, COL_RECORDS), where("imported","==",true)));
+    let n = 0;
+    const docs = snap.docs;
+    for (let i=0; i<docs.length; i+=400){
+      const batch = writeBatch(db);
+      docs.slice(i,i+400).forEach(d=>batch.delete(d.ref));
+      await batch.commit();
+      n = Math.min(i+400, docs.length);
+      $("importStatus").textContent = `刪除中… ${n}/${docs.length}`;
+    }
+    $("importStatus").textContent = `✓ 已刪除 ${docs.length} 筆匯入資料`;
+    toast("已刪除 "+docs.length+" 筆");
+  }catch(e){ toast("刪除失敗："+e.message, true); }
+  finally{ $("clearImportedBtn").disabled=false; }
+};
+</script>
+</body>
+</html>

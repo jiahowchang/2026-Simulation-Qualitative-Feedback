@@ -89,6 +89,39 @@ service cloud.firestore {
       allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
     }
 
+    // 360 情境導覽：教案定義（場景/熱點/題目）
+    match /tour_defs/{document} {
+      allow read, write: if true;
+    }
+
+    // 360 情境導覽：學員進度與作答（進度儲存）
+    match /tour_progress/{document} {
+      allow read, write: if true;
+    }
+
+    // 360 情境導覽：操作事件記錄（後台分析用）
+    match /tour_events/{document} {
+      allow read, write: if true;
+    }
+
+    // 家庭記帳：只有家人白名單可讀寫（之後把家人 email 加進清單）
+    function isFamily() {
+      return request.auth != null &&
+        request.auth.token.email in [
+          "jiahowchang@gmail.com"
+        ];
+    }
+
+    // 家庭記帳：支出紀錄
+    match /expense_records/{document} {
+      allow read, write: if isFamily();
+    }
+
+    // 家庭記帳：貸款設定（房貸/信貸條件與手動校正）
+    match /expense_loans/{document} {
+      allow read, write: if isFamily();
+    }
+
     // 其他集合預設禁止存取
     match /{document=**} {
       allow read, write: if false;
