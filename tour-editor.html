@@ -196,7 +196,7 @@ else onAuthStateChanged(auth, async (user)=>{
 /* ---------- 資料 ---------- */
 let tour = { id:"", title:"新教案", startSceneId:null, scenes:[] };
 let curScene=null, curHs=null;
-const DEMO_PANO="https://photo-sphere-viewer-data.netlify.app/assets/sphere.jpg";
+const DEMO_PANO="tours/er/resus.jpg";   // 預設環景：急救室（新場景也以此為底）
 let seq=1; const nid=p=>`${p}${seq++}`;
 
 /* ---------- Viewer ---------- */
@@ -466,9 +466,9 @@ function loadTourObj(t){
   renderSceneList(); if(tour.scenes[0]) selectScene(tour.scenes[0]);
 }
 
-/* ---------- 啟動 ---------- */
+/* ---------- 啟動：預設直接載入急救室範本（教師可修改後另存） ---------- */
 initViewer(DEMO_PANO);
-addSceneObj();
+loadTourObj(JSON.parse(JSON.stringify(ER_TEMPLATE)));
 </script>
 </body>
 </html>
