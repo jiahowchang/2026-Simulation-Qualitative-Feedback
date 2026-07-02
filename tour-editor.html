@@ -58,6 +58,9 @@
         <button class="btn ghost" id="exportBtn">匯出</button>
         <button class="btn ghost" id="importBtn">匯入</button>
       </div>
+      <div class="row" style="margin-top:6px">
+        <button class="btn ghost" id="erTplBtn" style="width:100%">🏥 載入急救室範本（可改後另存）</button>
+      </div>
       <input type="file" id="importFile" accept="application/json" hidden>
       <details style="margin-top:8px">
         <summary style="font-size:12px;color:#6b7885;cursor:pointer">情境設定（變數 / 通過門檻）</summary>
@@ -105,6 +108,7 @@
         <div id="typeFields"></div>
         <div class="row" style="margin-top:8px">
           <button class="btn ghost sm" id="saveHs">更新</button>
+          <button class="btn ghost sm" id="moveHs">📍 移動位置</button>
           <button class="btn danger sm" id="delHs">刪除熱點</button>
         </div>
       </div>
@@ -113,7 +117,7 @@
 
   <div id="viewer"></div>
 </div>
-<div id="hint">點擊畫面即可在該位置新增熱點</div>
+<div id="hint">點擊畫面即可在該位置新增熱點；選取熱點後按「📍 移動位置」再點新位置即可搬移</div>
 
 <script type="importmap">
 {
@@ -156,6 +160,12 @@ function initViewer(pano){
   markers = viewer.getPlugin(MarkersPlugin);
   viewer.addEventListener("click", ({ data }) => {
     if(!curScene || !data) return;
+    if(moveMode && curHs){                    // 移動模式：把選取的熱點搬到點擊處
+      curHs.yaw = data.yaw; curHs.pitch = data.pitch;
+      setMoveMode(false);
+      drawMarkers(); renderHsList();
+      return;
+    }
     addHotspot(data.yaw, data.pitch);
   });
   markers.addEventListener("select-marker", ({ marker }) => selectHs(marker.id));
@@ -180,6 +190,7 @@ function addSceneObj(){
 }
 function selectScene(s){
   curScene=s; curHs=null;
+  if(moveMode) setMoveMode(false);
   $("sceneEdit").style.display="block"; $("hsSect").style.display="block"; $("hsEdit").style.display="none"; $("hint").style.display="block";
   $("scName").value=s.name||""; $("scPano").value=s.panorama||"";
   if(!viewer) initViewer(s.panorama); else viewer.setPanorama(s.panorama||DEMO_PANO).then(drawMarkers);
@@ -220,6 +231,7 @@ function renderHsList(){
 }
 function selectHs(id){
   curHs=curScene.hotspots.find(h=>h.id===id); if(!curHs) return;
+  if(moveMode) setMoveMode(false);
   $("hsEdit").style.display="block"; $("fType").value=curHs.type; renderTypeFields(); renderHsList();
 }
 $("fType").onchange=()=>{ curHs.type=$("fType").value; renderTypeFields(); drawMarkers(); renderHsList(); };
@@ -294,7 +306,70 @@ $("saveHs").onclick=()=>{
   else { delete h.onSelect; }
   drawMarkers(); renderHsList(); alert("已更新（記得按『存到雲端』儲存整份教案）");
 };
-$("delHs").onclick=()=>{ if(!confirm("刪除此熱點？")) return; curScene.hotspots=curScene.hotspots.filter(h=>h!==curHs); curHs=null; $("hsEdit").style.display="none"; drawMarkers(); renderHsList(); };
+$("delHs").onclick=()=>{ if(!confirm("刪除此熱點？")) return; curScene.hotspots=curScene.hotspots.filter(h=>h!==curHs); curHs=null; $("hsEdit").style.display="none"; setMoveMode(false); drawMarkers(); renderHsList(); };
+
+/* ---------- 移動熱點（按「移動位置」後點畫面新位置） ---------- */
+let moveMode=false;
+const HINT_DEFAULT="點擊畫面即可在該位置新增熱點；選取熱點後按「📍 移動位置」再點新位置即可搬移";
+function setMoveMode(on){
+  moveMode=on;
+  const h=$("hint"); h.style.display="block";
+  h.textContent = on ? "📍 移動模式：點畫面上的新位置放置此熱點（再按一次「移動位置」可取消）" : HINT_DEFAULT;
+  h.style.background = on ? "#f59e0b" : "#111d";
+  $("moveHs").style.background = on ? "#f59e0b" : "";
+  $("moveHs").style.color = on ? "#fff" : "";
+}
+$("moveHs").onclick=()=>{ if(!curHs){ alert("請先選取一個熱點"); return; } setMoveMode(!moveMode); };
+
+/* ---------- 急救室範本（與 tour.html 內建 Demo 相同，可修改後另存） ---------- */
+const ER_TEMPLATE = {
+  id:"er-resus", title:"急救室 — 到院前心跳停止（OHCA）",
+  startSceneId:"er",
+  variables:{ handHygiene:false },
+  debrief:{ passScore:30, showMistakes:true },
+  scenes:[
+    { id:"er", name:"急救室",
+      panorama:"tours/er/resus.jpg",
+      initialView:{ yaw:0.2, pitch:-0.1 },
+      hotspots:[
+        { id:"hh", type:"action", yaw:-2.36, pitch:-0.19, label:"手部衛生（洗手台）",
+          onSelect:[
+            { do:"setVar", name:"handHygiene", value:true },
+            { do:"addScore", points:5 },
+            { do:"reveal", id:"assess" },
+            { do:"toast", msg:"完成手部衛生，可接觸病人" }
+          ] },
+        { id:"assess", type:"info", yaw:0.41, pitch:-0.24, startHidden:true, title:"評估病人 ABC",
+          html:"確認意識、呼吸、脈搏。<b>此病人無反應、無呼吸、無脈搏</b> → 立即開始高品質 CPR，並接上監視器。（此熱點洗手後才出現）" },
+        { id:"mon", type:"action", yaw:0.50, pitch:0.13, label:"床邊監視器",
+          onSelect:[
+            { do:"pushMonitor", rhythm:"vfc", co2:"flat", trend:0, t:{ etco2:8 } },
+            { do:"openMonitor" }
+          ] },
+        { id:"ecg", type:"media", yaw:0.94, pitch:-0.05, label:"查看 12 導程",
+          media:{ kind:"image", title:"12 導程 ECG",
+            url:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Chest_Xray_PA_3-8-2010.png/640px-Chest_Xray_PA_3-8-2010.png",
+            caption:"（範例圖片，可換成院內實際 VF / 12 導程影像）" } },
+        { id:"cart", type:"info", yaw:-2.92, pitch:-0.41, title:"急救車 / 除顫器",
+          html:"取出除顫器與腎上腺素。<b>可電擊心律 → 立即 200J 去顫</b>，之後不中斷 CPR。" },
+        { id:"q1", type:"quiz", yaw:0.62, pitch:-0.10, points:15,
+          question:"監視器顯示 <b>VF</b>，下一步<b>最優先</b>？",
+          options:["立即電擊（去顫）200J","先給腎上腺素 1mg","先氣管插管","先量血壓"],
+          answerIndex:0,
+          feedback:"VF/無脈性 VT 為可電擊心律，最優先立即去顫，之後持續高品質 CPR（壓胸不中斷）。",
+          onSelect:[ { do:"reveal", id:"rosc" },
+            { do:"pushMonitor", rhythm:"sinus", co2:"normal", trend:1, t:{ hr:108, sys:98, dia:60, spo2:94, rr:12, etco2:42 } } ] },
+        { id:"rosc", type:"info", yaw:1.30, pitch:-0.15, startHidden:true, title:"ROSC 循環恢復",
+          html:"去顫後恢復自發性循環（ROSC）。持續監測、找可逆病因（H's & T's），準備後送。" },
+        { id:"hz1", type:"hazard", yaw:-0.16, pitch:-0.55, points:5, label:"地面線材 / 床欄未拉起（絆倒與墜床風險）" }
+      ] }
+  ]
+};
+$("erTplBtn").onclick=()=>{
+  if(tour.scenes.length && !confirm("載入急救室範本？目前編輯中的內容會被取代")) return;
+  loadTourObj(JSON.parse(JSON.stringify(ER_TEMPLATE)));
+  setMoveMode(false);
+};
 
 /* ---------- 存 / 讀 / 匯出入 ---------- */
 $("tourTitle").oninput=e=>tour.title=e.target.value;
