@@ -13,6 +13,7 @@ const ANTHROPIC_KEY = defineSecret("ANTHROPIC_KEY");
 // 只允許這些來源呼叫（輕量防護；真正的花費上限請在 Anthropic Console 設定）
 const ALLOWED_ORIGINS = [
   "https://jiahowchang.github.io",
+  "https://jiahow-expense.web.app",
   "http://localhost:8081",
   "http://localhost:5000",
   "http://localhost:3000",
