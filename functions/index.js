@@ -68,3 +68,54 @@ exports.patient = onRequest(
     }
   }
 );
+
+/* ================================================================
+   台灣口音真人感語音 TTS 代理（Google Cloud Text-to-Speech, cmn-TW）
+   - 用函式執行身分（metadata token）呼叫，不需另外管 API key
+   - 需在 GCP 啟用 Text-to-Speech API：texttospeech.googleapis.com
+   - POST { text, voice?, rate? } → { audio: base64 MP3 }
+   ================================================================ */
+exports.tts = onRequest(
+  { region: "us-central1", maxInstances: 5, timeoutSeconds: 30, memory: "256MiB" },
+  async (req, res) => {
+    const origin = req.headers.origin || "";
+    const originOk = ALLOWED_ORIGINS.includes(origin);
+    if (originOk) res.set("Access-Control-Allow-Origin", origin);
+    res.set("Vary", "Origin");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (req.method !== "POST") { res.status(405).json({ error: { message: "Method not allowed" } }); return; }
+    if (!originOk) { res.status(403).json({ error: { message: "Origin not allowed" } }); return; }
+
+    const body = req.body || {};
+    const text = String(body.text || "").slice(0, 600);
+    if (!text.trim()) { res.status(400).json({ error: { message: "text required" } }); return; }
+    // 只允許台灣國語聲音，預設 Wavenet-A（自然女聲）
+    const voice = /^cmn-TW-[A-Za-z0-9-]+$/.test(body.voice || "") ? body.voice : "cmn-TW-Wavenet-A";
+    const rate = Math.min(1.3, Math.max(0.7, parseFloat(body.rate) || 1.0));
+
+    try {
+      const tokRes = await fetch(
+        "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token",
+        { headers: { "Metadata-Flavor": "Google" } }
+      );
+      const { access_token } = await tokRes.json();
+      const upstream = await fetch("https://texttospeech.googleapis.com/v1/text:synthesize", {
+        method: "POST",
+        headers: { authorization: "Bearer " + access_token, "content-type": "application/json" },
+        body: JSON.stringify({
+          input: { text },
+          voice: { languageCode: "cmn-TW", name: voice },
+          audioConfig: { audioEncoding: "MP3", speakingRate: rate },
+        }),
+      });
+      const data = await upstream.json();
+      if (!upstream.ok) { res.status(upstream.status).json(data); return; }
+      res.json({ audio: data.audioContent });
+    } catch (e) {
+      res.status(502).json({ error: { message: "tts error: " + (e && e.message || e) } });
+    }
+  }
+);
