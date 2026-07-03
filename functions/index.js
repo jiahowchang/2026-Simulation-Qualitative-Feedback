@@ -9,6 +9,7 @@ const { onRequest } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
 
 const ANTHROPIC_KEY = defineSecret("ANTHROPIC_KEY");
+const ELEVEN_KEY = defineSecret("ELEVEN_KEY");   // ElevenLabs 聲音克隆（未設定時 tts 自動退回 Google）
 
 // 只允許這些來源呼叫（輕量防護；真正的花費上限請在 Anthropic Console 設定）
 const ALLOWED_ORIGINS = [
@@ -76,7 +77,7 @@ exports.patient = onRequest(
    - POST { text, voice?, rate? } → { audio: base64 MP3 }
    ================================================================ */
 exports.tts = onRequest(
-  { region: "us-central1", maxInstances: 5, timeoutSeconds: 30, memory: "256MiB" },
+  { region: "us-central1", maxInstances: 5, timeoutSeconds: 30, memory: "256MiB", secrets: [ELEVEN_KEY] },
   async (req, res) => {
     const origin = req.headers.origin || "";
     const originOk = ALLOWED_ORIGINS.includes(origin);
@@ -92,9 +93,30 @@ exports.tts = onRequest(
     const body = req.body || {};
     const text = String(body.text || "").slice(0, 600);
     if (!text.trim()) { res.status(400).json({ error: { message: "text required" } }); return; }
-    // 只允許台灣國語聲音，預設 Wavenet-A（自然女聲）
-    const voice = /^cmn-TW-[A-Za-z0-9-]+$/.test(body.voice || "") ? body.voice : "cmn-TW-Wavenet-A";
     const rate = Math.min(1.3, Math.max(0.7, parseFloat(body.rate) || 1.0));
+
+    // ===== ElevenLabs 真人克隆聲：voice 形如 "eleven:<voiceId>"，且已設定 ELEVEN_KEY =====
+    const evMatch = /^eleven:([A-Za-z0-9]{8,40})$/.exec(body.voice || "");
+    const evKey = (() => { try { return ELEVEN_KEY.value(); } catch (e) { return ""; } })();
+    if (evMatch && evKey && evKey.length > 20) {
+      try {
+        const r = await fetch(
+          "https://api.elevenlabs.io/v1/text-to-speech/" + evMatch[1] + "?output_format=mp3_44100_64",
+          { method: "POST",
+            headers: { "xi-api-key": evKey, "content-type": "application/json" },
+            body: JSON.stringify({ text, model_id: "eleven_multilingual_v2",
+              voice_settings: { stability: 0.45, similarity_boost: 0.8 } }) });
+        if (r.ok) {
+          const buf = Buffer.from(await r.arrayBuffer());
+          res.json({ audio: buf.toString("base64"), provider: "eleven" });
+          return;
+        }
+        // 失敗就往下走 Google 備援
+      } catch (e) { /* 走 Google 備援 */ }
+    }
+
+    // ===== Google Cloud TTS（cmn-TW 台灣國語）=====
+    const voice = /^cmn-TW-[A-Za-z0-9-]+$/.test(body.voice || "") ? body.voice : "cmn-TW-Wavenet-A";
 
     try {
       const tokRes = await fetch(
