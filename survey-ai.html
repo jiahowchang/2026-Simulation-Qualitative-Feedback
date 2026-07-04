@@ -114,7 +114,7 @@
         <img class="hero-qr" src="images/survey-qr.png" alt="填答網址 QR Code">
       </div>
       <div class="sub">「一般師培:生成式AI訓練作為教學工具——標準病人、情境模擬大師」課程將依據您的回覆調整內容,讓這 90 分鐘對您最有幫助。</div>
-      <div class="meta">匿名填寫.約 4 分鐘.共 13 題</div>
+      <div class="meta">匿名填寫.約 4 分鐘.共 14 題</div>
     </header>
 
     <form id="surveyForm" novalidate>
@@ -380,9 +380,20 @@
         <div class="err">請至少選擇 1 項</div>
       </div>
 
-      <!-- Q13 想帶走的成品或能力(開放) -->
+      <!-- Q13 AI 帶來的正向/負向改變(開放) -->
       <div class="card" data-q="q13">
         <span class="qnum">Q13</span>
+        <div class="qtitle">你覺得 AI 會為學習或教學帶來什麼負向或正向改變?<span class="req">*</span></div>
+        <div class="qhint">開放作答,正向、負向都歡迎</div>
+        <div style="margin-top:12px">
+          <textarea id="aiChangeText" maxlength="300" placeholder="例如:學員都靠 AI 產出,沒有真的學習到/減少教師備課時間……"></textarea>
+        </div>
+        <div class="err">請簡短寫下您的看法</div>
+      </div>
+
+      <!-- Q14 想帶走的成品或能力(開放) -->
+      <div class="card" data-q="q14">
+        <span class="qnum">Q14</span>
         <div class="qtitle">這堂課結束時,您最希望「帶走」什麼成品或能力?<span class="req">*</span></div>
         <div class="qhint">開放作答,一兩句話即可</div>
         <div style="margin-top:12px">
@@ -529,6 +540,7 @@ if(!IS_RESULTS){
       famHosp: parseInt(radioVal("famHosp")||"0",10),
       concerns: checkVals("concerns"), concernOther: $("concernOther").value.trim(),
       hopes: checkVals("hopes"), hopeOther: $("hopeOther").value.trim(),
+      aiChangeText: $("aiChangeText").value.trim(),
       expectText: $("expectText").value.trim(),
       ua: navigator.userAgent.slice(0,160),
       t: serverTimestamp(), tLocal: new Date().toISOString()
@@ -546,7 +558,8 @@ if(!IS_RESULTS){
     if(!data.famText || !data.famImg || !data.famVoice || !data.famHosp) missing.push("q10");
     if(!data.concerns.length) missing.push("q11");
     if(!data.hopes.length) missing.push("q12");
-    if(!data.expectText) missing.push("q13");
+    if(!data.aiChangeText) missing.push("q13");
+    if(!data.expectText) missing.push("q14");
     document.querySelectorAll(".card[data-q]").forEach(c=>c.classList.remove("bad"));
     if(missing.length){
       missing.forEach(q=>{ const c=document.querySelector(`.card[data-q="${q}"]`); if(c) c.classList.add("bad"); });
@@ -657,7 +670,8 @@ if(IS_RESULTS){
     h+=famBar("Q10-4 院內 AI 系統熟悉度","famHosp");
     h+=countBar("Q11 主要顧慮(複選)", r=>(r.concerns||[]).map(p=>withOther(p,r.concernOther)));
     h+=countBar("Q12 最期待的改變(複選)", r=>(r.hopes||[]).map(p=>withOther(p,r.hopeOther)));
-    h+=freeList("Q13 想帶走的成品/能力(開放)", r=>r.expectText);
+    h+=freeList("Q13 AI 帶來的正向/負向改變(開放)", r=>r.aiChangeText);
+    h+=freeList("Q14 想帶走的成品/能力(開放)", r=>r.expectText);
     $("statsBody").innerHTML=h;
   }
 
@@ -681,6 +695,7 @@ if(IS_RESULTS){
       ["院內AI熟悉度", r=>r.famHosp],
       ["顧慮", r=>(r.concerns||[]).join("、")+(r.concernOther?"(其他:"+r.concernOther+")":"")],
       ["期待的改變", r=>(r.hopes||[]).join("、")+(r.hopeOther?"(其他:"+r.hopeOther+")":"")],
+      ["AI正負向改變看法", r=>r.aiChangeText],
       ["想帶走的成品/能力", r=>r.expectText],
     ];
     let html="<table><tr>"+cols.map(c=>"<th>"+c[0]+"</th>").join("")+"</tr>";
