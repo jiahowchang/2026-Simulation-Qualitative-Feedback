@@ -55,6 +55,11 @@
   .likert input{ display:none; }
   .likert .n{ font-size:1.15rem; font-weight:800; color:var(--navy); display:block; }
   .likert .t{ font-size:.62rem; color:#8b94a6; display:block; line-height:1.3; margin-top:2px; }
+  .qsub{ margin-top:14px; font-size:.88rem; font-weight:700; color:#556; }
+  .fam-label{ margin-top:16px; font-size:.9rem; font-weight:700; color:#445; }
+  .fam-label .eg{ font-weight:400; color:#8b94a6; font-size:.78rem; }
+  .fam-row .likert{ margin-top:8px; }
+  .fam-legend{ font-size:.75rem; color:#8b94a6; margin-top:10px; }
   .err{ display:none; color:#e05555; font-size:.82rem; margin-top:8px; }
   .card.bad{ border-color:#e05555; }
   .card.bad .err{ display:block; }
@@ -100,7 +105,7 @@
     <header class="hero">
       <h1>生成式 AI × 臨床教學<br>課前調查</h1>
       <div class="sub">「一般師培:生成式AI訓練作為教學工具——標準病人、情境模擬大師」課程將依據您的回覆調整內容,讓這 90 分鐘對您最有幫助。</div>
-      <div class="meta">匿名填寫.約 3 分鐘.共 10 題</div>
+      <div class="meta">匿名填寫.約 4 分鐘.共 13 題</div>
     </header>
 
     <form id="surveyForm" novalidate>
@@ -141,10 +146,41 @@
         <div class="err">請選擇教學年資</div>
       </div>
 
-      <!-- Q3 教學痛點 -->
+      <!-- Q3 教學對象與情境 -->
       <div class="card" data-q="q3">
         <span class="qnum">Q3</span>
-        <div class="qtitle">教學上最讓您困擾的痛點<span class="req">*</span></div>
+        <div class="qtitle">您最常負責的臨床教學「對象」與「情境」<span class="req">*</span></div>
+        <div class="qhint">兩部分皆可複選,不限項目</div>
+        <div class="qsub">教學對象</div>
+        <div class="opts" data-name="audiences" data-type="check">
+          <label class="opt"><input type="checkbox" name="audiences" value="實習學生">實習學生(醫學/護理/藥學等)</label>
+          <label class="opt"><input type="checkbox" name="audiences" value="PGY學員">PGY/二年期訓練學員</label>
+          <label class="opt"><input type="checkbox" name="audiences" value="住院醫師">住院醫師</label>
+          <label class="opt"><input type="checkbox" name="audiences" value="新進同仁">新進同仁(N0–N2/新進人員)</label>
+          <label class="opt"><input type="checkbox" name="audiences" value="進階人員">專科護理師/資深進階人員</label>
+          <label class="opt"><input type="checkbox" name="audiences" value="跨職類團隊">跨職類團隊(TRM)</label>
+          <label class="opt"><input type="checkbox" name="audiences" value="病人家屬衛教">病人與家屬衛教</label>
+          <label class="opt"><input type="checkbox" name="audiences" value="其他" data-other="audOther">其他</label>
+        </div>
+        <div class="otherline" id="line_audOther"><input type="text" id="audOther" placeholder="請填寫其他教學對象"></div>
+        <div class="qsub">教學情境/形式</div>
+        <div class="opts" data-name="settings" data-type="check">
+          <label class="opt"><input type="checkbox" name="settings" value="床邊教學">床邊教學/臨床帶教</label>
+          <label class="opt"><input type="checkbox" name="settings" value="課堂授課">課堂授課</label>
+          <label class="opt"><input type="checkbox" name="settings" value="擬真模擬">擬真模擬課程(含 OSCE)</label>
+          <label class="opt"><input type="checkbox" name="settings" value="技能工作坊">技能工作坊</label>
+          <label class="opt"><input type="checkbox" name="settings" value="個案討論">晨會/個案討論會</label>
+          <label class="opt"><input type="checkbox" name="settings" value="線上數位">線上課程/數位教材</label>
+          <label class="opt"><input type="checkbox" name="settings" value="其他" data-other="setOther">其他</label>
+        </div>
+        <div class="otherline" id="line_setOther"><input type="text" id="setOther" placeholder="請填寫其他教學情境"></div>
+        <div class="err">「對象」與「情境」請各至少選 1 項</div>
+      </div>
+
+      <!-- Q4 教學痛點 -->
+      <div class="card" data-q="q4">
+        <span class="qnum">Q4</span>
+        <div class="qtitle">準備臨床教學或模擬課程時,最讓您困擾的痛點<span class="req">*</span></div>
         <div class="qhint">可複選,不限項目</div>
         <div class="opts" data-name="pains" data-type="check">
           <label class="opt"><input type="checkbox" name="pains" value="準備教材簡報太花時間">準備教材與簡報太花時間</label>
@@ -161,17 +197,39 @@
         <div class="err">請至少選擇 1 項</div>
       </div>
 
-      <!-- Q4 開放:教學困擾情境 -->
-      <div class="card" data-q="q4">
-        <span class="qnum">Q4</span>
+      <!-- Q5 課程進行中難以掌握的環節 -->
+      <div class="card" data-q="q5">
+        <span class="qnum">Q5</span>
+        <div class="qtitle">課程「進行中」,哪些環節最讓您覺得難以掌握?<span class="req">*</span></div>
+        <div class="qhint">可複選,不限項目</div>
+        <div class="opts" data-name="inCourse" data-type="check">
+          <label class="opt"><input type="checkbox" name="inCourse" value="引導提問討論">引導提問與討論</label>
+          <label class="opt"><input type="checkbox" name="inCourse" value="時間節奏控制">時間與節奏控制</label>
+          <label class="opt"><input type="checkbox" name="inCourse" value="學員參與度不高">學員參與度不高</label>
+          <label class="opt"><input type="checkbox" name="inCourse" value="即時回饋">即時回饋的給法</label>
+          <label class="opt"><input type="checkbox" name="inCourse" value="Debriefing引導">Debriefing(課後檢討)引導</label>
+          <label class="opt"><input type="checkbox" name="inCourse" value="臨場調整難度">臨場調整教學難度</label>
+          <label class="opt"><input type="checkbox" name="inCourse" value="學員挫折情緒">處理學員挫折或情緒</label>
+          <label class="opt"><input type="checkbox" name="inCourse" value="跨職類溝通">跨職類間的溝通協調</label>
+          <label class="opt"><input type="checkbox" name="inCourse" value="設備技術操作">設備或技術操作</label>
+          <label class="opt" data-none="1"><input type="checkbox" name="inCourse" value="沒有特別困難">沒有特別困難</label>
+          <label class="opt"><input type="checkbox" name="inCourse" value="其他" data-other="inCourseOther">其他</label>
+        </div>
+        <div class="otherline" id="line_inCourseOther"><input type="text" id="inCourseOther" placeholder="請描述其他環節"></div>
+        <div class="err">請至少選擇 1 項</div>
+      </div>
+
+      <!-- Q6 開放:教學困擾情境 -->
+      <div class="card" data-q="q6">
+        <span class="qnum">Q6</span>
         <div class="qtitle">請描述一個最近讓您「特別費力或心累」的教學情境</div>
         <div class="qhint">選填.一兩句話即可,將作為課程案例設計參考</div>
         <div style="margin-top:12px"><textarea id="painStory" maxlength="300" placeholder="例如:為了一場 OSCE 出題+訓練標準化病人,花了三個週末……"></textarea></div>
       </div>
 
-      <!-- Q5 AI 使用頻率 -->
-      <div class="card" data-q="q5">
-        <span class="qnum">Q5</span>
+      <!-- Q7 AI 使用頻率 -->
+      <div class="card" data-q="q7">
+        <span class="qnum">Q7</span>
         <div class="qtitle">過去三個月,您使用生成式 AI(如 ChatGPT、Gemini)的頻率<span class="req">*</span></div>
         <div class="opts" data-name="freq" data-type="radio">
           <label class="opt"><input type="radio" name="freq" value="從未使用">從未使用</label>
@@ -183,9 +241,9 @@
         <div class="err">請選擇使用頻率</div>
       </div>
 
-      <!-- Q6 用過的工具 -->
-      <div class="card" data-q="q6">
-        <span class="qnum">Q6</span>
+      <!-- Q8 用過的工具 -->
+      <div class="card" data-q="q8">
+        <span class="qnum">Q8</span>
         <div class="qtitle">您使用過哪些 AI 工具?<span class="req">*</span></div>
         <div class="qhint">可複選,不限項目</div>
         <div class="opts" data-name="tools" data-type="check">
@@ -204,9 +262,9 @@
         <div class="err">請至少選擇 1 項</div>
       </div>
 
-      <!-- Q7 AI 用於教學任務 -->
-      <div class="card" data-q="q7">
-        <span class="qnum">Q7</span>
+      <!-- Q9 AI 用於教學任務 -->
+      <div class="card" data-q="q9">
+        <span class="qnum">Q9</span>
         <div class="qtitle">您曾把 AI 用在哪些「教學相關」工作?<span class="req">*</span></div>
         <div class="qhint">可複選,不限項目</div>
         <div class="opts" data-name="tasks" data-type="check">
@@ -224,23 +282,58 @@
         <div class="err">請至少選擇 1 項</div>
       </div>
 
-      <!-- Q8 熟悉度自評 -->
-      <div class="card" data-q="q8">
-        <span class="qnum">Q8</span>
-        <div class="qtitle">您對生成式 AI 工具的熟悉程度自評<span class="req">*</span></div>
-        <div class="likert" data-name="familiar">
-          <label><input type="radio" name="familiar" value="1"><span class="n">1</span><span class="t">完全<br>陌生</span></label>
-          <label><input type="radio" name="familiar" value="2"><span class="n">2</span><span class="t">聽過<br>沒用過</span></label>
-          <label><input type="radio" name="familiar" value="3"><span class="n">3</span><span class="t">會基本<br>操作</span></label>
-          <label><input type="radio" name="familiar" value="4"><span class="n">4</span><span class="t">常用且<br>順手</span></label>
-          <label><input type="radio" name="familiar" value="5"><span class="n">5</span><span class="t">靈活運用<br>能教別人</span></label>
+      <!-- Q10 各類 AI 功能熟悉度 -->
+      <div class="card" data-q="q10">
+        <span class="qnum">Q10</span>
+        <div class="qtitle">您對下列 AI 工具/功能的熟悉度<span class="req">*</span></div>
+        <div class="qhint">每一列都請評 1–5 分</div>
+        <div class="fam-row">
+          <div class="fam-label">文字生成與對話 <span class="eg">(ChatGPT、Claude、Gemini)</span></div>
+          <div class="likert" data-name="famText">
+            <label><input type="radio" name="famText" value="1"><span class="n">1</span></label>
+            <label><input type="radio" name="famText" value="2"><span class="n">2</span></label>
+            <label><input type="radio" name="famText" value="3"><span class="n">3</span></label>
+            <label><input type="radio" name="famText" value="4"><span class="n">4</span></label>
+            <label><input type="radio" name="famText" value="5"><span class="n">5</span></label>
+          </div>
         </div>
-        <div class="err">請選擇 1–5 分</div>
+        <div class="fam-row">
+          <div class="fam-label">圖片與簡報教材生成 <span class="eg">(Gamma、Canva、生圖工具)</span></div>
+          <div class="likert" data-name="famImg">
+            <label><input type="radio" name="famImg" value="1"><span class="n">1</span></label>
+            <label><input type="radio" name="famImg" value="2"><span class="n">2</span></label>
+            <label><input type="radio" name="famImg" value="3"><span class="n">3</span></label>
+            <label><input type="radio" name="famImg" value="4"><span class="n">4</span></label>
+            <label><input type="radio" name="famImg" value="5"><span class="n">5</span></label>
+          </div>
+        </div>
+        <div class="fam-row">
+          <div class="fam-label">語音轉文字與摘要 <span class="eg">(Whisper、會議紀錄工具)</span></div>
+          <div class="likert" data-name="famVoice">
+            <label><input type="radio" name="famVoice" value="1"><span class="n">1</span></label>
+            <label><input type="radio" name="famVoice" value="2"><span class="n">2</span></label>
+            <label><input type="radio" name="famVoice" value="3"><span class="n">3</span></label>
+            <label><input type="radio" name="famVoice" value="4"><span class="n">4</span></label>
+            <label><input type="radio" name="famVoice" value="5"><span class="n">5</span></label>
+          </div>
+        </div>
+        <div class="fam-row">
+          <div class="fam-label">院內導入的 AI 系統 <span class="eg">(智慧醫療、AI 輔助文書)</span></div>
+          <div class="likert" data-name="famHosp">
+            <label><input type="radio" name="famHosp" value="1"><span class="n">1</span></label>
+            <label><input type="radio" name="famHosp" value="2"><span class="n">2</span></label>
+            <label><input type="radio" name="famHosp" value="3"><span class="n">3</span></label>
+            <label><input type="radio" name="famHosp" value="4"><span class="n">4</span></label>
+            <label><input type="radio" name="famHosp" value="5"><span class="n">5</span></label>
+          </div>
+        </div>
+        <div class="fam-legend">1 = 完全陌生.3 = 會基本操作.5 = 熟練運用、能教別人</div>
+        <div class="err">四列都請評分(1–5)</div>
       </div>
 
-      <!-- Q9 顧慮 -->
-      <div class="card" data-q="q9">
-        <span class="qnum">Q9</span>
+      <!-- Q11 顧慮 -->
+      <div class="card" data-q="q11">
+        <span class="qnum">Q11</span>
         <div class="qtitle">使用 AI 於教學時,您最主要的顧慮<span class="req">*</span></div>
         <div class="qhint">可複選,不限項目</div>
         <div class="opts" data-name="concerns" data-type="check">
@@ -259,9 +352,9 @@
         <div class="err">請至少選擇 1 項</div>
       </div>
 
-      <!-- Q10 期待 -->
-      <div class="card" data-q="q10">
-        <span class="qnum">Q10</span>
+      <!-- Q12 期待 -->
+      <div class="card" data-q="q12">
+        <span class="qnum">Q12</span>
         <div class="qtitle">您最期待 AI 為您的「教學」帶來什麼改變?<span class="req">*</span></div>
         <div class="qhint">可複選,不限項目</div>
         <div class="opts" data-name="hopes" data-type="check">
@@ -275,8 +368,27 @@
           <label class="opt"><input type="checkbox" name="hopes" value="其他" data-other="hopeOther">其他</label>
         </div>
         <div class="otherline" id="line_hopeOther"><input type="text" id="hopeOther" placeholder="請描述其他期待"></div>
+        <div class="err">請至少選擇 1 項</div>
+      </div>
+
+      <!-- Q13 想帶走的成品或能力 -->
+      <div class="card" data-q="q13">
+        <span class="qnum">Q13</span>
+        <div class="qtitle">這堂課結束時,您最希望「帶走」什麼成品或能力?<span class="req">*</span></div>
+        <div class="qhint">可複選,不限項目</div>
+        <div class="opts" data-name="takeaways" data-type="check">
+          <label class="opt"><input type="checkbox" name="takeaways" value="AI教案情境腳本">一份自己主題的 AI 教案/擬真情境腳本</label>
+          <label class="opt"><input type="checkbox" name="takeaways" value="AI出題流程">用 AI 出題與建置題庫的流程</label>
+          <label class="opt"><input type="checkbox" name="takeaways" value="AI標準化病人操作">會操作 AI 標準化病人工具</label>
+          <label class="opt"><input type="checkbox" name="takeaways" value="簡報教材技巧">簡報與教材的 AI 快速產出技巧</label>
+          <label class="opt"><input type="checkbox" name="takeaways" value="逐字稿工作流">逐字稿/會議摘要的 AI 工作流</label>
+          <label class="opt"><input type="checkbox" name="takeaways" value="辨識AI幻覺能力">判斷 AI 內容正確性(辨識幻覺)的能力</label>
+          <label class="opt"><input type="checkbox" name="takeaways" value="Prompt範本">一套可直接套用的 Prompt 範本</label>
+          <label class="opt"><input type="checkbox" name="takeaways" value="其他" data-other="takeawayOther">其他</label>
+        </div>
+        <div class="otherline" id="line_takeawayOther"><input type="text" id="takeawayOther" placeholder="請描述其他成品或能力"></div>
         <div style="margin-top:14px">
-          <div class="qhint" style="margin-bottom:6px">關於這堂課,您最想學到什麼?(選填)</div>
+          <div class="qhint" style="margin-bottom:6px">其他想帶走的,或對這堂課的其他期待?(選填)</div>
           <textarea id="expectText" maxlength="300" placeholder="例如:想知道怎麼用 AI 幫我把病例改寫成教案……"></textarea>
         </div>
         <div class="err">請至少選擇 1 項</div>
@@ -406,14 +518,21 @@ if(!IS_RESULTS){
     const data={
       role: radioVal("role"), roleOther: $("roleOther").value.trim(),
       years: radioVal("years"),
+      audiences: checkVals("audiences"), audOther: $("audOther").value.trim(),
+      settings: checkVals("settings"), setOther: $("setOther").value.trim(),
       pains: checkVals("pains"), painOther: $("painOther").value.trim(),
+      inCourse: checkVals("inCourse"), inCourseOther: $("inCourseOther").value.trim(),
       painStory: $("painStory").value.trim(),
       freq: radioVal("freq"),
       tools: checkVals("tools"), toolOther: $("toolOther").value.trim(),
       tasks: checkVals("tasks"), taskOther: $("taskOther").value.trim(),
-      familiar: parseInt(radioVal("familiar")||"0",10),
+      famText: parseInt(radioVal("famText")||"0",10),
+      famImg: parseInt(radioVal("famImg")||"0",10),
+      famVoice: parseInt(radioVal("famVoice")||"0",10),
+      famHosp: parseInt(radioVal("famHosp")||"0",10),
       concerns: checkVals("concerns"), concernOther: $("concernOther").value.trim(),
       hopes: checkVals("hopes"), hopeOther: $("hopeOther").value.trim(),
+      takeaways: checkVals("takeaways"), takeawayOther: $("takeawayOther").value.trim(),
       expectText: $("expectText").value.trim(),
       ua: navigator.userAgent.slice(0,160),
       t: serverTimestamp(), tLocal: new Date().toISOString()
@@ -422,13 +541,16 @@ if(!IS_RESULTS){
     const missing=[];
     if(!data.role) missing.push("q1");
     if(!data.years) missing.push("q2");
-    if(!data.pains.length) missing.push("q3");
-    if(!data.freq) missing.push("q5");
-    if(!data.tools.length) missing.push("q6");
-    if(!data.tasks.length) missing.push("q7");
-    if(!data.familiar) missing.push("q8");
-    if(!data.concerns.length) missing.push("q9");
-    if(!data.hopes.length) missing.push("q10");
+    if(!data.audiences.length || !data.settings.length) missing.push("q3");
+    if(!data.pains.length) missing.push("q4");
+    if(!data.inCourse.length) missing.push("q5");
+    if(!data.freq) missing.push("q7");
+    if(!data.tools.length) missing.push("q8");
+    if(!data.tasks.length) missing.push("q9");
+    if(!data.famText || !data.famImg || !data.famVoice || !data.famHosp) missing.push("q10");
+    if(!data.concerns.length) missing.push("q11");
+    if(!data.hopes.length) missing.push("q12");
+    if(!data.takeaways.length) missing.push("q13");
     document.querySelectorAll(".card[data-q]").forEach(c=>c.classList.remove("bad"));
     if(missing.length){
       missing.forEach(q=>{ const c=document.querySelector(`.card[data-q="${q}"]`); if(c) c.classList.add("bad"); });
@@ -517,21 +639,30 @@ if(IS_RESULTS){
 
   function render(){
     const withOther=(v,o)=> (v==="其他"&&o)? "其他:"+o : v;
+    const famBar=(label,key)=>{
+      const vals=ROWS.map(r=>r[key]).filter(v=>v>=1&&v<=5);
+      const avg = vals.length? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2):"–";
+      return countBar(`${label}(平均 ${avg} / 5)`, r=>r[key]? r[key]+" 分":"");
+    };
     let h="";
     h+=countBar("Q1 職類", r=>withOther(r.role, r.roleOther));
     h+=countBar("Q2 教學年資", r=>r.years);
-    h+=countBar("Q3 教學痛點(複選)", r=>(r.pains||[]).map(p=>withOther(p,r.painOther)));
-    h+=freeList("Q4 教學困擾情境(開放)", r=>r.painStory);
-    h+=countBar("Q5 AI 使用頻率", r=>r.freq);
-    h+=countBar("Q6 用過的 AI 工具(複選)", r=>(r.tools||[]).map(p=>withOther(p,r.toolOther)));
-    h+=countBar("Q7 AI 用於教學任務(複選)", r=>(r.tasks||[]).map(p=>withOther(p,r.taskOther)));
-    // Q8 熟悉度:分布 + 平均
-    const vals=ROWS.map(r=>r.familiar).filter(v=>v>=1&&v<=5);
-    const avg = vals.length? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2):"–";
-    h+=countBar(`Q8 AI 熟悉度自評(平均 ${avg} / 5)`, r=>r.familiar? r.familiar+" 分":"");
-    h+=countBar("Q9 主要顧慮(複選)", r=>(r.concerns||[]).map(p=>withOther(p,r.concernOther)));
-    h+=countBar("Q10 最期待的改變(複選)", r=>(r.hopes||[]).map(p=>withOther(p,r.hopeOther)));
-    h+=freeList("Q10+ 對課程的期待(開放)", r=>r.expectText);
+    h+=countBar("Q3a 教學對象(複選)", r=>(r.audiences||[]).map(p=>withOther(p,r.audOther)));
+    h+=countBar("Q3b 教學情境(複選)", r=>(r.settings||[]).map(p=>withOther(p,r.setOther)));
+    h+=countBar("Q4 準備教學的痛點(複選)", r=>(r.pains||[]).map(p=>withOther(p,r.painOther)));
+    h+=countBar("Q5 課程進行中難掌握的環節(複選)", r=>(r.inCourse||[]).map(p=>withOther(p,r.inCourseOther)));
+    h+=freeList("Q6 教學困擾情境(開放)", r=>r.painStory);
+    h+=countBar("Q7 AI 使用頻率", r=>r.freq);
+    h+=countBar("Q8 用過的 AI 工具(複選)", r=>(r.tools||[]).map(p=>withOther(p,r.toolOther)));
+    h+=countBar("Q9 AI 用於教學任務(複選)", r=>(r.tasks||[]).map(p=>withOther(p,r.taskOther)));
+    h+=famBar("Q10-1 文字生成熟悉度","famText");
+    h+=famBar("Q10-2 圖片/簡報生成熟悉度","famImg");
+    h+=famBar("Q10-3 語音轉文字/摘要熟悉度","famVoice");
+    h+=famBar("Q10-4 院內 AI 系統熟悉度","famHosp");
+    h+=countBar("Q11 主要顧慮(複選)", r=>(r.concerns||[]).map(p=>withOther(p,r.concernOther)));
+    h+=countBar("Q12 最期待的改變(複選)", r=>(r.hopes||[]).map(p=>withOther(p,r.hopeOther)));
+    h+=countBar("Q13 想帶走的成品/能力(複選)", r=>(r.takeaways||[]).map(p=>withOther(p,r.takeawayOther)));
+    h+=freeList("Q13+ 對課程的其他期待(開放)", r=>r.expectText);
     $("statsBody").innerHTML=h;
   }
 
@@ -541,14 +672,21 @@ if(IS_RESULTS){
       ["時間", r=>(r.tLocal||"").replace("T"," ").slice(0,19)],
       ["職類", r=>r.role+(r.roleOther?"("+r.roleOther+")":"")],
       ["教學年資", r=>r.years],
-      ["教學痛點", r=>(r.pains||[]).join("、")+(r.painOther?"(其他:"+r.painOther+")":"")],
+      ["教學對象", r=>(r.audiences||[]).join("、")+(r.audOther?"(其他:"+r.audOther+")":"")],
+      ["教學情境", r=>(r.settings||[]).join("、")+(r.setOther?"(其他:"+r.setOther+")":"")],
+      ["準備痛點", r=>(r.pains||[]).join("、")+(r.painOther?"(其他:"+r.painOther+")":"")],
+      ["進行中難掌握環節", r=>(r.inCourse||[]).join("、")+(r.inCourseOther?"(其他:"+r.inCourseOther+")":"")],
       ["困擾情境", r=>r.painStory],
       ["AI使用頻率", r=>r.freq],
       ["用過的工具", r=>(r.tools||[]).join("、")+(r.toolOther?"(其他:"+r.toolOther+")":"")],
       ["教學任務", r=>(r.tasks||[]).join("、")+(r.taskOther?"(其他:"+r.taskOther+")":"")],
-      ["熟悉度(1-5)", r=>r.familiar],
+      ["文字生成熟悉度", r=>r.famText],
+      ["圖片簡報熟悉度", r=>r.famImg],
+      ["語音摘要熟悉度", r=>r.famVoice],
+      ["院內AI熟悉度", r=>r.famHosp],
       ["顧慮", r=>(r.concerns||[]).join("、")+(r.concernOther?"(其他:"+r.concernOther+")":"")],
       ["期待的改變", r=>(r.hopes||[]).join("、")+(r.hopeOther?"(其他:"+r.hopeOther+")":"")],
+      ["想帶走的成品能力", r=>(r.takeaways||[]).join("、")+(r.takeawayOther?"(其他:"+r.takeawayOther+")":"")],
       ["課程期待", r=>r.expectText],
     ];
     let html="<table><tr>"+cols.map(c=>"<th>"+c[0]+"</th>").join("")+"</tr>";
