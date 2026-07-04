@@ -145,8 +145,8 @@
       <div class="card" data-q="q3">
         <span class="qnum">Q3</span>
         <div class="qtitle">教學上最讓您困擾的痛點<span class="req">*</span></div>
-        <div class="qhint">複選,最多 3 項</div>
-        <div class="opts" data-name="pains" data-type="check" data-max="3">
+        <div class="qhint">可複選,不限項目</div>
+        <div class="opts" data-name="pains" data-type="check">
           <label class="opt"><input type="checkbox" name="pains" value="準備教材簡報太花時間">準備教材與簡報太花時間</label>
           <label class="opt"><input type="checkbox" name="pains" value="教案情境設計困難">教案/擬真情境腳本設計困難</label>
           <label class="opt"><input type="checkbox" name="pains" value="臨床忙沒時間教">臨床工作忙,沒有完整時間教學</label>
@@ -158,7 +158,7 @@
           <label class="opt"><input type="checkbox" name="pains" value="其他" data-other="painOther">其他</label>
         </div>
         <div class="otherline" id="line_painOther"><input type="text" id="painOther" placeholder="請描述其他痛點"></div>
-        <div class="err">請至少選擇 1 項(最多 3 項)</div>
+        <div class="err">請至少選擇 1 項</div>
       </div>
 
       <!-- Q4 開放:教學困擾情境 -->
@@ -187,7 +187,7 @@
       <div class="card" data-q="q6">
         <span class="qnum">Q6</span>
         <div class="qtitle">您使用過哪些 AI 工具?<span class="req">*</span></div>
-        <div class="qhint">複選,皆可</div>
+        <div class="qhint">可複選,不限項目</div>
         <div class="opts" data-name="tools" data-type="check">
           <label class="opt"><input type="checkbox" name="tools" value="ChatGPT">ChatGPT</label>
           <label class="opt"><input type="checkbox" name="tools" value="Google Gemini">Google Gemini</label>
@@ -208,7 +208,7 @@
       <div class="card" data-q="q7">
         <span class="qnum">Q7</span>
         <div class="qtitle">您曾把 AI 用在哪些「教學相關」工作?<span class="req">*</span></div>
-        <div class="qhint">複選,皆可</div>
+        <div class="qhint">可複選,不限項目</div>
         <div class="opts" data-name="tasks" data-type="check">
           <label class="opt"><input type="checkbox" name="tasks" value="製作簡報教材">製作簡報或教材</label>
           <label class="opt"><input type="checkbox" name="tasks" value="出考題測驗">出考題或測驗</label>
@@ -242,8 +242,8 @@
       <div class="card" data-q="q9">
         <span class="qnum">Q9</span>
         <div class="qtitle">使用 AI 於教學時,您最主要的顧慮<span class="req">*</span></div>
-        <div class="qhint">複選,最多 3 項</div>
-        <div class="opts" data-name="concerns" data-type="check" data-max="3">
+        <div class="qhint">可複選,不限項目</div>
+        <div class="opts" data-name="concerns" data-type="check">
           <label class="opt"><input type="checkbox" name="concerns" value="內容正確性">內容正確性(AI 會一本正經地講錯,即「幻覺」)</label>
           <label class="opt"><input type="checkbox" name="concerns" value="病人資料隱私">病人資料隱私與個資保護</label>
           <label class="opt"><input type="checkbox" name="concerns" value="不知從何開始">不知道從哪裡開始學</label>
@@ -256,15 +256,15 @@
           <label class="opt"><input type="checkbox" name="concerns" value="其他" data-other="concernOther">其他</label>
         </div>
         <div class="otherline" id="line_concernOther"><input type="text" id="concernOther" placeholder="請描述其他顧慮"></div>
-        <div class="err">請至少選擇 1 項(最多 3 項)</div>
+        <div class="err">請至少選擇 1 項</div>
       </div>
 
       <!-- Q10 期待 -->
       <div class="card" data-q="q10">
         <span class="qnum">Q10</span>
         <div class="qtitle">您最期待 AI 為您的「教學」帶來什麼改變?<span class="req">*</span></div>
-        <div class="qhint">複選,最多 3 項</div>
-        <div class="opts" data-name="hopes" data-type="check" data-max="3">
+        <div class="qhint">可複選,不限項目</div>
+        <div class="opts" data-name="hopes" data-type="check">
           <label class="opt"><input type="checkbox" name="hopes" value="自動生成教案情境">自動生成教案與擬真情境腳本</label>
           <label class="opt"><input type="checkbox" name="hopes" value="AI標準化病人">AI 標準化病人,讓學員隨時練問診</label>
           <label class="opt"><input type="checkbox" name="hopes" value="自動出題題庫">自動出題與題庫建置</label>
@@ -279,7 +279,7 @@
           <div class="qhint" style="margin-bottom:6px">關於這堂課,您最想學到什麼?(選填)</div>
           <textarea id="expectText" maxlength="300" placeholder="例如:想知道怎麼用 AI 幫我把病例改寫成教案……"></textarea>
         </div>
-        <div class="err">請至少選擇 1 項(最多 3 項)</div>
+        <div class="err">請至少選擇 1 項</div>
       </div>
 
       <button type="submit" class="btn" id="submitBtn">送出問卷</button>
@@ -520,7 +520,7 @@ if(IS_RESULTS){
     let h="";
     h+=countBar("Q1 職類", r=>withOther(r.role, r.roleOther));
     h+=countBar("Q2 教學年資", r=>r.years);
-    h+=countBar("Q3 教學痛點(複選,至多3)", r=>(r.pains||[]).map(p=>withOther(p,r.painOther)));
+    h+=countBar("Q3 教學痛點(複選)", r=>(r.pains||[]).map(p=>withOther(p,r.painOther)));
     h+=freeList("Q4 教學困擾情境(開放)", r=>r.painStory);
     h+=countBar("Q5 AI 使用頻率", r=>r.freq);
     h+=countBar("Q6 用過的 AI 工具(複選)", r=>(r.tools||[]).map(p=>withOther(p,r.toolOther)));
@@ -529,8 +529,8 @@ if(IS_RESULTS){
     const vals=ROWS.map(r=>r.familiar).filter(v=>v>=1&&v<=5);
     const avg = vals.length? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2):"–";
     h+=countBar(`Q8 AI 熟悉度自評(平均 ${avg} / 5)`, r=>r.familiar? r.familiar+" 分":"");
-    h+=countBar("Q9 主要顧慮(複選,至多3)", r=>(r.concerns||[]).map(p=>withOther(p,r.concernOther)));
-    h+=countBar("Q10 最期待的改變(複選,至多3)", r=>(r.hopes||[]).map(p=>withOther(p,r.hopeOther)));
+    h+=countBar("Q9 主要顧慮(複選)", r=>(r.concerns||[]).map(p=>withOther(p,r.concernOther)));
+    h+=countBar("Q10 最期待的改變(複選)", r=>(r.hopes||[]).map(p=>withOther(p,r.hopeOther)));
     h+=freeList("Q10+ 對課程的期待(開放)", r=>r.expectText);
     $("statsBody").innerHTML=h;
   }
