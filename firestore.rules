@@ -122,6 +122,14 @@ service cloud.firestore {
       allow read, write: if isFamily();
     }
 
+    // 生成式AI教學課前調查：匿名問卷（survey-ai.html）
+    // - 任何人可送出回覆；讀取/修改僅限管理者（結果統計頁 ?results）
+    match /survey_ai_teaching/{document} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null &&
+        request.auth.token.email == "jiahowchang@gmail.com";
+    }
+
     // 其他集合預設禁止存取
     match /{document=**} {
       allow read, write: if false;

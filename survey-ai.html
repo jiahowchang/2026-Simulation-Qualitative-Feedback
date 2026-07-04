@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>生成式AI × 臨床教學 課前調查</title>
+<style>
+  :root{
+    --navy:#1E2761; --blue:#2B7DE9; --ink:#333; --line:#e3e8f0; --bg:#f5f7fb;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.6;
+    padding-bottom:60px;
+  }
+  .wrap{ max-width:640px; margin:0 auto; padding:16px; }
+  header.hero{
+    background:var(--navy); color:#fff; border-radius:14px; padding:22px 20px; margin-bottom:14px;
+  }
+  header.hero h1{ font-size:1.28rem; line-height:1.45; }
+  header.hero .sub{ margin-top:8px; font-size:.9rem; opacity:.85; }
+  header.hero .meta{ margin-top:10px; font-size:.8rem; opacity:.7; }
+  .card{
+    background:#fff; border:1px solid var(--line); border-radius:14px;
+    padding:18px 16px; margin-bottom:12px;
+  }
+  .qnum{ display:inline-block; background:var(--blue); color:#fff; font-size:.78rem;
+    border-radius:999px; padding:1px 10px; margin-bottom:6px; font-weight:700; }
+  .qtitle{ font-size:1.02rem; font-weight:700; color:var(--navy); }
+  .qhint{ font-size:.82rem; color:#8b94a6; margin-top:2px; }
+  .req{ color:#e05555; margin-left:2px; }
+  .opts{ margin-top:12px; display:flex; flex-direction:column; gap:8px; }
+  .opt{
+    display:flex; align-items:flex-start; gap:10px; border:1.5px solid var(--line);
+    border-radius:10px; padding:10px 12px; cursor:pointer; font-size:.95rem;
+    background:#fff; transition:border-color .12s, background .12s;
+  }
+  .opt input{ margin-top:4px; accent-color:var(--blue); width:17px; height:17px; flex:0 0 17px; }
+  .opt.on{ border-color:var(--blue); background:#eef5fe; }
+  .otherline{ display:none; margin-top:8px; }
+  .otherline.show{ display:block; }
+  input[type=text], textarea{
+    width:100%; border:1.5px solid var(--line); border-radius:10px; padding:10px 12px;
+    font-size:.95rem; font-family:inherit; background:#fff;
+  }
+  input[type=text]:focus, textarea:focus{ outline:none; border-color:var(--blue); }
+  textarea{ min-height:84px; resize:vertical; }
+  .likert{ display:flex; gap:6px; margin-top:14px; }
+  .likert label{
+    flex:1; text-align:center; border:1.5px solid var(--line); border-radius:10px;
+    padding:10px 2px 8px; cursor:pointer; transition:border-color .12s, background .12s;
+  }
+  .likert label.on{ border-color:var(--blue); background:#eef5fe; }
+  .likert input{ display:none; }
+  .likert .n{ font-size:1.15rem; font-weight:800; color:var(--navy); display:block; }
+  .likert .t{ font-size:.62rem; color:#8b94a6; display:block; line-height:1.3; margin-top:2px; }
+  .err{ display:none; color:#e05555; font-size:.82rem; margin-top:8px; }
+  .card.bad{ border-color:#e05555; }
+  .card.bad .err{ display:block; }
+  .btn{
+    display:block; width:100%; background:var(--blue); color:#fff; border:none;
+    border-radius:12px; padding:14px; font-size:1.05rem; font-weight:700; cursor:pointer;
+    font-family:inherit;
+  }
+  .btn:disabled{ opacity:.5; }
+  .btn.ghost{ background:#fff; color:var(--blue); border:1.5px solid var(--blue); }
+  #toast{
+    position:fixed; left:50%; bottom:26px; transform:translateX(-50%);
+    background:#333; color:#fff; padding:9px 18px; border-radius:999px; font-size:.88rem;
+    opacity:0; pointer-events:none; transition:opacity .25s; z-index:50; white-space:nowrap;
+  }
+  #toast.show{ opacity:.95; }
+  .done{ text-align:center; padding:52px 20px; }
+  .done .big{ font-size:2.6rem; }
+  .done h2{ color:var(--navy); margin:10px 0 6px; }
+  .done p{ color:#667; font-size:.92rem; }
+  .footer-note{ text-align:center; font-size:.75rem; color:#a0a8b8; margin-top:18px; }
+  .footer-note a{ color:#a0a8b8; }
+  /* ===== 結果統計 ===== */
+  .stat-q{ font-weight:700; color:var(--navy); margin:18px 0 8px; font-size:.98rem; }
+  .bar-row{ display:flex; align-items:center; gap:8px; margin-bottom:6px; font-size:.85rem; }
+  .bar-label{ flex:0 0 42%; text-align:right; color:#556; }
+  .bar-track{ flex:1; background:#eef1f6; border-radius:6px; height:20px; position:relative; }
+  .bar-fill{ background:var(--blue); height:100%; border-radius:6px; min-width:2px; }
+  .bar-n{ flex:0 0 46px; color:var(--navy); font-weight:700; }
+  .free-item{ background:#f6f8fc; border-radius:8px; padding:8px 12px; margin-bottom:6px; font-size:.88rem; }
+  .free-item .who{ color:#8b94a6; font-size:.75rem; }
+  .stat-head{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+  .stat-head h2{ color:var(--navy); font-size:1.1rem; }
+  .pill{ background:#eef5fe; color:var(--blue); border-radius:999px; padding:2px 12px; font-weight:700; font-size:.85rem; }
+  .mini{ font-size:.8rem; color:#8b94a6; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+
+  <!-- ======== 問卷模式 ======== -->
+  <div id="formView">
+    <header class="hero">
+      <h1>生成式 AI × 臨床教學<br>課前調查</h1>
+      <div class="sub">「一般師培:生成式AI訓練作為教學工具——標準病人、情境模擬大師」課程將依據您的回覆調整內容,讓這 90 分鐘對您最有幫助。</div>
+      <div class="meta">匿名填寫.約 3 分鐘.共 10 題</div>
+    </header>
+
+    <form id="surveyForm" novalidate>
+
+      <!-- Q1 職類 -->
+      <div class="card" data-q="q1">
+        <span class="qnum">Q1</span>
+        <div class="qtitle">您的職類<span class="req">*</span></div>
+        <div class="opts" data-name="role" data-type="radio">
+          <label class="opt"><input type="radio" name="role" value="醫師">醫師</label>
+          <label class="opt"><input type="radio" name="role" value="護理師">護理師</label>
+          <label class="opt"><input type="radio" name="role" value="專科護理師(NP)">專科護理師(NP)</label>
+          <label class="opt"><input type="radio" name="role" value="藥師">藥師</label>
+          <label class="opt"><input type="radio" name="role" value="呼吸治療師">呼吸治療師</label>
+          <label class="opt"><input type="radio" name="role" value="醫事檢驗師">醫事檢驗師</label>
+          <label class="opt"><input type="radio" name="role" value="醫事放射師">醫事放射師</label>
+          <label class="opt"><input type="radio" name="role" value="物理/職能治療師">物理/職能治療師</label>
+          <label class="opt"><input type="radio" name="role" value="營養師">營養師</label>
+          <label class="opt"><input type="radio" name="role" value="其他" data-other="roleOther">其他</label>
+        </div>
+        <div class="otherline" id="line_roleOther"><input type="text" id="roleOther" placeholder="請填寫您的職類"></div>
+        <div class="err">請選擇您的職類</div>
+      </div>
+
+      <!-- Q2 教學年資 -->
+      <div class="card" data-q="q2">
+        <span class="qnum">Q2</span>
+        <div class="qtitle">您的臨床教學年資<span class="req">*</span></div>
+        <div class="opts" data-name="years" data-type="radio">
+          <label class="opt"><input type="radio" name="years" value="未滿2年">未滿 2 年</label>
+          <label class="opt"><input type="radio" name="years" value="2-5年">2–5 年</label>
+          <label class="opt"><input type="radio" name="years" value="6-10年">6–10 年</label>
+          <label class="opt"><input type="radio" name="years" value="11-20年">11–20 年</label>
+          <label class="opt"><input type="radio" name="years" value="20年以上">20 年以上</label>
+        </div>
+        <div class="err">請選擇教學年資</div>
+      </div>
+
+      <!-- Q3 教學痛點 -->
+      <div class="card" data-q="q3">
+        <span class="qnum">Q3</span>
+        <div class="qtitle">教學上最讓您困擾的痛點<span class="req">*</span></div>
+        <div class="qhint">複選,最多 3 項</div>
+        <div class="opts" data-name="pains" data-type="check" data-max="3">
+          <label class="opt"><input type="checkbox" name="pains" value="準備教材簡報太花時間">準備教材與簡報太花時間</label>
+          <label class="opt"><input type="checkbox" name="pains" value="教案情境設計困難">教案/擬真情境腳本設計困難</label>
+          <label class="opt"><input type="checkbox" name="pains" value="臨床忙沒時間教">臨床工作忙,沒有完整時間教學</label>
+          <label class="opt"><input type="checkbox" name="pains" value="學員程度落差大">學員程度落差大,難以因材施教</label>
+          <label class="opt"><input type="checkbox" name="pains" value="回饋評量費時">給回饋與寫評量(EPA/mini-CEX/CbD)費時</label>
+          <label class="opt"><input type="checkbox" name="pains" value="標準化病人擬真資源不足">標準化病人/擬真教學資源不足</label>
+          <label class="opt"><input type="checkbox" name="pains" value="出題題庫吃力">出題與題庫維護吃力</label>
+          <label class="opt"><input type="checkbox" name="pains" value="行政文書負擔">行政文書負擔(計畫書、成果報告)</label>
+          <label class="opt"><input type="checkbox" name="pains" value="其他" data-other="painOther">其他</label>
+        </div>
+        <div class="otherline" id="line_painOther"><input type="text" id="painOther" placeholder="請描述其他痛點"></div>
+        <div class="err">請至少選擇 1 項(最多 3 項)</div>
+      </div>
+
+      <!-- Q4 開放:教學困擾情境 -->
+      <div class="card" data-q="q4">
+        <span class="qnum">Q4</span>
+        <div class="qtitle">請描述一個最近讓您「特別費力或心累」的教學情境</div>
+        <div class="qhint">選填.一兩句話即可,將作為課程案例設計參考</div>
+        <div style="margin-top:12px"><textarea id="painStory" maxlength="300" placeholder="例如:為了一場 OSCE 出題+訓練標準化病人,花了三個週末……"></textarea></div>
+      </div>
+
+      <!-- Q5 AI 使用頻率 -->
+      <div class="card" data-q="q5">
+        <span class="qnum">Q5</span>
+        <div class="qtitle">過去三個月,您使用生成式 AI(如 ChatGPT、Gemini)的頻率<span class="req">*</span></div>
+        <div class="opts" data-name="freq" data-type="radio">
+          <label class="opt"><input type="radio" name="freq" value="從未使用">從未使用</label>
+          <label class="opt"><input type="radio" name="freq" value="用過一兩次">只用過一兩次</label>
+          <label class="opt"><input type="radio" name="freq" value="每月數次">每月數次</label>
+          <label class="opt"><input type="radio" name="freq" value="每週數次">每週數次</label>
+          <label class="opt"><input type="radio" name="freq" value="幾乎每天">幾乎每天</label>
+        </div>
+        <div class="err">請選擇使用頻率</div>
+      </div>
+
+      <!-- Q6 用過的工具 -->
+      <div class="card" data-q="q6">
+        <span class="qnum">Q6</span>
+        <div class="qtitle">您使用過哪些 AI 工具?<span class="req">*</span></div>
+        <div class="qhint">複選,皆可</div>
+        <div class="opts" data-name="tools" data-type="check">
+          <label class="opt"><input type="checkbox" name="tools" value="ChatGPT">ChatGPT</label>
+          <label class="opt"><input type="checkbox" name="tools" value="Google Gemini">Google Gemini</label>
+          <label class="opt"><input type="checkbox" name="tools" value="Claude">Claude</label>
+          <label class="opt"><input type="checkbox" name="tools" value="Microsoft Copilot">Microsoft Copilot</label>
+          <label class="opt"><input type="checkbox" name="tools" value="NotebookLM">NotebookLM</label>
+          <label class="opt"><input type="checkbox" name="tools" value="Perplexity">Perplexity</label>
+          <label class="opt"><input type="checkbox" name="tools" value="AI簡報工具">AI 簡報/設計工具(Gamma、Canva AI)</label>
+          <label class="opt"><input type="checkbox" name="tools" value="語音轉文字">語音轉文字(Whisper 等)</label>
+          <label class="opt" data-none="1"><input type="checkbox" name="tools" value="都沒有用過">都沒有用過</label>
+          <label class="opt"><input type="checkbox" name="tools" value="其他" data-other="toolOther">其他</label>
+        </div>
+        <div class="otherline" id="line_toolOther"><input type="text" id="toolOther" placeholder="請填寫其他工具"></div>
+        <div class="err">請至少選擇 1 項</div>
+      </div>
+
+      <!-- Q7 AI 用於教學任務 -->
+      <div class="card" data-q="q7">
+        <span class="qnum">Q7</span>
+        <div class="qtitle">您曾把 AI 用在哪些「教學相關」工作?<span class="req">*</span></div>
+        <div class="qhint">複選,皆可</div>
+        <div class="opts" data-name="tasks" data-type="check">
+          <label class="opt"><input type="checkbox" name="tasks" value="製作簡報教材">製作簡報或教材</label>
+          <label class="opt"><input type="checkbox" name="tasks" value="出考題測驗">出考題或測驗</label>
+          <label class="opt"><input type="checkbox" name="tasks" value="設計教案情境">設計教案或擬真情境腳本</label>
+          <label class="opt"><input type="checkbox" name="tasks" value="文獻搜尋摘要">文獻搜尋與摘要</label>
+          <label class="opt"><input type="checkbox" name="tasks" value="翻譯潤稿">翻譯或潤稿</label>
+          <label class="opt"><input type="checkbox" name="tasks" value="撰寫回饋評語">撰寫學員回饋或評語</label>
+          <label class="opt"><input type="checkbox" name="tasks" value="行政文書">行政文書(公文、計畫、報告)</label>
+          <label class="opt" data-none="1"><input type="checkbox" name="tasks" value="尚未用於教學">尚未用於教學工作</label>
+          <label class="opt"><input type="checkbox" name="tasks" value="其他" data-other="taskOther">其他</label>
+        </div>
+        <div class="otherline" id="line_taskOther"><input type="text" id="taskOther" placeholder="請填寫其他用途"></div>
+        <div class="err">請至少選擇 1 項</div>
+      </div>
+
+      <!-- Q8 熟悉度自評 -->
+      <div class="card" data-q="q8">
+        <span class="qnum">Q8</span>
+        <div class="qtitle">您對生成式 AI 工具的熟悉程度自評<span class="req">*</span></div>
+        <div class="likert" data-name="familiar">
+          <label><input type="radio" name="familiar" value="1"><span class="n">1</span><span class="t">完全<br>陌生</span></label>
+          <label><input type="radio" name="familiar" value="2"><span class="n">2</span><span class="t">聽過<br>沒用過</span></label>
+          <label><input type="radio" name="familiar" value="3"><span class="n">3</span><span class="t">會基本<br>操作</span></label>
+          <label><input type="radio" name="familiar" value="4"><span class="n">4</span><span class="t">常用且<br>順手</span></label>
+          <label><input type="radio" name="familiar" value="5"><span class="n">5</span><span class="t">靈活運用<br>能教別人</span></label>
+        </div>
+        <div class="err">請選擇 1–5 分</div>
+      </div>
+
+      <!-- Q9 顧慮 -->
+      <div class="card" data-q="q9">
+        <span class="qnum">Q9</span>
+        <div class="qtitle">使用 AI 於教學時,您最主要的顧慮<span class="req">*</span></div>
+        <div class="qhint">複選,最多 3 項</div>
+        <div class="opts" data-name="concerns" data-type="check" data-max="3">
+          <label class="opt"><input type="checkbox" name="concerns" value="內容正確性">內容正確性(AI 會一本正經地講錯,即「幻覺」)</label>
+          <label class="opt"><input type="checkbox" name="concerns" value="病人資料隱私">病人資料隱私與個資保護</label>
+          <label class="opt"><input type="checkbox" name="concerns" value="不知從何開始">不知道從哪裡開始學</label>
+          <label class="opt"><input type="checkbox" name="concerns" value="沒有時間學">沒有時間學習新工具</label>
+          <label class="opt"><input type="checkbox" name="concerns" value="費用">費用與訂閱成本</label>
+          <label class="opt"><input type="checkbox" name="concerns" value="學員過度依賴">擔心學員過度依賴 AI</label>
+          <label class="opt"><input type="checkbox" name="concerns" value="倫理著作權">倫理與著作權疑慮</label>
+          <label class="opt"><input type="checkbox" name="concerns" value="政策不明">醫院/單位政策不明確</label>
+          <label class="opt" data-none="1"><input type="checkbox" name="concerns" value="沒有特別顧慮">沒有特別顧慮</label>
+          <label class="opt"><input type="checkbox" name="concerns" value="其他" data-other="concernOther">其他</label>
+        </div>
+        <div class="otherline" id="line_concernOther"><input type="text" id="concernOther" placeholder="請描述其他顧慮"></div>
+        <div class="err">請至少選擇 1 項(最多 3 項)</div>
+      </div>
+
+      <!-- Q10 期待 -->
+      <div class="card" data-q="q10">
+        <span class="qnum">Q10</span>
+        <div class="qtitle">您最期待 AI 為您的「教學」帶來什麼改變?<span class="req">*</span></div>
+        <div class="qhint">複選,最多 3 項</div>
+        <div class="opts" data-name="hopes" data-type="check" data-max="3">
+          <label class="opt"><input type="checkbox" name="hopes" value="自動生成教案情境">自動生成教案與擬真情境腳本</label>
+          <label class="opt"><input type="checkbox" name="hopes" value="AI標準化病人">AI 標準化病人,讓學員隨時練問診</label>
+          <label class="opt"><input type="checkbox" name="hopes" value="自動出題題庫">自動出題與題庫建置</label>
+          <label class="opt"><input type="checkbox" name="hopes" value="快速產出簡報教材">快速產出簡報與教材</label>
+          <label class="opt"><input type="checkbox" name="hopes" value="評量個別化回饋">協助評量與個別化回饋</label>
+          <label class="opt"><input type="checkbox" name="hopes" value="逐字稿自動整理">錄音/逐字稿自動整理(會議、debriefing)</label>
+          <label class="opt"><input type="checkbox" name="hopes" value="減少行政文書">減少行政文書時間</label>
+          <label class="opt"><input type="checkbox" name="hopes" value="其他" data-other="hopeOther">其他</label>
+        </div>
+        <div class="otherline" id="line_hopeOther"><input type="text" id="hopeOther" placeholder="請描述其他期待"></div>
+        <div style="margin-top:14px">
+          <div class="qhint" style="margin-bottom:6px">關於這堂課,您最想學到什麼?(選填)</div>
+          <textarea id="expectText" maxlength="300" placeholder="例如:想知道怎麼用 AI 幫我把病例改寫成教案……"></textarea>
+        </div>
+        <div class="err">請至少選擇 1 項(最多 3 項)</div>
+      </div>
+
+      <button type="submit" class="btn" id="submitBtn">送出問卷</button>
+      <div class="footer-note">本問卷為匿名調查,回覆僅用於課程設計與統計分析。</div>
+    </form>
+  </div>
+
+  <!-- ======== 完成畫面 ======== -->
+  <div id="doneView" class="done" style="display:none">
+    <div class="big">✅</div>
+    <h2>感謝您的回覆!</h2>
+    <p>您的意見將直接反映在課程內容裡。<br>課堂上見!</p>
+  </div>
+
+  <!-- ======== 結果統計(管理者) ======== -->
+  <div id="resultsView" style="display:none">
+    <header class="hero">
+      <h1>課前調查 結果統計</h1>
+      <div class="sub">生成式 AI × 臨床教學(管理者檢視)</div>
+    </header>
+    <div class="card" id="loginCard">
+      <p style="margin-bottom:12px">結果僅限管理者檢視,請以 Google 帳號登入。</p>
+      <button class="btn" id="loginBtn">使用 Google 登入</button>
+    </div>
+    <div id="statsWrap" style="display:none">
+      <div class="card">
+        <div class="stat-head">
+          <h2>總回覆數 <span class="pill" id="totalN">0</span></h2>
+          <div>
+            <button class="btn ghost" id="exportBtn" style="width:auto;display:inline-block;padding:8px 16px;font-size:.9rem">匯出 Excel</button>
+            <button class="btn ghost" id="refreshBtn" style="width:auto;display:inline-block;padding:8px 16px;font-size:.9rem">重新整理</button>
+          </div>
+        </div>
+        <div class="mini" id="lastTime" style="margin-top:6px"></div>
+      </div>
+      <div class="card" id="statsBody"></div>
+      <div class="card">
+        <div class="stat-head"><h2>分享問卷</h2></div>
+        <p class="mini" style="margin:8px 0" id="shareUrl"></p>
+        <div style="text-align:center"><img id="qrImg" alt="問卷 QR Code" style="max-width:220px;border-radius:8px"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey:"AIzaSyBrs80vpFVe-iEh5ctzRWfYHUBb3KGvILo",
+  authDomain:"speech-to-text-2f776.firebaseapp.com",
+  projectId:"speech-to-text-2f776",
+  storageBucket:"speech-to-text-2f776.firebasestorage.app",
+  messagingSenderId:"283739023798",
+  appId:"1:283739023798:web:3091ec2bcf6262b5ecb917"
+};
+let db=null, auth=null;
+try{ const app=initializeApp(firebaseConfig); db=getFirestore(app); auth=getAuth(app); }
+catch(e){ console.warn("Firebase init failed", e); }
+
+const COLL="survey_ai_teaching";
+const ADMIN_EMAIL="jiahowchang@gmail.com";
+const $=id=>document.getElementById(id);
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(t._tm); t._tm=setTimeout(()=>t.classList.remove("show"),2200); }
+
+const IS_RESULTS = new URLSearchParams(location.search).has("results");
+
+/* ================= 問卷模式 ================= */
+if(!IS_RESULTS){
+  if(localStorage.getItem("survey_ai_done")==="1"){
+    $("formView").style.display="none"; $("doneView").style.display="block";
+  }
+
+  // 選項高亮 + 其他欄位開合 + 複選上限 + 「都沒有/尚未」互斥
+  document.querySelectorAll(".opts").forEach(box=>{
+    const max = parseInt(box.dataset.max||"0",10);
+    box.addEventListener("change", ev=>{
+      const inp = ev.target;
+      if(inp.type==="checkbox" && max){
+        const n = box.querySelectorAll("input:checked").length;
+        if(n>max){ inp.checked=false; toast("最多選 "+max+" 項"); }
+      }
+      // 「都沒有用過/尚未用於教學/沒有特別顧慮」與其他選項互斥
+      if(inp.type==="checkbox" && inp.checked){
+        const lb = inp.closest(".opt");
+        if(lb && lb.dataset.none){
+          box.querySelectorAll("input:checked").forEach(o=>{ if(o!==inp) o.checked=false; });
+        }else{
+          box.querySelectorAll(".opt[data-none] input:checked").forEach(o=>{ o.checked=false; });
+        }
+      }
+      // 高亮 + 其他欄位
+      box.querySelectorAll(".opt").forEach(lb=>{
+        const i = lb.querySelector("input");
+        lb.classList.toggle("on", i.checked);
+        if(i.dataset.other){
+          const line = $("line_"+i.dataset.other);
+          if(line){ line.classList.toggle("show", i.checked);
+            if(i.checked) line.querySelector("input").focus(); }
+        }
+      });
+    });
+  });
+  document.querySelectorAll(".likert").forEach(box=>{
+    box.addEventListener("change", ()=>{
+      box.querySelectorAll("label").forEach(lb=>{
+        lb.classList.toggle("on", lb.querySelector("input").checked);
+      });
+    });
+  });
+
+  function radioVal(name){ const el=document.querySelector(`input[name="${name}"]:checked`); return el?el.value:""; }
+  function checkVals(name){ return [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(i=>i.value); }
+
+  $("surveyForm").addEventListener("submit", async ev=>{
+    ev.preventDefault();
+    const data={
+      role: radioVal("role"), roleOther: $("roleOther").value.trim(),
+      years: radioVal("years"),
+      pains: checkVals("pains"), painOther: $("painOther").value.trim(),
+      painStory: $("painStory").value.trim(),
+      freq: radioVal("freq"),
+      tools: checkVals("tools"), toolOther: $("toolOther").value.trim(),
+      tasks: checkVals("tasks"), taskOther: $("taskOther").value.trim(),
+      familiar: parseInt(radioVal("familiar")||"0",10),
+      concerns: checkVals("concerns"), concernOther: $("concernOther").value.trim(),
+      hopes: checkVals("hopes"), hopeOther: $("hopeOther").value.trim(),
+      expectText: $("expectText").value.trim(),
+      ua: navigator.userAgent.slice(0,160),
+      t: serverTimestamp(), tLocal: new Date().toISOString()
+    };
+    // 驗證必填
+    const missing=[];
+    if(!data.role) missing.push("q1");
+    if(!data.years) missing.push("q2");
+    if(!data.pains.length) missing.push("q3");
+    if(!data.freq) missing.push("q5");
+    if(!data.tools.length) missing.push("q6");
+    if(!data.tasks.length) missing.push("q7");
+    if(!data.familiar) missing.push("q8");
+    if(!data.concerns.length) missing.push("q9");
+    if(!data.hopes.length) missing.push("q10");
+    document.querySelectorAll(".card[data-q]").forEach(c=>c.classList.remove("bad"));
+    if(missing.length){
+      missing.forEach(q=>{ const c=document.querySelector(`.card[data-q="${q}"]`); if(c) c.classList.add("bad"); });
+      document.querySelector(`.card[data-q="${missing[0]}"]`).scrollIntoView({behavior:"smooth", block:"center"});
+      toast("還有 "+missing.length+" 題必填未完成"); return;
+    }
+    const btn=$("submitBtn"); btn.disabled=true; btn.textContent="送出中…";
+    try{
+      await addDoc(collection(db, COLL), data);
+      localStorage.setItem("survey_ai_done","1");
+      $("formView").style.display="none"; $("doneView").style.display="block";
+      window.scrollTo({top:0});
+    }catch(e){
+      console.error(e); toast("送出失敗,請檢查網路後再試");
+      btn.disabled=false; btn.textContent="送出問卷";
+    }
+  });
+}
+
+/* ================= 結果統計模式(?results) ================= */
+if(IS_RESULTS){
+  $("formView").style.display="none";
+  $("resultsView").style.display="block";
+
+  const surveyUrl = location.origin + location.pathname;
+  $("shareUrl").textContent = surveyUrl;
+  $("qrImg").src = "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" + encodeURIComponent(surveyUrl);
+  $("qrImg").onerror = ()=>{ $("qrImg").style.display="none"; };
+
+  let ROWS=[];
+
+  $("loginBtn").addEventListener("click", async ()=>{
+    try{ await signInWithPopup(auth, new GoogleAuthProvider()); }
+    catch(e){ toast("登入失敗:"+(e.message||e)); }
+  });
+  onAuthStateChanged(auth, user=>{
+    if(user && user.email===ADMIN_EMAIL){
+      $("loginCard").style.display="none"; $("statsWrap").style.display="block";
+      loadStats();
+    }else if(user){
+      toast("此帳號無檢視權限");
+    }
+  });
+  $("refreshBtn").addEventListener("click", loadStats);
+  $("exportBtn").addEventListener("click", exportXls);
+
+  async function loadStats(){
+    $("statsBody").innerHTML="<p class='mini'>載入中…</p>";
+    try{
+      const snap = await getDocs(query(collection(db, COLL), orderBy("tLocal","desc")));
+      ROWS = snap.docs.map(d=>d.data());
+    }catch(e){
+      $("statsBody").innerHTML="<p class='mini'>讀取失敗:"+(e.message||e)+"</p>"; return;
+    }
+    $("totalN").textContent = ROWS.length;
+    $("lastTime").textContent = ROWS.length ? "最新回覆:"+(ROWS[0].tLocal||"").replace("T"," ").slice(0,16) : "尚無回覆";
+    render();
+  }
+
+  function countBar(title, getter, opts){
+    const counts={};
+    ROWS.forEach(r=>{
+      const v=getter(r);
+      (Array.isArray(v)?v:[v]).forEach(x=>{ if(x) counts[x]=(counts[x]||0)+1; });
+    });
+    const entries=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+    const mx=Math.max(1,...entries.map(e=>e[1]));
+    let h=`<div class="stat-q">${title}</div>`;
+    if(!entries.length) h+=`<p class="mini">尚無資料</p>`;
+    entries.forEach(([k,n])=>{
+      const pct = ROWS.length? Math.round(n/ROWS.length*100):0;
+      h+=`<div class="bar-row"><div class="bar-label">${k}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${n/mx*100}%"></div></div>
+        <div class="bar-n">${n}(${pct}%)</div></div>`;
+    });
+    return h;
+  }
+  function freeList(title, getter){
+    const items=ROWS.map(r=>({txt:getter(r), who:r.role||""})).filter(x=>x.txt);
+    let h=`<div class="stat-q">${title}<span class="mini">(${items.length} 則)</span></div>`;
+    if(!items.length) h+=`<p class="mini">尚無資料</p>`;
+    items.forEach(x=>{ h+=`<div class="free-item">${esc(x.txt)}<div class="who">— ${esc(x.who)}</div></div>`; });
+    return h;
+  }
+  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+  function render(){
+    const withOther=(v,o)=> (v==="其他"&&o)? "其他:"+o : v;
+    let h="";
+    h+=countBar("Q1 職類", r=>withOther(r.role, r.roleOther));
+    h+=countBar("Q2 教學年資", r=>r.years);
+    h+=countBar("Q3 教學痛點(複選,至多3)", r=>(r.pains||[]).map(p=>withOther(p,r.painOther)));
+    h+=freeList("Q4 教學困擾情境(開放)", r=>r.painStory);
+    h+=countBar("Q5 AI 使用頻率", r=>r.freq);
+    h+=countBar("Q6 用過的 AI 工具(複選)", r=>(r.tools||[]).map(p=>withOther(p,r.toolOther)));
+    h+=countBar("Q7 AI 用於教學任務(複選)", r=>(r.tasks||[]).map(p=>withOther(p,r.taskOther)));
+    // Q8 熟悉度:分布 + 平均
+    const vals=ROWS.map(r=>r.familiar).filter(v=>v>=1&&v<=5);
+    const avg = vals.length? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2):"–";
+    h+=countBar(`Q8 AI 熟悉度自評(平均 ${avg} / 5)`, r=>r.familiar? r.familiar+" 分":"");
+    h+=countBar("Q9 主要顧慮(複選,至多3)", r=>(r.concerns||[]).map(p=>withOther(p,r.concernOther)));
+    h+=countBar("Q10 最期待的改變(複選,至多3)", r=>(r.hopes||[]).map(p=>withOther(p,r.hopeOther)));
+    h+=freeList("Q10+ 對課程的期待(開放)", r=>r.expectText);
+    $("statsBody").innerHTML=h;
+  }
+
+  function exportXls(){
+    if(!ROWS.length){ toast("尚無資料可匯出"); return; }
+    const cols=[
+      ["時間", r=>(r.tLocal||"").replace("T"," ").slice(0,19)],
+      ["職類", r=>r.role+(r.roleOther?"("+r.roleOther+")":"")],
+      ["教學年資", r=>r.years],
+      ["教學痛點", r=>(r.pains||[]).join("、")+(r.painOther?"(其他:"+r.painOther+")":"")],
+      ["困擾情境", r=>r.painStory],
+      ["AI使用頻率", r=>r.freq],
+      ["用過的工具", r=>(r.tools||[]).join("、")+(r.toolOther?"(其他:"+r.toolOther+")":"")],
+      ["教學任務", r=>(r.tasks||[]).join("、")+(r.taskOther?"(其他:"+r.taskOther+")":"")],
+      ["熟悉度(1-5)", r=>r.familiar],
+      ["顧慮", r=>(r.concerns||[]).join("、")+(r.concernOther?"(其他:"+r.concernOther+")":"")],
+      ["期待的改變", r=>(r.hopes||[]).join("、")+(r.hopeOther?"(其他:"+r.hopeOther+")":"")],
+      ["課程期待", r=>r.expectText],
+    ];
+    let html="<table><tr>"+cols.map(c=>"<th>"+c[0]+"</th>").join("")+"</tr>";
+    ROWS.forEach(r=>{ html+="<tr>"+cols.map(c=>"<td>"+esc(String(c[1](r)??""))+"</td>").join("")+"</tr>"; });
+    html+="</table>";
+    const blob=new Blob(["﻿<html><head><meta charset='utf-8'></head><body>"+html+"</body></html>"],
+      {type:"application/vnd.ms-excel"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="AI教學課前調查_"+new Date().toISOString().slice(0,10)+".xls";
+    a.click(); URL.revokeObjectURL(a.href);
+  }
+}
+</script>
+</body>
+</html>
