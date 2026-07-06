@@ -597,10 +597,12 @@ async function cpSpeak(t){
     speechSynthesis.speak(u);
   }
 }
-// 語音輸入（Chrome/Edge/Safari 的 webkitSpeechRecognition）
+// 語音輸入：台語角色走雅婷即時 ASR（國台語混講），其餘走瀏覽器 webkitSpeechRecognition
+const STT_URL = "https://stt-mkargc7maa-uc.a.run.app";
 const CP_SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let cpRec = null;
 $("cpMic").onclick = ()=>{
+  if(chatState.voiceName && /^yating:tai/.test(chatState.voiceName)){ yatingMicToggle(); return; }
   if(!CP_SR){ cpAddMsg("sys","此瀏覽器不支援語音輸入，請改用文字"); return; }
   if(cpRec){ cpRec.stop(); return; }
   cpRec = new CP_SR();
@@ -611,6 +613,64 @@ $("cpMic").onclick = ()=>{
   cpRec.onerror = ()=>{ cpRec = null; $("cpMic").classList.remove("on"); };
   cpRec.start();
 };
+
+// ===== 雅婷即時語音辨識（wss 串流 16kHz PCM；token 由後端換發，金鑰不落地） =====
+let ytRec = null;
+async function yatingMicToggle(){
+  if(ytRec){ yatingMicStop(); return; }
+  $("cpMic").classList.add("on");
+  try{
+    const tk = await fetch(STT_URL, { method:"POST", headers:{ "content-type":"application/json" },
+      body: JSON.stringify({ pipeline:"asr-zh-tw-std" }) }).then(r=>r.json());
+    if(!tk.token) throw new Error((tk.error&&tk.error.message)||"token 取得失敗");
+    const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+    const ws = new WebSocket("wss://asr.api.yating.tw/ws/v1/?token="+tk.token);
+    ws.binaryType = "arraybuffer";
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    const ctx = new Ctx();
+    await ctx.resume();
+    const src = ctx.createMediaStreamSource(stream);
+    const node = ctx.createScriptProcessor(4096, 1, 1);
+    const mute = ctx.createGain(); mute.gain.value = 0;   // 不回放，避免回授
+    let pend = new Int16Array(0), open = false, got = false;
+    ws.onmessage = ev=>{
+      let m; try{ m = JSON.parse(ev.data); }catch(e){ return; }
+      if(m.status === "ok"){ open = true; return; }
+      if(m.status === "error"){ cpAddMsg("sys","台語辨識錯誤："+(m.detail||"")); yatingMicStop(); return; }
+      const p = m.pipe || {};
+      if(p.asr_sentence){ $("cpInput").value = p.asr_sentence; got = true; }
+      if(p.asr_final){ yatingMicStop(); if($("cpInput").value.trim()) cpSend(); }
+    };
+    ws.onerror = ()=>{ cpAddMsg("sys","台語語音辨識連線失敗，請改用文字"); yatingMicStop(); };
+    ws.onclose = ()=>{ if(ytRec) yatingMicStop(); };
+    node.onaudioprocess = e=>{
+      if(!open || ws.readyState !== 1) return;
+      const f = e.inputBuffer.getChannelData(0);
+      const ratio = ctx.sampleRate / 16000, n = Math.floor(f.length / ratio);
+      const out = new Int16Array(n);
+      for(let i=0;i<n;i++){ const v = f[Math.floor(i*ratio)]; out[i] = Math.max(-1, Math.min(1, v)) * 0x7FFF; }
+      const all = new Int16Array(pend.length + out.length); all.set(pend); all.set(out, pend.length);
+      let off = 0;
+      while(all.length - off >= 1000){ ws.send(all.subarray(off, off+1000).slice().buffer); off += 1000; }  // 2000 bytes/塊
+      pend = all.subarray(off).slice();
+    };
+    src.connect(node); node.connect(mute); mute.connect(ctx.destination);
+    ytRec = { ws, ctx, node, stream };
+    cpAddMsg("sys","🎤 請說話（台語/國語皆可），說完稍停會自動送出；再按一次 🎤 取消");
+  }catch(e){
+    $("cpMic").classList.remove("on"); ytRec = null;
+    cpAddMsg("sys","無法啟動台語語音辨識："+(e.message||e));
+  }
+}
+function yatingMicStop(){
+  const r = ytRec; ytRec = null;
+  $("cpMic").classList.remove("on");
+  if(!r) return;
+  try{ r.node.disconnect(); }catch(e){}
+  try{ r.stream.getTracks().forEach(t=>t.stop()); }catch(e){}
+  try{ r.ctx.close(); }catch(e){}
+  try{ if(r.ws.readyState === 1) r.ws.send(new ArrayBuffer(0)); r.ws.close(); }catch(e){}
+}
 
 function followMonPanel(){
   cancelAnimationFrame(mpRAF);

@@ -173,3 +173,47 @@ exports.tts = onRequest(
     }
   }
 );
+
+/* ================================================================
+   雅婷即時語音辨識（ASR）一次性密碼代理
+   - 國台語混講辨識 asr-zh-tw-std；API key 藏在伺服器端
+   - 瀏覽器 POST {pipeline?} → 取得 60 秒有效的一次性 token
+     → 直連 wss://asr.api.yating.tw/ws/v1/?token=... 串流 PCM
+   ================================================================ */
+exports.stt = onRequest(
+  { region: "us-central1", maxInstances: 5, timeoutSeconds: 15, memory: "256MiB",
+    secrets: [YATING_KEY], invoker: "public" },
+  async (req, res) => {
+    const origin = req.headers.origin || "";
+    const originOk = ALLOWED_ORIGINS.includes(origin);
+    if (originOk) res.set("Access-Control-Allow-Origin", origin);
+    res.set("Vary", "Origin");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (req.method !== "POST") { res.status(405).json({ error: { message: "Method not allowed" } }); return; }
+    if (!originOk) { res.status(403).json({ error: { message: "Origin not allowed" } }); return; }
+
+    const ytKey = (() => { try { return YATING_KEY.value(); } catch (e) { return ""; } })();
+    if (!ytKey || ytKey.length < 10) { res.status(503).json({ error: { message: "YATING_KEY not set" } }); return; }
+
+    const body = req.body || {};
+    const pipeline = /^asr-[a-z-]{2,20}$/.test(body.pipeline || "") ? body.pipeline : "asr-zh-tw-std";
+    try {
+      const r = await fetch("https://asr.api.yating.tw/v1/token", {
+        method: "POST",
+        headers: { key: ytKey, "content-type": "application/json" },
+        body: JSON.stringify({ pipeline }),
+      });
+      const d = await r.json();
+      if (!(r.ok || r.status === 201) || !d.auth_token) {
+        res.status(502).json({ error: { message: "yating token failed: " + JSON.stringify(d).slice(0, 200) } });
+        return;
+      }
+      res.json({ token: d.auth_token });
+    } catch (e) {
+      res.status(502).json({ error: { message: "stt error: " + (e && e.message || e) } });
+    }
+  }
+);
