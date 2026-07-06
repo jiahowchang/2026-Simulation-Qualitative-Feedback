@@ -332,8 +332,34 @@ function initViewer(scene){
     plugins: [[MarkersPlugin, {}]]
   });
   markers = viewer.getPlugin(MarkersPlugin);
-  markers.addEventListener("select-marker", ({ marker }) => onHotspot(marker.data));
+  markers.addEventListener("select-marker", ({ marker }) => {
+    if(Date.now()-lastHsFire<600) return;   // 觸控備援已處理過就跳過
+    lastHsFire = Date.now();
+    onHotspot(marker.data);
+  });
+
+  // iPad/iOS 觸控備援：部分 iOS 裝置上 PSV 的 select-marker 不觸發，
+  // 直接偵測熱點 DOM 的「輕點」（位移 <12px 且 <600ms 才算，拖曳環景不會誤觸）
+  let tx=0, ty=0, tt=0;
+  const vc = $("viewer");
+  vc.addEventListener("touchstart", e=>{
+    const t=e.touches[0]; tx=t.clientX; ty=t.clientY; tt=Date.now();
+  }, { passive:true, capture:true });
+  vc.addEventListener("touchend", e=>{
+    const t=e.changedTouches[0];
+    if(!t || Math.hypot(t.clientX-tx, t.clientY-ty)>12 || Date.now()-tt>600) return;
+    const wrap = e.target && e.target.closest ? e.target.closest(".hswrap[data-hs]") : null;
+    if(!wrap) return;
+    const sc = curSceneObj();
+    const h = sc && (sc.hotspots||[]).find(x=>x.id===wrap.dataset.hs);
+    if(!h || !hsVisible(h)) return;
+    if(Date.now()-lastHsFire<600) return;
+    lastHsFire = Date.now();
+    e.preventDefault();   // 擋掉後續合成 click，避免 select-marker 雙開
+    onHotspot(h);
+  }, { passive:false, capture:true });
 }
+let lastHsFire = 0;
 
 function curSceneObj(){ return tour.scenes.find(s=>s.id===curScene); }
 function iconFor(t){ return {nav:"➜",info:"ℹ️",quiz:"❓",branch:"⤢",hazard:"⚠️",media:"📎",action:"⚙️"}[t]||"•"; }
