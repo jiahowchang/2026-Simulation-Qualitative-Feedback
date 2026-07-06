@@ -10,6 +10,7 @@ const { defineSecret } = require("firebase-functions/params");
 
 const ANTHROPIC_KEY = defineSecret("ANTHROPIC_KEY");
 const ELEVEN_KEY = defineSecret("ELEVEN_KEY");   // ElevenLabs 聲音克隆（未設定時 tts 自動退回 Google）
+const YATING_KEY = defineSecret("YATING_KEY");   // 雅婷 TTS（台語/國語聲優；未設定時自動退回 Google）
 
 // 只允許這些來源呼叫（輕量防護；真正的花費上限請在 Anthropic Console 設定）
 const ALLOWED_ORIGINS = [
@@ -77,7 +78,7 @@ exports.patient = onRequest(
    - POST { text, voice?, rate? } → { audio: base64 MP3 }
    ================================================================ */
 exports.tts = onRequest(
-  { region: "us-central1", maxInstances: 5, timeoutSeconds: 30, memory: "256MiB", secrets: [ELEVEN_KEY] },
+  { region: "us-central1", maxInstances: 5, timeoutSeconds: 30, memory: "256MiB", secrets: [ELEVEN_KEY, YATING_KEY] },
   async (req, res) => {
     const origin = req.headers.origin || "";
     const originOk = ALLOWED_ORIGINS.includes(origin);
@@ -108,8 +109,39 @@ exports.tts = onRequest(
               voice_settings: { stability: 0.45, similarity_boost: 0.8 } }) });
         if (r.ok) {
           const buf = Buffer.from(await r.arrayBuffer());
-          res.json({ audio: buf.toString("base64"), provider: "eleven" });
+          res.json({ audio: buf.toString("base64"), mime: "audio/mpeg", provider: "eleven" });
           return;
+        }
+        // 失敗就往下走 Google 備援
+      } catch (e) { /* 走 Google 備援 */ }
+    }
+
+    // ===== 雅婷 TTS：voice 形如 "yating:<model>"（台語 tai_female_1/tai_male_1/tai_female_2；
+    //       國語 zh_en_female_1/zh_en_male_1/zh_en_female_2），且已設定 YATING_KEY =====
+    const ytMatch = /^yating:([a-z0-9_]{3,30})$/i.exec(body.voice || "");
+    const ytKey = (() => { try { return YATING_KEY.value(); } catch (e) { return ""; } })();
+    if (ytMatch && ytKey && ytKey.length > 10) {
+      try {
+        // 雅婷字數上限 600 units（中文/全形=2、半形=1），保守截斷
+        let units = 0, cut = "";
+        for (const ch of text) { units += ch.charCodeAt(0) > 255 ? 2 : 1; if (units > 590) break; cut += ch; }
+        // 雅婷 speed 語意與 Google 相反（越小越快、0.5~1.5）：把 rate 0.7~1.3 映射為 1.3~0.7
+        const ytSpeed = Math.min(1.5, Math.max(0.5, 2 - rate));
+        const r = await fetch("https://tts.api.yating.tw/v2/speeches/short", {
+          method: "POST",
+          headers: { key: ytKey, "content-type": "application/json" },
+          body: JSON.stringify({
+            input: { text: cut, type: "text" },
+            voice: { model: ytMatch[1].toLowerCase(), speed: ytSpeed, pitch: 1.0, energy: 1.0 },
+            audioConfig: { encoding: "LINEAR16", sampleRate: "16K" },   // MP3 官方標示「即將支援」，先用 WAV
+          }),
+        });
+        if (r.ok || r.status === 201) {
+          const d = await r.json();
+          if (d && d.audioContent) {
+            res.json({ audio: d.audioContent, mime: "audio/wav", provider: "yating" });
+            return;
+          }
         }
         // 失敗就往下走 Google 備援
       } catch (e) { /* 走 Google 備援 */ }
@@ -135,7 +167,7 @@ exports.tts = onRequest(
       });
       const data = await upstream.json();
       if (!upstream.ok) { res.status(upstream.status).json(data); return; }
-      res.json({ audio: data.audioContent });
+      res.json({ audio: data.audioContent, mime: "audio/mpeg", provider: "google" });
     } catch (e) {
       res.status(502).json({ error: { message: "tts error: " + (e && e.message || e) } });
     }
