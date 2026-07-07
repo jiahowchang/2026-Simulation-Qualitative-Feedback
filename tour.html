@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>360 情境導覽</title>
+<title>InSim擬境 — 360 擬真情境</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="360情境">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -109,6 +109,11 @@
   #gate{ position:fixed; inset:0; z-index:80; background:#0f172a; color:#fff; display:flex; align-items:center; justify-content:center; }
   #gate .box{ text-align:center; max-width:360px; padding:24px; }
   #gate h1{ font-size:22px; margin:0 0 6px; }
+  .gate-logo{ width:min(210px,52vw); margin:0 auto 2px; display:block; }
+  .gate-brand{ color:#5eead4; font-size:13px; letter-spacing:.35em; margin-bottom:18px; opacity:.9; }
+  .gate-logos{ margin-top:26px; display:flex; gap:12px; justify-content:center; align-items:center; }
+  .gate-logos img{ height:52px; width:auto; border-radius:10px; }
+  .gate-logos .gl-hosp{ background:#fff; padding:6px 10px; box-sizing:border-box; }
   #gate p{ opacity:.8; font-size:14px; margin:0 0 20px; }
   #gate input{ width:100%; padding:12px 14px; border-radius:10px; border:1px solid #ffffff33; background:#ffffff14; color:#fff; font-size:16px; text-align:center; }
   #gate button{ margin-top:14px; width:100%; }
@@ -136,12 +141,18 @@
 
 <div id="gate">
   <div class="box">
+    <img class="gate-logo" src="images/logo-insim.png" alt="InSim擬境">
+    <div class="gate-brand">360° 擬真情境教學平台</div>
     <h1 id="gateTitle">360 情境導覽</h1>
     <p>請輸入你的姓名或學號開始</p>
     <input id="gateName" placeholder="姓名 / 學號" autocomplete="off">
     <input id="gateMon" placeholder="連動碼（通常留空）" inputmode="numeric" autocomplete="off" style="margin-top:10px">
     <p style="opacity:.6;font-size:12px;margin:6px 0 0;line-height:1.5">進階：師生約定同一組 4 位數（例 5566）→ 教師在 iPad 控制台連同碼即可<b>即時操控本情境內的監視器</b>；也可連動另一台實體 SimMonitor（該機 START 後左上角的碼）</p>
     <button class="btn primary" id="gateStart">開始</button>
+    <div class="gate-logos">
+      <img class="gl-hosp" src="images/logo-hsinchu.png" alt="新竹台大分院">
+      <img class="gl-trm" src="images/logo-trm.png" alt="TRM 團隊資源管理">
+    </div>
   </div>
 </div>
 
