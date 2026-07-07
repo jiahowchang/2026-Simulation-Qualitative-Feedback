@@ -68,7 +68,7 @@
         <div class="field"><label>通過門檻分數（除錯總結用，選填）</label><input id="tPass" type="number" placeholder="例：70"></div>
         <div class="field"><label>虛擬人物/物件（JSON 陣列，套用到第一個場景；image 可用 images/props/ 內建素材；hotspot=點擊觸發的熱點 id）</label>
         <textarea id="tProps" style="min-height:72px" placeholder='[{"id":"vp_patient","image":"images/props/patient-supine.png","yaw":0.41,"pitch":-0.34,"width":820,"height":508,"hotspot":"assess"}]'></textarea></div>
-        <div class="field"><label>挑戰關卡（JSON 陣列；tasks=熱點 id；熱點可加 role:"leader/airway/compress/meds/recorder/runner"（角色專屬）、once:true（防重複）、startHidden:true（由關卡自動揭示））</label>
+        <div class="field"><label>挑戰關卡（JSON 陣列；tasks=熱點 id；熱點可加 role:"leaderDr/leaderN/airway/circulation/support"（角色專屬）、once:true（防重複）、startHidden:true（由關卡自動揭示））</label>
         <textarea id="tStages" style="min-height:72px" placeholder='[{"id":"s1","title":"現場準備","tasks":["hh","assess"],"bonus":10,"timeLimit":120,"fastBonus":10}]'></textarea></div>
       </details>
     </header>
@@ -403,7 +403,7 @@ const ER_TEMPLATE = {
           ] },
         { id:"assess", type:"info", yaw:0.41, pitch:-0.24, startHidden:true, gated:true, title:"評估病人 ABC",
           html:"確認意識、呼吸、脈搏。<b>此病人無反應、無呼吸、無脈搏</b> → 立即開始高品質 CPR，並接上監視器。（此熱點洗手後才出現）" },
-        { id:"cpr", type:"action", yaw:0.47, pitch:-0.26, startHidden:true, once:true, role:"compress",
+        { id:"cpr", type:"action", yaw:0.47, pitch:-0.26, startHidden:true, once:true, role:"circulation",
           label:"開始胸外按壓",
           onSelect:[ { do:"addScore", points:10 },
             { do:"toast", msg:"高品質按壓：深 5-6 公分、每分鐘 100-120 次、減少中斷" } ] },
@@ -411,24 +411,24 @@ const ER_TEMPLATE = {
           label:"甦醒球給氧（BVM）",
           onSelect:[ { do:"addScore", points:10 },
             { do:"toast", msg:"壓額抬下巴開放呼吸道，按壓通氣比 30:2" } ] },
-        { id:"defib", type:"action", yaw:0.72, pitch:-0.16, startHidden:true, once:true, role:"leader",
+        { id:"defib", type:"action", yaw:0.72, pitch:-0.16, startHidden:true, once:true, role:"circulation",
           label:"執行電擊 200J",
           onSelect:[ { do:"addScore", points:15 },
             { do:"pushMonitor", rhythm:"sinus", co2:"normal", trend:1, t:{ hr:108, sys:98, dia:60, spo2:94, rr:12, etco2:42 } },
             { do:"reveal", id:"rosc" },
             { do:"toast", msg:"⚡ 電擊完成 — 恢復竇性心律（ROSC）！" } ] },
-        { id:"iv", type:"action", yaw:0.60, pitch:-0.32, startHidden:true, once:true, role:"meds",
-          label:"建立靜脈輸液（IV）",
+        { id:"iv", type:"action", yaw:0.60, pitch:-0.32, startHidden:true, once:true, role:"support",
+          label:"打針：建立靜脈路徑（IV）",
           onSelect:[ { do:"addScore", points:10 }, { do:"toast", msg:"IV 建立完成，路徑通暢" } ] },
-        { id:"epi", type:"action", yaw:0.86, pitch:-0.26, startHidden:true, once:true, role:"meds",
-          label:"給予 Epinephrine 1mg",
+        { id:"epi", type:"action", yaw:0.86, pitch:-0.26, startHidden:true, once:true, role:"support",
+          label:"抽藥並給 Epinephrine 1mg",
           onSelect:[ { do:"addScore", points:10 },
             { do:"toast", msg:"Epinephrine 1mg IV，每 3-5 分鐘可重複" } ] },
-        { id:"record", type:"action", yaw:0.02, pitch:-0.18, startHidden:true, once:true, role:"recorder",
-          label:"記錄時間與處置",
+        { id:"record", type:"action", yaw:0.02, pitch:-0.18, startHidden:true, once:true, role:"leaderN",
+          label:"計時／讀秒／記錄處置",
           onSelect:[ { do:"addScore", points:10 },
             { do:"toast", msg:"已記錄：開始時間、電擊次數、給藥時間" } ] },
-        { id:"handoff", type:"action", yaw:1.05, pitch:-0.12, startHidden:true, once:true, role:"leader",
+        { id:"handoff", type:"action", yaw:1.05, pitch:-0.12, startHidden:true, once:true, role:"leaderDr",
           label:"SBAR 交接後送",
           onSelect:[ { do:"addScore", points:15 },
             { do:"toast", msg:"SBAR 交接完成，病人後送加護病房 🏁" } ] },
@@ -451,7 +451,7 @@ const ER_TEMPLATE = {
             caption:"（範例圖片，可換成院內實際 VF / 12 導程影像）" } },
         { id:"cart", type:"info", yaw:-2.92, pitch:-0.41, title:"急救車 / 除顫器",
           html:"取出除顫器與腎上腺素。<b>可電擊心律 → 立即 200J 去顫</b>，之後不中斷 CPR。" },
-        { id:"q1", type:"quiz", yaw:0.62, pitch:-0.10, points:15, startHidden:true, role:"leader",
+        { id:"q1", type:"quiz", yaw:0.62, pitch:-0.10, points:15, startHidden:true, role:"leaderDr",
           question:"監視器顯示 <b>VF</b>，下一步<b>最優先</b>？",
           options:["立即電擊（去顫）200J","先給腎上腺素 1mg","先氣管插管","先量血壓"],
           answerIndex:0,
