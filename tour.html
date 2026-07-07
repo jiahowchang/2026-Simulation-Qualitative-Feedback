@@ -99,6 +99,8 @@
     background:#101826; color:#fff; font-size:12px; }
   #tpChatRow button{ border:0; border-radius:8px; padding:0 12px; background:#2b7de9; color:#fff;
     cursor:pointer; font-size:14px; }
+  #tpMic{ background:#334155 !important; }
+  #tpMic.on{ background:#e0533d !important; animation:pulse 1.2s infinite; }
   /* 挑戰關卡 HUD（頂部中央） */
   #stageBar{ position:fixed; top:8px; left:50%; transform:translateX(-50%); z-index:35;
     background:#000a; border:1px solid #ffffff33; border-radius:20px; padding:7px 18px;
@@ -271,6 +273,7 @@
     <div id="tpFeed"></div>
   </div>
   <div id="tpChatRow">
+    <button id="tpMic" title="語音輸入">🎤</button>
     <input id="tpChat" placeholder="隊內訊息…" autocomplete="off">
     <button id="tpSend">➤</button>
   </div>
@@ -730,6 +733,20 @@ function sendTeamChat(){
 }
 $("tpSend").onclick = sendTeamChat;
 $("tpChat").addEventListener("keydown", e=>{ if(e.key==="Enter") sendTeamChat(); });
+// 隊內訊息語音輸入：講完自動送出
+let tpRec = null;
+$("tpMic").onclick = ()=>{
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ toast("此瀏覽器不支援語音輸入，請改用文字"); return; }
+  if(tpRec){ tpRec.stop(); return; }
+  tpRec = new SR();
+  tpRec.lang = "zh-TW"; tpRec.interimResults = false;
+  $("tpMic").classList.add("on");
+  tpRec.onresult = e=>{ $("tpChat").value = e.results[0][0].transcript; sendTeamChat(); };
+  tpRec.onend = ()=>{ tpRec = null; $("tpMic").classList.remove("on"); };
+  tpRec.onerror = ()=>{ tpRec = null; $("tpMic").classList.remove("on"); };
+  tpRec.start();
+};
 function condMatch(cond){ return Object.keys(cond||{}).every(k => vars[k] === cond[k]); }
 function hsVisible(h){
   if(hiddenSet.has(h.id)) return false;
