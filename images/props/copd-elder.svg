@@ -1,0 +1,201 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700">
+  <defs>
+    <linearGradient id="metalV" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#B9C2CC"/>
+      <stop offset="1" stop-color="#8D97A3"/>
+    </linearGradient>
+    <linearGradient id="metalH" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#B9C2CC"/>
+      <stop offset="1" stop-color="#8D97A3"/>
+    </linearGradient>
+    <linearGradient id="gownG" x1="0" y1="0" x2="0.55" y2="1">
+      <stop offset="0" stop-color="#A9C7E8"/>
+      <stop offset="1" stop-color="#86A9CF"/>
+    </linearGradient>
+    <linearGradient id="blanketG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F4F7FA"/>
+      <stop offset="0.72" stop-color="#F4F7FA"/>
+      <stop offset="1" stop-color="#D9E2EA"/>
+    </linearGradient>
+    <linearGradient id="sheetG" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#F4F7FA"/>
+      <stop offset="1" stop-color="#D9E2EA"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ground shadow -->
+  <ellipse cx="500" cy="650" rx="428" ry="25" fill="rgba(0,0,0,0.16)"/>
+
+  <!-- far side rail (behind everything on the bed) -->
+  <g>
+    <rect x="520" y="352" width="11" height="76" fill="#8D97A3"/>
+    <rect x="700" y="352" width="11" height="76" fill="#8D97A3"/>
+    <rect x="832" y="352" width="11" height="76" fill="#8D97A3"/>
+    <rect x="470" y="348" width="392" height="11" rx="5.5" fill="#8D97A3"/>
+    <rect x="470" y="348" width="392" height="4" rx="2" fill="#B9C2CC"/>
+  </g>
+
+  <!-- headboard (left) -->
+  <rect x="62" y="242" width="40" height="330" rx="16" fill="url(#metalV)"/>
+  <rect x="70" y="254" width="24" height="306" rx="10" fill="#8D97A3" opacity="0.25"/>
+
+  <!-- oxygen flowmeter on headboard -->
+  <g>
+    <rect x="96" y="300" width="20" height="48" rx="4" fill="#1E2761"/>
+    <rect x="101" y="308" width="10" height="26" rx="3" fill="#F4F7FA" opacity="0.85"/>
+    <circle cx="106" cy="326" r="3.5" fill="#EF5844"/>
+    <circle cx="119" cy="340" r="4" fill="#8D97A3"/>
+    <rect x="102" y="348" width="8" height="9" rx="2" fill="#8D97A3"/>
+  </g>
+
+  <!-- footboard (right) -->
+  <rect x="898" y="352" width="38" height="220" rx="14" fill="url(#metalV)"/>
+  <rect x="905" y="362" width="22" height="200" rx="9" fill="#8D97A3" opacity="0.25"/>
+  <circle cx="917" cy="392" r="3.2" fill="#EF5844"/>
+  <circle cx="917" cy="404" r="3.2" fill="#1E2761"/>
+
+  <!-- bed platform, legs, casters -->
+  <rect x="108" y="466" width="784" height="36" rx="6" fill="#B9C2CC"/>
+  <rect x="108" y="492" width="784" height="10" rx="4" fill="#8D97A3"/>
+  <rect x="196" y="500" width="26" height="112" rx="4" fill="url(#metalH)"/>
+  <rect x="776" y="500" width="26" height="112" rx="4" fill="url(#metalH)"/>
+  <rect x="209" y="556" width="593" height="13" rx="5" fill="#8D97A3"/>
+  <g>
+    <rect x="202" y="606" width="14" height="18" rx="3" fill="#B9C2CC"/>
+    <circle cx="209" cy="630" r="16" fill="#8D97A3"/>
+    <circle cx="209" cy="630" r="7" fill="#B9C2CC"/>
+    <circle cx="209" cy="630" r="2.8" fill="#3A3F4A"/>
+  </g>
+  <g>
+    <rect x="782" y="606" width="14" height="18" rx="3" fill="#B9C2CC"/>
+    <circle cx="789" cy="630" r="16" fill="#8D97A3"/>
+    <circle cx="789" cy="630" r="7" fill="#B9C2CC"/>
+    <circle cx="789" cy="630" r="2.8" fill="#3A3F4A"/>
+  </g>
+
+  <!-- flat mattress -->
+  <rect x="420" y="424" width="472" height="46" rx="9" fill="#F4F7FA"/>
+  <rect x="420" y="456" width="472" height="14" rx="6" fill="#D9E2EA"/>
+  <rect x="878" y="426" width="13" height="42" rx="6" fill="#D9E2EA" opacity="0.7"/>
+
+  <!-- raised back section (semi-Fowler ~45deg) -->
+  <path d="M205,208 L432,430 L432,470 L173,252 Z" fill="url(#sheetG)"/>
+  <path d="M173,252 L432,470 L432,456 L182,240 Z" fill="#D9E2EA"/>
+  <path d="M240,236 L392,384 M282,282 L360,360" stroke="#D9E2EA" stroke-width="2.5" fill="none" opacity="0.8"/>
+
+  <!-- pillow -->
+  <g>
+    <ellipse cx="250" cy="230" rx="74" ry="36" transform="rotate(44 250 230)" fill="#F4F7FA"/>
+    <ellipse cx="245" cy="238" rx="64" ry="26" transform="rotate(44 245 238)" fill="#D9E2EA" opacity="0.55"/>
+    <ellipse cx="254" cy="224" rx="58" ry="23" transform="rotate(44 254 224)" fill="#F4F7FA"/>
+  </g>
+
+  <!-- neck -->
+  <path d="M296,244 L330,240 L348,264 L306,274 Z" fill="#E8B48E"/>
+  <path d="M312,252 L318,268 M322,250 L330,264" stroke="#D69B72" stroke-width="1.3" opacity="0.6" fill="none" stroke-linecap="round"/>
+
+  <!-- torso in patient gown -->
+  <path d="M278,270 Q298,250 322,248 L352,264 Q368,272 380,290
+           C412,322 444,356 466,392 Q484,406 498,416 Q506,424 505,436
+           L512,470 L400,470 L438,432 L278,270 Z" fill="url(#gownG)"/>
+  <path d="M280,272 L436,428 L426,432 L274,280 Z" fill="#86A9CF" opacity="0.45"/>
+  <path d="M356,288 Q378,318 398,346 M338,300 Q366,338 390,372 M320,312 Q352,356 380,394"
+        stroke="#86A9CF" stroke-width="2" fill="none" opacity="0.65" stroke-linecap="round"/>
+  <path d="M322,262 Q334,268 346,266" stroke="#D69B72" stroke-width="1.5" fill="none" opacity="0.7" stroke-linecap="round"/>
+
+  <!-- head -->
+  <path d="M305,148 C278,150 260,168 257,196 C255,224 262,242 278,250
+           C288,255 302,256 316,252 C328,249 334,246 339,240
+           C345,235 347,230 344,227 L349,221 C352,218 351,214 347,211
+           L347,210 C356,208 360,204 357,200 C353,195 348,192 345,187
+           L348,180 C344,172 340,164 336,159 C328,151 317,148 305,148 Z" fill="#E8B48E"/>
+
+  <!-- sparse grey hair -->
+  <path d="M301,146 C280,147 262,162 258,190 C255,214 259,234 270,244
+           Q265,230 263,212 Q262,186 272,170 Q282,155 302,151 Q308,148 301,146 Z" fill="#9AA2AD"/>
+  <path d="M283,152 Q294,143 306,147 M268,164 Q278,151 292,150 M259,182 Q265,168 278,160"
+        stroke="#9AA2AD" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+  <!-- ear -->
+  <path d="M281,199 Q292,193 296,204 Q298,217 288,221 Q279,221 279,210 Q279,203 281,199 Z" fill="#E8B48E"/>
+  <path d="M285,203 Q291,203 291,211" stroke="#D69B72" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+  <path d="M282,196 Q279,206 281,214 L286,212 Q284,204 286,197 Z" fill="#9AA2AD" opacity="0.9"/>
+
+  <!-- face shading and strained features -->
+  <ellipse cx="317" cy="178" rx="7" ry="10" fill="#D69B72" opacity="0.25"/>
+  <path d="M315,214 Q321,228 334,233 Q320,231 312,220 Q311,215 315,214 Z" fill="#D69B72" opacity="0.5"/>
+  <path d="M292,246 Q312,255 333,245 Q316,257 297,252 Z" fill="#D69B72" opacity="0.5"/>
+  <path d="M311,164 Q324,160 336,164 M309,157 Q321,152 331,156"
+        stroke="#D69B72" stroke-width="1.5" fill="none" opacity="0.75" stroke-linecap="round"/>
+  <path d="M319,184 Q331,179 343,183" stroke="#9AA2AD" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <path d="M343,175 L346,168" stroke="#D69B72" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M324,195 Q333,200 342,197" stroke="#3A3F4A" stroke-width="2.3" fill="none" stroke-linecap="round"/>
+  <path d="M325,203 Q333,206 340,203" stroke="#D69B72" stroke-width="1.4" fill="none" opacity="0.8" stroke-linecap="round"/>
+  <path d="M344,214 Q340,222 341,229" stroke="#D69B72" stroke-width="1.4" fill="none" opacity="0.7" stroke-linecap="round"/>
+  <circle cx="348.5" cy="209" r="1.6" fill="#D69B72"/>
+  <ellipse cx="343" cy="227" rx="3.6" ry="4.6" fill="#D69B72" opacity="0.95"/>
+  <circle cx="296" cy="160" r="2" fill="#D69B72" opacity="0.5"/>
+  <circle cx="308" cy="153" r="1.6" fill="#D69B72" opacity="0.5"/>
+
+  <!-- blanket over legs up to abdomen -->
+  <path d="M451,344 Q500,362 528,388 Q560,374 615,370 Q655,366 675,380
+           Q715,396 775,394 Q820,390 843,402 Q860,412 862,430
+           L864,500 Q850,512 830,504 Q800,494 772,506 Q740,514 712,504
+           Q680,494 650,506 Q618,514 590,504 Q556,494 528,506
+           Q496,514 470,504 Q452,498 446,486 L442,432 Q444,382 451,344 Z" fill="url(#blanketG)"/>
+  <path d="M451,346 Q462,368 486,384 Q464,380 448,366 Q446,354 451,346 Z" fill="#D9E2EA"/>
+  <path d="M676,382 Q718,398 776,395 Q736,406 700,398 Q684,392 676,382 Z" fill="#D9E2EA" opacity="0.85"/>
+  <path d="M804,394 Q824,392 843,403 Q824,400 806,400 Z" fill="#D9E2EA" opacity="0.8"/>
+  <path d="M452,346 Q502,364 530,390" stroke="#D9E2EA" stroke-width="7" fill="none" opacity="0.8" stroke-linecap="round"/>
+  <path d="M520,436 Q516,470 520,502 Q528,504 532,500 Q528,468 532,436 Z" fill="#D9E2EA" opacity="0.7"/>
+  <path d="M604,438 Q600,472 602,502 Q610,505 614,501 Q610,470 614,440 Z" fill="#D9E2EA" opacity="0.7"/>
+  <path d="M692,440 Q688,472 690,502 Q698,505 702,501 Q698,470 702,442 Z" fill="#D9E2EA" opacity="0.7"/>
+  <path d="M774,440 Q770,472 772,500 Q780,503 784,499 Q780,468 784,442 Z" fill="#D9E2EA" opacity="0.7"/>
+
+  <!-- far hand resting on blanket -->
+  <ellipse cx="560" cy="414" rx="36" ry="6" fill="#D9E2EA" opacity="0.8"/>
+  <path d="M522,398 Q550,392 580,396 Q598,400 596,410 Q592,418 576,415 Q548,410 524,410 Z" fill="#E8B48E"/>
+  <path d="M578,400 L590,404 M576,406 L589,409 M574,411 L586,413"
+        stroke="#D69B72" stroke-width="1.3" fill="none" opacity="0.6" stroke-linecap="round"/>
+  <path d="M524,408 Q550,408 574,412" stroke="#D69B72" stroke-width="1.6" fill="none" opacity="0.45" stroke-linecap="round"/>
+
+  <!-- right arm: sleeve, arm, hand on chest -->
+  <path d="M404,352 Q420,372 436,390 L428,394 Q412,376 398,356 Z" fill="#86A9CF" opacity="0.4"/>
+  <path d="M330,258 Q356,258 372,278 L392,318 Q384,334 364,330 L342,296 Q334,272 330,258 Z" fill="#A9C7E8"/>
+  <path d="M342,296 Q356,320 370,330 L378,326 Q362,312 352,292 Z" fill="#86A9CF" opacity="0.8"/>
+  <path d="M366,326 Q380,330 392,318" stroke="#86A9CF" stroke-width="2" fill="none" opacity="0.9"/>
+  <path d="M372,312 Q408,336 444,374 Q454,386 446,394 Q436,398 424,388 Q396,362 362,330 Z" fill="#E8B48E"/>
+  <path d="M452,380 L418,332 Q412,324 404,330 Q398,338 404,346 L434,392 Q446,398 452,388 Z" fill="#E8B48E"/>
+  <ellipse cx="443" cy="385" rx="7" ry="6" fill="#D69B72" opacity="0.45"/>
+  <path d="M424,386 Q400,362 376,338" stroke="#D69B72" stroke-width="1.6" fill="none" opacity="0.45" stroke-linecap="round"/>
+  <path d="M416,330 Q420,340 412,348 Q402,354 392,348 Q384,340 388,330 Q394,320 406,322 Q414,324 416,330 Z" fill="#E8B48E"/>
+  <path d="M394,324 Q382,310 374,298" stroke="#E8B48E" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+  <path d="M390,330 Q376,318 366,308" stroke="#E8B48E" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+  <path d="M389,337 Q374,328 364,320" stroke="#E8B48E" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M390,344 Q377,338 367,333" stroke="#E8B48E" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+  <path d="M406,346 Q400,354 390,356" stroke="#E8B48E" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M383,312 L377,304 M377,320 L369,312 M375,329 L366,322"
+        stroke="#D69B72" stroke-width="1.4" fill="none" opacity="0.5" stroke-linecap="round"/>
+  <path d="M398,326 Q402,323 406,325 M396,333 Q400,330 404,332"
+        stroke="#D69B72" stroke-width="1.2" fill="none" opacity="0.6" stroke-linecap="round"/>
+
+  <!-- oxygen mask straps -->
+  <path d="M342,190 Q300,176 264,184" stroke="#F4F7FA" stroke-width="4" fill="none" opacity="0.85" stroke-linecap="round"/>
+  <path d="M340,244 Q302,248 268,238" stroke="#F4F7FA" stroke-width="4" fill="none" opacity="0.85" stroke-linecap="round"/>
+
+  <!-- transparent oxygen mask -->
+  <path d="M341,183 Q364,189 371,208 Q376,227 363,239 Q350,249 338,246 Q331,243 332,228 L334,205 Q336,190 341,183 Z"
+        fill="#A9C7E8" fill-opacity="0.45"/>
+  <path d="M341,183 Q364,189 371,208 Q376,227 363,239 Q350,249 338,246 Q331,243 332,228 L334,205 Q336,190 341,183 Z"
+        fill="none" stroke="#F4F7FA" stroke-width="3" opacity="0.9" stroke-linejoin="round"/>
+  <path d="M348,192 Q360,197 365,210" stroke="#F4F7FA" stroke-width="3" fill="none" opacity="0.6" stroke-linecap="round"/>
+  <circle cx="363" cy="237" r="4.5" fill="#F4F7FA" stroke="#D9E2EA" stroke-width="1.5"/>
+
+  <!-- green oxygen tubing to flowmeter -->
+  <path d="M363,242 C370,270 352,300 332,328 C306,364 262,410 222,450
+           C194,478 164,490 146,472 C130,456 122,418 118,382 Q114,368 106,358"
+        fill="none" stroke="#0F7C72" stroke-width="7.5" stroke-linecap="round"/>
+  <path d="M363,242 C370,270 352,300 332,328 C306,364 262,410 222,450
+           C194,478 164,490 146,472 C130,456 122,418 118,382 Q114,368 106,358"
+        fill="none" stroke="#17A093" stroke-width="4.5" stroke-linecap="round"/>
+</svg>

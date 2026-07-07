@@ -1,0 +1,191 @@
+<svg viewBox="0 0 420 1000" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="skinG" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#E8B48E"/>
+      <stop offset="0.72" stop-color="#E8B48E"/>
+      <stop offset="1" stop-color="#D69B72"/>
+    </linearGradient>
+    <linearGradient id="scrubG" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#17A093"/>
+      <stop offset="0.62" stop-color="#17A093"/>
+      <stop offset="1" stop-color="#0F7C72"/>
+    </linearGradient>
+    <linearGradient id="pantG" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#17A093"/>
+      <stop offset="0.55" stop-color="#17A093"/>
+      <stop offset="1" stop-color="#0F7C72"/>
+    </linearGradient>
+    <linearGradient id="metalG" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#B9C2CC"/>
+      <stop offset="1" stop-color="#8D97A3"/>
+    </linearGradient>
+    <linearGradient id="screenG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8D97A3"/>
+      <stop offset="1" stop-color="#B9C2CC"/>
+    </linearGradient>
+    <linearGradient id="hairG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3A3F4A"/>
+      <stop offset="1" stop-color="#3A3F4A"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ground shadow -->
+  <ellipse cx="212" cy="942" rx="142" ry="21" fill="rgba(0,0,0,0.16)"/>
+
+  <!-- back hair mass -->
+  <path d="M 209 38 C 162 38 140 72 140 118 C 140 152 150 182 168 198 L 250 198 C 268 182 278 150 278 118 C 278 72 256 38 209 38 Z" fill="#3A3F4A"/>
+  <path d="M 209 38 C 162 38 140 72 140 118 C 140 152 150 182 168 198 L 200 198 C 178 176 168 144 170 108 C 172 78 188 52 209 44 Z" fill="rgba(0,0,0,0.22)"/>
+
+  <!-- neck -->
+  <path d="M 190 152 L 190 216 C 197 224 221 224 228 216 L 228 152 Z" fill="#D69B72"/>
+  <path d="M 190 158 C 196 172 222 172 228 158 L 228 152 L 190 152 Z" fill="rgba(0,0,0,0.14)"/>
+  <path d="M 176 218 C 186 210 232 210 242 218 L 236 232 L 182 232 Z" fill="#E8B48E"/>
+
+  <!-- ===== pants ===== -->
+  <path d="M 150 498 C 146 560 144 630 147 700 C 149 768 153 836 158 888 L 203 888 L 207 640 C 208 628 216 628 217 640 L 221 888 L 266 888 C 271 836 275 768 277 700 C 280 630 278 560 274 498 C 234 490 190 490 150 498 Z" fill="url(#pantG)"/>
+  <path d="M 203 888 L 207 640 C 208 628 216 628 217 640 L 221 888 L 210 888 Z" fill="rgba(0,0,0,0.10)"/>
+  <path d="M 176 522 C 173 640 173 762 178 884" fill="none" stroke="#0F7C72" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+  <path d="M 247 522 C 250 640 250 762 245 884" fill="none" stroke="#0F7C72" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+  <path d="M 150 498 C 190 490 234 490 274 498 L 273 516 C 234 508 190 508 151 516 Z" fill="rgba(0,0,0,0.10)"/>
+
+  <!-- ===== shoes ===== -->
+  <path d="M 156 884 C 150 898 145 912 143 924 C 141 938 148 944 163 944 L 196 944 C 203 944 206 938 205 928 L 203 884 Z" fill="#F4F7FA"/>
+  <path d="M 143 926 L 205 926 L 205 932 C 206 940 202 944 196 944 L 163 944 C 149 944 141 939 143 926 Z" fill="#D9E2EA"/>
+  <path d="M 156 884 L 203 884 L 204 896 C 188 902 168 900 154 890 Z" fill="#D9E2EA"/>
+  <path d="M 268 884 C 274 898 279 912 281 924 C 283 938 276 944 261 944 L 228 944 C 221 944 218 938 219 928 L 221 884 Z" fill="#F4F7FA"/>
+  <path d="M 281 926 L 219 926 L 219 932 C 218 940 222 944 228 944 L 261 944 C 275 944 283 939 281 926 Z" fill="#D9E2EA"/>
+  <path d="M 268 884 L 221 884 L 220 896 C 236 902 256 900 270 890 Z" fill="#D9E2EA"/>
+
+  <!-- ===== scrub top ===== -->
+  <path d="M 152 312 C 148 278 148 248 158 230 C 172 216 190 210 209 210 C 228 210 246 216 260 230 C 270 248 270 278 266 312 C 262 348 260 376 260 405 C 260 440 266 475 272 505 C 232 516 186 516 148 505 C 154 475 159 440 159 405 C 159 376 156 344 152 312 Z" fill="url(#scrubG)"/>
+  <!-- hem shading + seam -->
+  <path d="M 148 505 C 186 516 232 516 272 505 L 270 496 C 232 507 188 507 150 496 Z" fill="rgba(0,0,0,0.14)"/>
+  <path d="M 159 420 C 190 430 230 430 260 420" fill="none" stroke="#0F7C72" stroke-width="2.5" opacity="0.5"/>
+  <path d="M 260 300 C 262 350 260 380 260 405 C 260 440 266 475 272 505 C 262 508 252 510 242 511 C 250 470 252 430 250 390 C 249 360 252 326 256 300 Z" fill="rgba(0,0,0,0.10)"/>
+  <!-- white undershirt in V-neck -->
+  <path d="M 189 216 L 209 254 L 229 216 C 221 211 197 211 189 216 Z" fill="#F4F7FA"/>
+  <path d="M 209 254 L 229 216 C 226 214 222 213 218 212 L 205 246 Z" fill="#D9E2EA"/>
+  <!-- V-neck trim -->
+  <path d="M 187 216 L 209 256 L 231 216" fill="none" stroke="#0F7C72" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- chest pocket (her left) -->
+  <path d="M 236 296 L 264 293 L 265 328 L 238 331 Z" fill="#17A093" stroke="#0F7C72" stroke-width="2"/>
+
+  <!-- ===== lanyard + ID card ===== -->
+  <path d="M 194 216 C 187 250 184 288 188 326" fill="none" stroke="#1E2761" stroke-width="7"/>
+  <path d="M 224 216 C 218 252 206 294 190 328" fill="none" stroke="#1E2761" stroke-width="7"/>
+  <rect x="184" y="326" width="10" height="12" rx="2" fill="#8D97A3"/>
+  <g transform="rotate(-4 190 368)">
+    <rect x="170" y="338" width="46" height="62" rx="5" fill="#F4F7FA"/>
+    <path d="M 170 343 C 170 340 172 338 175 338 L 211 338 C 214 338 216 340 216 343 L 216 350 L 170 350 Z" fill="#1E2761"/>
+    <rect x="176" y="356" width="16" height="19" rx="2" fill="#E8B48E"/>
+    <path d="M 176 360 C 178 355 190 355 192 360 L 192 358 C 190 355 178 355 176 358 Z" fill="#3A3F4A"/>
+    <path d="M 177 357 C 180 354 188 354 191 357 L 191 362 C 188 358 180 358 177 362 Z" fill="#3A3F4A"/>
+    <rect x="197" y="358" width="14" height="4" rx="2" fill="#B9C2CC"/>
+    <rect x="197" y="366" width="11" height="4" rx="2" fill="#B9C2CC"/>
+    <rect x="176" y="382" width="33" height="4" rx="2" fill="#B9C2CC"/>
+    <rect x="176" y="390" width="24" height="4" rx="2" fill="#D9E2EA"/>
+  </g>
+
+  <!-- ===== stethoscope ===== -->
+  <path d="M 192 214 C 180 246 178 282 186 314 C 189 328 196 340 205 347" fill="none" stroke="#262B33" stroke-width="6" stroke-linecap="round"/>
+  <path d="M 226 214 C 238 246 242 280 238 312 C 236 324 232 334 226 341" fill="none" stroke="#262B33" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="226" cy="342" r="4.5" fill="#8D97A3"/>
+  <path d="M 205 345 L 209 351" stroke="#8D97A3" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="211" cy="356" r="13" fill="url(#metalG)"/>
+  <circle cx="211" cy="356" r="6" fill="#8D97A3"/>
+  <circle cx="208" cy="353" r="2" fill="#F4F7FA" opacity="0.8"/>
+
+  <!-- ===== sleeves ===== -->
+  <path d="M 160 226 C 142 234 132 254 128 282 L 124 314 C 138 324 162 326 174 318 L 176 268 C 177 246 172 232 160 226 Z" fill="url(#scrubG)"/>
+  <path d="M 128 282 L 124 314 C 130 318 138 321 146 322 L 148 288 C 143 270 140 254 144 240 C 135 250 130 264 128 282 Z" fill="rgba(0,0,0,0.12)"/>
+  <path d="M 258 226 C 276 234 286 254 290 282 L 294 314 C 280 324 256 326 244 318 L 242 268 C 241 246 246 232 258 226 Z" fill="url(#scrubG)"/>
+  <path d="M 290 282 L 294 314 C 288 318 281 321 273 322 L 271 288 C 276 270 279 254 275 240 C 284 250 288 264 290 282 Z" fill="rgba(0,0,0,0.16)"/>
+  <!-- white undershirt sleeve bands -->
+  <path d="M 124 314 C 138 324 162 326 174 318 L 173 336 C 160 344 137 342 122 331 Z" fill="#F4F7FA"/>
+  <path d="M 122 331 C 137 342 160 344 173 336 L 173 340 C 160 348 137 346 122 335 Z" fill="#D9E2EA"/>
+  <path d="M 294 314 C 280 324 256 326 244 318 L 245 336 C 258 344 281 342 296 331 Z" fill="#F4F7FA"/>
+  <path d="M 296 331 C 281 342 258 344 245 336 L 245 340 C 258 348 281 346 296 335 Z" fill="#D9E2EA"/>
+
+  <!-- ===== right arm (viewer left) hanging ===== -->
+  <path d="M 122 334 C 138 344 160 346 173 338 C 170 368 166 402 164 442 C 162 486 160 520 158 546 L 133 547 C 129 519 126 486 125 448 C 124 410 122 370 122 334 Z" fill="url(#skinG)"/>
+  <path d="M 158 546 L 148 546 C 150 518 152 484 153 446 C 154 408 156 372 160 342 C 164 341 169 340 173 338 C 170 368 166 402 164 442 C 162 486 160 520 158 546 Z" fill="#D69B72" opacity="0.6"/>
+  <!-- watch -->
+  <rect x="127" y="530" width="34" height="10" rx="4" fill="#8D97A3"/>
+  <circle cx="144" cy="535" r="8" fill="#B9C2CC"/>
+  <circle cx="144" cy="535" r="5.5" fill="#F4F7FA"/>
+  <!-- hand -->
+  <path d="M 133 547 L 158 546 C 162 557 163 569 161 579 C 158 589 150 593 143 591 C 135 589 130 581 129 571 C 128 562 130 553 133 547 Z" fill="url(#skinG)"/>
+  <path d="M 140 566 L 140 584 M 147 567 L 147 586 M 154 566 L 154 583" stroke="#D69B72" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+
+  <!-- ===== left arm (viewer right): upper arm + forearm under tablet ===== -->
+  <path d="M 245 338 C 258 346 280 344 296 334 C 298 358 297 378 292 396 C 284 406 262 406 256 396 C 251 376 248 356 245 338 Z" fill="url(#skinG)"/>
+  <path d="M 296 334 C 298 358 297 378 292 396 C 288 401 281 404 274 405 C 279 384 281 362 280 340 C 286 339 291 337 296 334 Z" fill="#D69B72" opacity="0.55"/>
+  <path d="M 278 388 C 289 394 294 406 290 417 L 226 470 C 217 477 205 475 199 466 C 194 457 196 446 204 440 L 258 400 C 264 395 271 384 278 388 Z" fill="url(#skinG)"/>
+
+  <!-- ===== tablet (dark gray) with her left hand ===== -->
+  <g transform="rotate(-8 244 455) translate(0 35)">
+    <rect x="184" y="340" width="120" height="162" rx="10" fill="#454B54"/>
+    <rect x="184" y="340" width="120" height="162" rx="10" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="2"/>
+    <rect x="192" y="352" width="104" height="138" rx="4" fill="url(#screenG)"/>
+    <rect x="192" y="352" width="104" height="16" fill="#1E2761"/>
+    <circle cx="244" cy="346" r="2.4" fill="#8D97A3"/>
+    <rect x="198" y="374" width="52" height="6" rx="3" fill="#F4F7FA" opacity="0.9"/>
+    <rect x="198" y="386" width="38" height="5" rx="2.5" fill="#F4F7FA" opacity="0.6"/>
+    <path d="M 198 428 L 214 428 L 220 412 L 228 444 L 234 428 L 252 428 L 258 418 L 264 436 L 270 428 L 290 428" fill="none" stroke="#17A093" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="198" y="456" width="26" height="20" rx="3" fill="#F4F7FA" opacity="0.55"/>
+    <rect x="230" y="456" width="26" height="20" rx="3" fill="#F4F7FA" opacity="0.55"/>
+    <circle cx="272" cy="466" r="9" fill="#EF5844" opacity="0.85"/>
+    <!-- her left hand: palm below edge, fingers over screen bottom, thumb on side bezel -->
+    <ellipse cx="216" cy="506" rx="28" ry="15" fill="#E8B48E"/>
+    <rect x="195" y="484" width="11" height="28" rx="5.5" fill="#E8B48E"/>
+    <rect x="209" y="482" width="11" height="30" rx="5.5" fill="#E8B48E"/>
+    <rect x="223" y="483" width="11" height="29" rx="5.5" fill="#E8B48E"/>
+    <rect x="237" y="486" width="10" height="26" rx="5" fill="#E8B48E"/>
+    <path d="M 206 488 L 206 508 M 220 486 L 220 508 M 234 487 L 234 508" stroke="#D69B72" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+    <rect x="179" y="430" width="12" height="32" rx="6" fill="#E8B48E"/>
+    <path d="M 191 434 C 193 444 193 452 191 460" stroke="#D69B72" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+  </g>
+
+  <!-- low ponytail swept over her right shoulder -->
+  <path d="M 170 156 C 151 188 141 232 140 276 C 139 304 145 324 156 332 C 166 322 171 300 172 272 C 173 234 175 198 181 170 Z" fill="#3A3F4A"/>
+  <path d="M 170 156 C 151 188 141 232 140 276 C 139 304 145 324 156 332 C 151 302 151 264 158 226 C 162 202 167 180 173 164 Z" fill="rgba(0,0,0,0.22)"/>
+  <path d="M 160 210 C 154 240 152 272 154 300" stroke="rgba(0,0,0,0.28)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M 168 160 C 173 155 181 155 185 161 L 182 173 C 177 168 171 167 166 170 Z" fill="#1E2761"/>
+
+  <!-- ===== head ===== -->
+  <path d="M 163 110 C 163 76 183 56 209 56 C 236 56 255 78 255 110 C 255 134 248 152 235 164 C 225 173 215 178 207 178 C 191 177 173 158 167 138 C 164 128 163 118 163 110 Z" fill="url(#skinG)"/>
+  <!-- 3/4 side shading (viewer-left jaw) -->
+  <path d="M 167 122 C 170 146 182 166 200 175 C 188 174 173 158 167 138 C 166 132 166 127 167 122 Z" fill="#D69B72" opacity="0.5"/>
+  <!-- ear (viewer right) -->
+  <ellipse cx="253" cy="128" rx="9" ry="13" fill="url(#skinG)"/>
+  <path d="M 250 122 C 254 124 255 130 252 134" fill="none" stroke="#D69B72" stroke-width="2" stroke-linecap="round"/>
+  <!-- brows -->
+  <path d="M 173 104 Q 186 97 199 103" fill="none" stroke="#3A3F4A" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 219 103 Q 232 97 245 104" fill="none" stroke="#3A3F4A" stroke-width="4" stroke-linecap="round"/>
+  <!-- eyes -->
+  <circle cx="187" cy="117" r="5" fill="#3A3F4A"/>
+  <circle cx="189" cy="115" r="1.5" fill="#F4F7FA"/>
+  <path d="M 176 115 Q 187 108 198 114" fill="none" stroke="#3A3F4A" stroke-width="3.4" stroke-linecap="round"/>
+  <path d="M 178 122 Q 187 125 196 122" fill="none" stroke="#D69B72" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="231" cy="117" r="5" fill="#3A3F4A"/>
+  <circle cx="233" cy="115" r="1.5" fill="#F4F7FA"/>
+  <path d="M 220 114 Q 231 108 242 115" fill="none" stroke="#3A3F4A" stroke-width="3.4" stroke-linecap="round"/>
+  <path d="M 222 122 Q 231 125 240 122" fill="none" stroke="#D69B72" stroke-width="2" stroke-linecap="round"/>
+  <!-- nose -->
+  <path d="M 207 118 C 205 128 203 136 200 142 C 203 147 212 147 215 143 C 211 136 209 127 208 118 Z" fill="#D69B72" opacity="0.7"/>
+  <!-- mouth: calm professional slight smile -->
+  <path d="M 193 155 C 199 160 219 160 225 155 C 221 165 197 165 193 155 Z" fill="#EF5844" opacity="0.55"/>
+  <path d="M 191 154 Q 209 162 227 154" fill="none" stroke="#D69B72" stroke-width="2" stroke-linecap="round"/>
+  <!-- subtle blush -->
+  <ellipse cx="179" cy="137" rx="8" ry="5" fill="#EF5844" opacity="0.12"/>
+  <ellipse cx="239" cy="137" rx="8" ry="5" fill="#EF5844" opacity="0.12"/>
+
+  <!-- front hair (side-parted fringe) -->
+  <path d="M 209 42 C 172 42 150 70 149 112 C 149 127 151 140 156 150 C 156 122 160 100 170 88 C 180 76 194 72 206 72 C 224 70 244 78 252 96 C 258 108 260 124 259 146 C 265 134 268 116 267 100 C 263 62 244 42 209 42 Z" fill="#3A3F4A"/>
+  <path d="M 149 112 C 149 127 151 140 156 150 C 156 122 160 100 170 88 C 162 92 155 100 149 112 Z" fill="rgba(0,0,0,0.22)"/>
+  <path d="M 196 72 C 188 74 178 80 172 88" fill="none" stroke="rgba(0,0,0,0.25)" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M 216 71 C 228 73 240 80 248 92" fill="none" stroke="rgba(0,0,0,0.25)" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- side hair covering temples -->
+  <path d="M 156 96 C 150 120 150 148 158 172 C 163 182 169 188 175 191 C 168 168 164 138 167 108 Z" fill="#3A3F4A"/>
+  <path d="M 258 100 C 264 124 262 152 254 176 C 250 184 245 189 239 192 C 246 168 250 138 248 110 Z" fill="#3A3F4A"/>
+</svg>

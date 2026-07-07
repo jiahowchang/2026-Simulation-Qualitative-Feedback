@@ -1,0 +1,254 @@
+<svg viewBox="0 0 1000 620" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="mattressGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F4F7FA"/>
+      <stop offset="1" stop-color="#D9E2EA"/>
+    </linearGradient>
+    <linearGradient id="blanketGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F4F7FA"/>
+      <stop offset="0.75" stop-color="#E4EBF1"/>
+      <stop offset="1" stop-color="#D9E2EA"/>
+    </linearGradient>
+    <linearGradient id="metalGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#B9C2CC"/>
+      <stop offset="1" stop-color="#8D97A3"/>
+    </linearGradient>
+    <linearGradient id="railGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#CBD3DC"/>
+      <stop offset="0.5" stop-color="#B9C2CC"/>
+      <stop offset="1" stop-color="#8D97A3"/>
+    </linearGradient>
+    <linearGradient id="gownGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#A9C7E8"/>
+      <stop offset="1" stop-color="#86A9CF"/>
+    </linearGradient>
+    <linearGradient id="skinGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E8B48E"/>
+      <stop offset="1" stop-color="#D69B72"/>
+    </linearGradient>
+    <linearGradient id="pillowGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FDFEFF"/>
+      <stop offset="1" stop-color="#D9E2EA"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ===================== floor shadow ===================== -->
+  <ellipse cx="500" cy="576" rx="440" ry="30" fill="rgba(0,0,0,0.16)"/>
+
+  <!-- ===================== stretcher undercarriage ===================== -->
+  <!-- legs -->
+  <g>
+    <!-- left leg pair (X frame suggestion) -->
+    <polygon points="150,412 178,412 268,540 240,540" fill="url(#metalGrad)"/>
+    <polygon points="268,412 240,412 150,540 178,540" fill="#8D97A3"/>
+    <!-- right leg pair -->
+    <polygon points="730,412 758,412 848,540 820,540" fill="url(#metalGrad)"/>
+    <polygon points="848,412 820,412 730,540 758,540" fill="#8D97A3"/>
+    <!-- lower cross bar -->
+    <rect x="180" y="520" width="640" height="16" rx="8" fill="url(#metalGrad)"/>
+    <rect x="180" y="520" width="640" height="6" rx="3" fill="#CBD3DC"/>
+  </g>
+
+  <!-- wheels -->
+  <g>
+    <!-- each wheel: fork + tire + hub -->
+    <g>
+      <rect x="146" y="528" width="14" height="30" rx="5" fill="#8D97A3"/>
+      <circle cx="153" cy="566" r="26" fill="#6E7883"/>
+      <circle cx="153" cy="566" r="26" fill="none"/>
+      <circle cx="153" cy="566" r="17" fill="#8D97A3"/>
+      <circle cx="153" cy="566" r="7" fill="#B9C2CC"/>
+      <path d="M 133 553 A 26 26 0 0 1 173 553 L 166 560 A 17 17 0 0 0 140 560 Z" fill="#828C98"/>
+    </g>
+    <g>
+      <rect x="255" y="528" width="14" height="30" rx="5" fill="#8D97A3"/>
+      <circle cx="262" cy="566" r="26" fill="#6E7883"/>
+      <circle cx="262" cy="566" r="17" fill="#8D97A3"/>
+      <circle cx="262" cy="566" r="7" fill="#B9C2CC"/>
+      <path d="M 242 553 A 26 26 0 0 1 282 553 L 275 560 A 17 17 0 0 0 249 560 Z" fill="#828C98"/>
+    </g>
+    <g>
+      <rect x="726" y="528" width="14" height="30" rx="5" fill="#8D97A3"/>
+      <circle cx="733" cy="566" r="26" fill="#6E7883"/>
+      <circle cx="733" cy="566" r="17" fill="#8D97A3"/>
+      <circle cx="733" cy="566" r="7" fill="#B9C2CC"/>
+      <path d="M 713 553 A 26 26 0 0 1 753 553 L 746 560 A 17 17 0 0 0 720 560 Z" fill="#828C98"/>
+    </g>
+    <g>
+      <rect x="835" y="528" width="14" height="30" rx="5" fill="#8D97A3"/>
+      <circle cx="842" cy="566" r="26" fill="#6E7883"/>
+      <circle cx="842" cy="566" r="17" fill="#8D97A3"/>
+      <circle cx="842" cy="566" r="7" fill="#B9C2CC"/>
+      <path d="M 822 553 A 26 26 0 0 1 862 553 L 855 560 A 17 17 0 0 0 829 560 Z" fill="#828C98"/>
+    </g>
+  </g>
+
+  <!-- ===================== bed frame (metal deck) ===================== -->
+  <g>
+    <!-- frame slab with slight top-down perspective: top edge lighter -->
+    <path d="M 70 388 L 930 388 L 944 416 Q 946 424 936 424 L 64 424 Q 54 424 56 416 Z" fill="url(#metalGrad)"/>
+    <path d="M 70 388 L 930 388 L 934 396 L 66 396 Z" fill="#CBD3DC"/>
+    <!-- frame end caps -->
+    <rect x="48" y="384" width="26" height="46" rx="9" fill="#8D97A3"/>
+    <rect x="926" y="384" width="26" height="46" rx="9" fill="#8D97A3"/>
+    <rect x="50" y="386" width="22" height="12" rx="6" fill="#B9C2CC"/>
+    <rect x="928" y="386" width="22" height="12" rx="6" fill="#B9C2CC"/>
+  </g>
+
+  <!-- ===================== mattress ===================== -->
+  <g>
+    <!-- slightly tilted top plane to suggest looking a bit from above -->
+    <path d="M 92 330 Q 96 316 112 315 L 892 315 Q 908 316 912 330 L 916 372 Q 917 388 900 389 L 104 389 Q 87 388 88 372 Z" fill="url(#mattressGrad)"/>
+    <!-- top surface highlight (the visible top plane) -->
+    <path d="M 100 332 Q 103 322 116 321 L 888 321 Q 901 322 904 332 L 906 348 L 98 348 Z" fill="#F4F7FA"/>
+    <!-- mattress seam -->
+    <path d="M 92 360 L 912 360" stroke="#D9E2EA" stroke-width="4" fill="none"/>
+  </g>
+
+  <!-- ===================== pillow ===================== -->
+  <path d="M 112 300 Q 104 268 132 260 Q 190 246 244 258 Q 274 266 268 300 Q 264 328 232 332 L 150 332 Q 116 328 112 300 Z" fill="url(#pillowGrad)"/>
+  <path d="M 124 296 Q 120 274 142 268 Q 190 258 234 266 Q 256 272 252 294" fill="none" stroke="#D9E2EA" stroke-width="5"/>
+
+  <!-- ===================== patient body (under/over blanket ordering) ===================== -->
+
+  <!-- right arm (far side, drawn before torso) lying along body -->
+  <g>
+    <path d="M 300 306 Q 340 296 392 300 L 560 306 Q 586 310 584 328 Q 582 344 556 344 L 380 340 Q 330 338 300 330 Z" fill="#D69B72"/>
+  </g>
+
+  <!-- torso in gown -->
+  <g>
+    <!-- gown torso: shoulders near head (left), tapering toward waist -->
+    <path d="M 282 262 Q 320 250 356 252 L 470 258 Q 506 262 516 292 L 522 318 Q 524 344 498 350 L 330 352 Q 292 352 280 322 Q 270 288 282 262 Z" fill="url(#gownGrad)"/>
+    <!-- chest shading folds -->
+    <path d="M 356 256 Q 352 300 360 350" stroke="#86A9CF" stroke-width="6" fill="none"/>
+    <path d="M 412 260 Q 408 302 414 350" stroke="#86A9CF" stroke-width="5" fill="none"/>
+    <path d="M 462 264 Q 460 304 464 348" stroke="#86A9CF" stroke-width="4" fill="none"/>
+    <!-- gown neckline -->
+    <path d="M 284 264 Q 302 254 322 254 Q 310 276 306 296 Q 292 284 284 264 Z" fill="#86A9CF"/>
+    <!-- shoulder highlight -->
+    <path d="M 300 258 Q 360 248 450 256 Q 500 262 512 290 L 506 292 Q 494 268 448 264 Q 362 256 302 266 Z" fill="#BBD4EE"/>
+  </g>
+
+  <!-- neck -->
+  <path d="M 268 276 Q 268 262 282 260 L 306 258 Q 312 278 308 300 L 284 302 Q 270 296 268 276 Z" fill="url(#skinGrad)"/>
+  <path d="M 284 262 Q 292 280 290 300 L 284 302 Q 272 296 270 278 Q 270 264 284 262 Z" fill="#D69B72"/>
+
+  <!-- ===================== head (on pillow, facing up, profile-ish 3/4 up view) ===================== -->
+  <g>
+    <!-- skull / face base: lying supine, face up, seen from the side slightly above -->
+    <path d="M 170 282 Q 162 240 200 226 Q 238 214 262 240 Q 278 258 274 284 Q 271 306 252 314 Q 220 326 192 314 Q 172 304 170 282 Z" fill="url(#skinGrad)"/>
+    <!-- ear -->
+    <path d="M 246 282 Q 262 278 262 292 Q 262 306 248 306 Q 240 304 240 294 Q 240 284 246 282 Z" fill="#D69B72"/>
+    <path d="M 248 288 Q 256 287 255 296 Q 254 301 249 300 Z" fill="#C98F68"/>
+    <!-- short grey hair: cap over back/top of head (toward pillow, left) -->
+    <path d="M 166 284 Q 154 236 196 220 Q 234 206 262 232 Q 268 238 270 246 Q 250 234 226 238 Q 208 240 198 252 Q 186 264 184 286 Q 184 300 190 310 Q 172 302 166 284 Z" fill="#9AA2AD"/>
+    <path d="M 200 224 Q 232 212 258 232 Q 244 228 224 232 Q 208 235 199 244 Q 196 234 200 224 Z" fill="#8A93A0"/>
+    <!-- sideburn -->
+    <path d="M 244 276 Q 250 276 250 284 L 248 296 Q 242 294 241 286 Q 240 279 244 276 Z" fill="#9AA2AD"/>
+    <!-- brow -->
+    <path d="M 190 254 Q 200 248 212 250" stroke="#9AA2AD" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <!-- closed eye: gentle downward arc (face pointing up-left) -->
+    <path d="M 193 264 Q 202 270 212 266" stroke="#B07B54" stroke-width="4" stroke-linecap="round" fill="none"/>
+    <path d="M 194 267 Q 202 272 211 269" stroke="#D69B72" stroke-width="2" stroke-linecap="round" fill="none"/>
+    <!-- nose: pointing up (leftward in this orientation) -->
+    <path d="M 178 272 Q 170 278 172 286 Q 174 292 182 292 Q 180 282 184 274 Z" fill="#D69B72"/>
+    <path d="M 176 288 Q 180 291 185 290" stroke="#C98F68" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <!-- relaxed mouth -->
+    <path d="M 186 302 Q 194 306 203 303" stroke="#B07B54" stroke-width="4" stroke-linecap="round" fill="none"/>
+    <path d="M 188 306 Q 194 309 200 307" stroke="#D69B72" stroke-width="2" stroke-linecap="round" fill="none"/>
+    <!-- chin shading toward neck -->
+    <path d="M 212 314 Q 232 320 252 312 Q 244 322 226 322 Q 216 320 212 314 Z" fill="#D69B72"/>
+    <!-- cheek soft shadow -->
+    <path d="M 216 284 Q 226 288 230 298 Q 220 298 214 292 Z" fill="#E0A87F"/>
+    <!-- nasolabial hint -->
+    <path d="M 190 292 Q 187 297 188 301" stroke="#D69B72" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  </g>
+
+  <!-- ===================== blanket over lower body (waist to feet) ===================== -->
+  <g>
+    <!-- blanket mass with soft draped top edge at the waist -->
+    <path d="M 506 300 Q 540 288 566 296 L 872 300 Q 902 304 906 330 L 908 366 Q 908 388 884 388 L 520 388 Q 494 388 492 362 L 492 326 Q 492 308 506 300 Z" fill="url(#blanketGrad)"/>
+    <!-- leg volumes under blanket -->
+    <path d="M 520 306 Q 660 296 800 306 Q 850 310 872 318 Q 800 314 662 312 Q 580 312 522 318 Z" fill="#FDFEFF"/>
+    <path d="M 540 322 Q 700 314 860 326" stroke="#D9E2EA" stroke-width="6" fill="none"/>
+    <path d="M 560 344 Q 710 336 880 348" stroke="#D9E2EA" stroke-width="5" fill="none"/>
+    <!-- feet bumps at right end -->
+    <path d="M 842 302 Q 872 292 890 306 Q 906 320 904 344 L 900 372 Q 898 386 882 386 L 848 386 Q 838 346 842 302 Z" fill="#EDF2F7"/>
+    <path d="M 856 308 Q 878 302 890 316 Q 898 328 896 348" stroke="#D9E2EA" stroke-width="5" fill="none"/>
+    <!-- folded top edge of blanket at waist -->
+    <path d="M 500 302 Q 536 286 572 294 L 600 298 Q 606 306 598 312 L 540 312 Q 508 314 496 330 Q 490 312 500 302 Z" fill="#FDFEFF"/>
+    <path d="M 502 308 Q 534 294 588 300" stroke="#D9E2EA" stroke-width="4" fill="none"/>
+    <!-- hanging blanket edge over mattress side -->
+    <path d="M 492 340 L 492 372 Q 494 390 516 390 L 700 390 L 700 402 Q 700 412 688 412 L 520 412 Q 486 410 482 378 L 482 352 Z" fill="#D9E2EA"/>
+  </g>
+
+  <!-- ===================== near-side arm (left arm of patient, closest to viewer) ===================== -->
+  <g>
+    <!-- upper arm in gown sleeve -->
+    <path d="M 300 322 Q 296 300 320 298 L 380 302 Q 400 306 400 326 Q 400 346 378 348 L 322 348 Q 302 344 300 322 Z" fill="url(#gownGrad)"/>
+    <path d="M 306 306 Q 340 300 384 306 Q 396 310 398 322 L 392 322 Q 388 312 360 310 Q 326 308 308 312 Z" fill="#BBD4EE"/>
+    <!-- forearm skin lying alongside body -->
+    <path d="M 384 314 Q 386 304 400 304 L 512 312 Q 530 314 530 330 Q 530 346 512 346 L 402 342 Q 386 340 384 326 Z" fill="url(#skinGrad)"/>
+    <path d="M 390 336 Q 450 342 510 344 L 512 346 L 402 342 Q 390 341 386 332 Z" fill="#D69B72"/>
+    <!-- hand resting by the hip, fingers relaxed -->
+    <path d="M 512 312 Q 540 310 552 322 Q 562 332 556 344 Q 550 354 534 352 Q 516 350 510 344 Q 504 328 512 312 Z" fill="url(#skinGrad)"/>
+    <!-- finger separations -->
+    <path d="M 534 322 Q 546 326 552 334" stroke="#D69B72" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M 530 330 Q 542 334 548 342" stroke="#D69B72" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M 526 338 Q 536 342 540 348" stroke="#D69B72" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <!-- thumb -->
+    <path d="M 514 316 Q 528 310 540 314 Q 532 320 524 322 Z" fill="#D69B72"/>
+    <!-- wrist crease -->
+    <path d="M 508 318 Q 506 330 508 342" stroke="#D69B72" stroke-width="2.5" fill="none"/>
+    <!-- elbow shading -->
+    <path d="M 388 316 Q 384 326 388 336 Q 380 328 382 320 Z" fill="#D69B72"/>
+  </g>
+
+  <!-- far-side hand peeking beyond torso near right hip (subtle) -->
+  <path d="M 560 310 Q 578 306 588 316 Q 596 326 588 336 Q 578 344 566 338 Q 556 326 560 310 Z" fill="#D69B72"/>
+
+  <!-- ===================== side rails (raised, both sides) ===================== -->
+  <!-- far rail (behind patient, upper) -->
+  <g>
+    <rect x="150" y="234" width="700" height="14" rx="7" fill="url(#railGrad)"/>
+    <rect x="150" y="262" width="700" height="12" rx="6" fill="url(#railGrad)"/>
+    <rect x="162" y="238" width="18" height="80" rx="8" fill="url(#metalGrad)"/>
+    <rect x="480" y="238" width="18" height="80" rx="8" fill="url(#metalGrad)"/>
+    <rect x="820" y="238" width="18" height="80" rx="8" fill="url(#metalGrad)"/>
+    <rect x="150" y="234" width="700" height="5" rx="2.5" fill="#DDE3EA"/>
+  </g>
+
+  <!-- head board (left end, raised panel) -->
+  <g>
+    <path d="M 60 226 Q 58 208 76 206 L 96 206 Q 112 208 112 226 L 114 388 L 62 388 Z" fill="url(#metalGrad)"/>
+    <path d="M 66 226 Q 66 214 78 212 L 94 212 Q 104 214 104 226 L 105 300 L 67 300 Z" fill="#CBD3DC"/>
+    <rect x="70" y="310" width="34" height="60" rx="8" fill="#8D97A3"/>
+  </g>
+  <!-- foot board (right end) -->
+  <g>
+    <path d="M 888 226 Q 888 208 906 206 L 926 206 Q 942 208 942 226 L 940 388 L 888 388 Z" fill="url(#metalGrad)"/>
+    <path d="M 896 226 Q 896 214 908 212 L 922 212 Q 934 214 934 226 L 933 300 L 897 300 Z" fill="#CBD3DC"/>
+    <rect x="898" y="310" width="34" height="60" rx="8" fill="#8D97A3"/>
+    <!-- navy chart clip on footboard -->
+    <rect x="894" y="240" width="42" height="56" rx="6" fill="#1E2761"/>
+    <rect x="900" y="248" width="30" height="6" rx="3" fill="#B9C2CC"/>
+    <rect x="900" y="260" width="30" height="5" rx="2.5" fill="#8D97A3"/>
+    <rect x="900" y="271" width="22" height="5" rx="2.5" fill="#8D97A3"/>
+  </g>
+
+  <!-- near rail (in front of patient, drawn last so it overlaps body slightly) -->
+  <g>
+    <rect x="140" y="332" width="720" height="16" rx="8" fill="url(#railGrad)"/>
+    <rect x="140" y="362" width="720" height="14" rx="7" fill="url(#railGrad)"/>
+    <rect x="154" y="336" width="20" height="72" rx="9" fill="url(#metalGrad)"/>
+    <rect x="486" y="336" width="20" height="72" rx="9" fill="url(#metalGrad)"/>
+    <rect x="828" y="336" width="20" height="72" rx="9" fill="url(#metalGrad)"/>
+    <!-- top highlight on near rail -->
+    <rect x="140" y="332" width="720" height="6" rx="3" fill="#DDE3EA"/>
+    <!-- rail lock knobs -->
+    <circle cx="164" cy="410" r="8" fill="#1E2761"/>
+    <circle cx="496" cy="410" r="8" fill="#1E2761"/>
+    <circle cx="838" cy="410" r="8" fill="#1E2761"/>
+  </g>
+</svg>

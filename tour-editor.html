@@ -66,6 +66,8 @@
         <summary style="font-size:12px;color:#6b7885;cursor:pointer">情境設定（變數 / 通過門檻）</summary>
         <div class="field" style="margin-top:8px"><label>初始變數（JSON 物件）</label><textarea id="tVars" placeholder='{"handHygiene":false,"gloves":false}'></textarea></div>
         <div class="field"><label>通過門檻分數（除錯總結用，選填）</label><input id="tPass" type="number" placeholder="例：70"></div>
+        <div class="field"><label>虛擬人物/物件（JSON 陣列，套用到第一個場景；image 可用 images/props/ 內建素材；hotspot=點擊觸發的熱點 id）</label>
+        <textarea id="tProps" style="min-height:72px" placeholder='[{"id":"vp_patient","image":"images/props/patient-supine.png","yaw":0.41,"pitch":-0.34,"width":820,"height":508,"hotspot":"assess"}]'></textarea></div>
       </details>
     </header>
 
@@ -378,6 +380,9 @@ const ER_TEMPLATE = {
     { id:"er", name:"急救室",
       panorama:"tours/er/resus.jpg",
       initialView:{ yaw:0.2, pitch:-0.1 },
+      props:[
+        { id:"vp_wife", image:"images/props/family-woman.png", yaw:0.13, pitch:-0.27, width:250, height:595, hotspot:"talk" }
+      ],
       hotspots:[
         { id:"hh", type:"action", yaw:-2.36, pitch:-0.19, label:"手部衛生（洗手台）",
           onSelect:[
@@ -438,6 +443,11 @@ $("saveBtn").onclick=async()=>{
   if(vt){ try{ tour.variables=JSON.parse(vt); }catch(e){ alert("初始變數 JSON 格式錯誤"); return; } } else { delete tour.variables; }
   const ps=($("tPass").value||"").trim();
   if(ps!==""){ tour.debrief=Object.assign({}, tour.debrief, { passScore:+ps }); } else if(tour.debrief){ delete tour.debrief.passScore; }
+  const pj=($("tProps").value||"").trim();
+  if(pj){ try{ const arr=JSON.parse(pj); if(!Array.isArray(arr)) throw new Error("必須是陣列");
+      if(tour.scenes[0]) tour.scenes[0].props=arr; }
+    catch(e){ alert("虛擬人物/物件 JSON 格式錯誤："+e.message); return; } }
+  else if(tour.scenes[0]){ delete tour.scenes[0].props; }
   try{ await setDoc(doc(db,C_DEFS,id),{ ...tour, updatedAt:serverTimestamp() });
     alert(`已存到雲端！\n學員連結： tour.html?tour=${id}`); }
   catch(e){ alert("存檔失敗："+e.message); }
@@ -461,6 +471,7 @@ function loadTourObj(t){
   $("tourId").value=tour.id||""; $("tourTitle").value=tour.title||"";
   $("tVars").value = tour.variables ? JSON.stringify(tour.variables) : "";
   $("tPass").value = tour.debrief?.passScore ?? "";
+  $("tProps").value = tour.scenes[0]?.props ? JSON.stringify(tour.scenes[0].props) : "";
   // 重算 seq 避免 id 衝突
   let max=1; tour.scenes.forEach(s=>{ (s.hotspots||[]).forEach(()=>{}); });
   renderSceneList(); if(tour.scenes[0]) selectScene(tour.scenes[0]);

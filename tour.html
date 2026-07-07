@@ -241,6 +241,9 @@ const DEMO = {
     { id:"er", name:"急救室",
       panorama:"tours/er/resus.jpg",
       initialView:{ yaw:0.2, pitch:-0.1 },
+      props:[
+        { id:"vp_wife", image:"images/props/family-woman.png", yaw:0.13, pitch:-0.27, width:250, height:595, hotspot:"talk" }
+      ],
       hotspots:[
         { id:"hh", type:"action", yaw:-2.36, pitch:-0.19, label:"手部衛生（洗手台）",
           onSelect:[
@@ -351,7 +354,14 @@ function initViewer(scene){
   markers.addEventListener("select-marker", ({ marker }) => {
     if(Date.now()-lastHsFire<600) return;   // 觸控備援已處理過就跳過
     lastHsFire = Date.now();
-    onHotspot(marker.data);
+    const d = marker.data;
+    if(d && d.__prop){   // 點虛擬人物/物件 → 觸發其連結的熱點（例：點家屬開啟對話）
+      const p = d.__prop, sc = curSceneObj();
+      const h = p.hotspot && sc && (sc.hotspots||[]).find(x=>x.id===p.hotspot);
+      if(h && hsVisible(h)) onHotspot(h);
+      return;
+    }
+    onHotspot(d);
   });
 
   // iPad/iOS 觸控備援：部分 iOS 裝置上 PSV 的 select-marker 不觸發，
@@ -380,6 +390,27 @@ let lastHsFire = 0;
 function curSceneObj(){ return tour.scenes.find(s=>s.id===curScene); }
 function iconFor(t){ return {nav:"➜",info:"ℹ️",quiz:"❓",branch:"⤢",hazard:"⚠️",media:"📎",action:"⚙️"}[t]||"•"; }
 
+// 虛擬人物/物件（vSim 式）：imageLayer 渲染進全景 3D 空間，隨視角自然縮放
+// prop 欄位：{ id, image, yaw, pitch, width, height, rotation?, opacity?, hotspot?, startHidden?, showIf? }
+function propVisible(p){
+  if(hiddenSet.has(p.id)) return false;
+  if(p.startHidden && !revealed.has(p.id)) return false;
+  if(p.showIf && !condMatch(p.showIf)) return false;
+  return true;
+}
+function propMarkers(scene){
+  return (scene.props||[]).filter(propVisible).map(p => ({
+    id: "prop_"+p.id,
+    imageLayer: p.image,
+    position: { yaw:+p.yaw||0, pitch:+p.pitch||0 },
+    size: { width:+p.width||600, height:+p.height||600 },
+    opacity: p.opacity ?? 1,
+    zIndex: p.zIndex ?? 1,
+    style: { cursor: p.hotspot ? "pointer" : "default" },
+    data: { __prop: p }
+  }));
+}
+
 // 只重畫熱點（不重載環景），變數改變 / 顯示隱藏熱點時使用
 function drawMarkers(){
   const scene = curSceneObj(); if(!scene || !markers) return;
@@ -396,7 +427,7 @@ function drawMarkers(){
       data: h
     };
   });
-  markers.setMarkers(ms);
+  markers.setMarkers([...propMarkers(scene), ...ms]);
   updateHazardBar(scene);
 }
 
