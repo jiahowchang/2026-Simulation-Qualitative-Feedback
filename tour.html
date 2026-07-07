@@ -567,7 +567,7 @@ function teamMemberEl(m){
     const r = ROLES[m.role]||{ color:"#888", label:"" };
     el = document.createElement("div");
     el.className = "tm-fig";
-    el.style.width = "210px"; el.style.height = "540px";
+    el.style.width = "230px"; el.style.height = "548px";   // 與畫作 420:1000 同比例，避免縮放變形
     el.style.cursor = "grab"; el.style.touchAction = "none";
     el.innerHTML = `<div class="tm-bubble"></div><div class="tm-name" style="background:${r.color}cc">${esc2(m.name)}｜${r.label}</div><div class="tm-svg" style="width:100%;height:100%"></div>`;
     TEAM_EL[m.id] = el;
@@ -610,7 +610,8 @@ function makeAvatarDraggable(el, memberId){
     if(sph && typeof sph.yaw==="number"){
       moved = true;
       POS_LIVE[memberId] = { yaw:sph.yaw, pitch:sph.pitch };
-      try{ markers.updateMarker({ id:"tm_"+memberId, position: POS_LIVE[memberId] }); }catch(err){}
+      try{ markers.updateMarker({ id:"tm_"+memberId, position: POS_LIVE[memberId],
+        rotation: { pitch: -sph.pitch } }); }catch(err){}
     }
   });
   const up = e=>{
@@ -634,7 +635,8 @@ function teamMarkers(){
     .map(m=>{
       const pos = POS_LIVE[m.id] || (m.pos && typeof m.pos.yaw==="number" ? m.pos : { yaw:ROLES[m.role].yaw, pitch:ROLES[m.role].pitch });
       return { id:"tm_"+m.id, elementLayer: teamMemberEl(m),
-        position: pos, zIndex:2, data:{ __team:m.id } };
+        position: pos, rotation: { pitch: -pos.pitch },   // 補償切面後傾：人物平面保持直立不變形
+        zIndex:2, data:{ __team:m.id } };
     });
 }
 $("tpToggle").onclick = ()=> $("teamPanel").classList.toggle("min");
