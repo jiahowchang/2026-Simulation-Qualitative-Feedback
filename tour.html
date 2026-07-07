@@ -306,7 +306,7 @@
 import { Viewer } from '@photo-sphere-viewer/core';
 import { MarkersPlugin } from '@photo-sphere-viewer/markers-plugin';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, collection, serverTimestamp,
+import { getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, deleteDoc, collection, serverTimestamp,
          onSnapshot, query, orderBy, limit }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -441,6 +441,7 @@ let teamMembers = [];            // 房間成員（onSnapshot 最新）
 let teamEvents = [];             // 房間事件（新→舊）
 let applyingRemote = false;      // 套用遠端狀態時避免回寫迴圈
 const TEAM_EL = {};              // memberId → 場景 Avatar DOM（elementLayer 重用）
+window.__teamEl = TEAM_EL;       // 除錯用
 let NURSE_TXT = null;
 const shade = (hex,f)=>"#"+hex.replace("#","").match(/../g).map(h=>Math.round(parseInt(h,16)*f).toString(16).padStart(2,"0")).join("");
 function esc2(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
@@ -456,6 +457,11 @@ async function joinTeam(code, role){
   const memRef = doc(db, C_ROOMS, code, "members", team.memberId);
   await setDoc(memRef, { name: student, role, lastSeen: Date.now(), joinedAt: serverTimestamp() }).catch(()=>{});
   team.hb = setInterval(()=> setDoc(memRef, { lastSeen: Date.now() }, { merge:true }).catch(()=>{}), 25000);
+  // 入房順手清掃：把 10 分鐘以上沒心跳的殘留成員移除
+  try{
+    const ms = await getDocs(collection(db, C_ROOMS, code, "members"));
+    ms.docs.forEach(d=>{ const v=d.data()||{}; if(Date.now()-(v.lastSeen||0) > 600000) deleteDoc(d.ref).catch(()=>{}); });
+  }catch(e){}
 
   // 共享情境狀態：一人洗手/答題/找到危害 → 全隊同步解鎖與計分
   onSnapshot(roomRef, snap=>{
@@ -478,8 +484,10 @@ async function joinTeam(code, role){
   // 成員出席（心跳 90 秒內視為在場）
   onSnapshot(collection(db, C_ROOMS, code, "members"), snap=>{
     teamMembers = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+    // 資料庫位置已是最新 → 清掉本地拖曳暫存（拖曳中的那位除外）
+    Object.keys(POS_LIVE).forEach(id=>{ if(id!==avatarDragId) delete POS_LIVE[id]; });
     renderTeamMembers();
-    if(viewer) drawMarkers();
+    if(viewer && !avatarDragId) drawMarkers();   // 拖曳中不重建 marker（避免中斷拖曳）
   });
   // 即時動態（動作 + TRM 標記）
   onSnapshot(query(collection(db, C_ROOMS, code, "events"), orderBy("atLocal","desc"), limit(40)), snap=>{
@@ -519,6 +527,7 @@ function evtLabel(type, d){
     case "info": return "查看：" + (d.label||"資訊");
     case "nav": return "移動到其他場景";
     case "chat": return "💬 " + String(d.text||"").slice(0,50);
+    case "move": return "移動了站位";
     case "stage_done": return "🏁 完成關卡：" + (d.title||"") + (d.fast?"（限時達成）":"");
     case "locked": return null;
     case "trm": return (d.ok?"👍 ":"⚠️ ") + ({A:"警覺",C:"溝通",S:"互助",L:"領導"}[d.dim]||"") + (d.target? "→"+d.target : "（全隊）");
@@ -559,8 +568,10 @@ function teamMemberEl(m){
     el = document.createElement("div");
     el.className = "tm-fig";
     el.style.width = "210px"; el.style.height = "540px";
+    el.style.cursor = "grab"; el.style.touchAction = "none";
     el.innerHTML = `<div class="tm-bubble"></div><div class="tm-name" style="background:${r.color}cc">${esc2(m.name)}｜${r.label}</div><div class="tm-svg" style="width:100%;height:100%"></div>`;
     TEAM_EL[m.id] = el;
+    makeAvatarDraggable(el, m.id);
     (NURSE_TXT ? Promise.resolve(NURSE_TXT) : fetch("images/props/nurse.svg").then(x=>x.text()).then(t=>(NURSE_TXT=t)))
       .then(txt=>{
         const recolored = txt.replaceAll("#17A093", r.color).replaceAll("#0F7C72", shade(r.color, 0.72));
@@ -571,12 +582,60 @@ function teamMemberEl(m){
   }
   return el;
 }
+/* 拖放移動 Avatar：拖曳中鎖住全景旋轉，放開後位置寫回房間 → 全隊同步 */
+const POS_LIVE = {};       // memberId → 拖曳中的即時位置（優先於資料庫值）
+let avatarDragId = null;
+function screenToSph(clientX, clientY){
+  const rect = $("viewer").getBoundingClientRect();
+  const pt = { x: clientX-rect.left, y: clientY-rect.top };
+  try{
+    const dh = viewer.dataHelper;
+    if(dh.viewerCoordsToSphericalCoords) return dh.viewerCoordsToSphericalCoords(pt);
+    if(dh.viewerCoordsToVector3){ const v = dh.viewerCoordsToVector3(pt); if(v) return dh.vector3ToSphericalCoords(v); }
+  }catch(e){}
+  return null;
+}
+function makeAvatarDraggable(el, memberId){
+  let dragging = false, moved = false;
+  el.addEventListener("pointerdown", e=>{
+    dragging = true; moved = false; avatarDragId = memberId;
+    el.style.cursor = "grabbing";
+    try{ el.setPointerCapture(e.pointerId); }catch(err){}
+    e.stopPropagation(); e.preventDefault();
+  });
+  el.addEventListener("pointermove", e=>{
+    if(!dragging) return;
+    e.stopPropagation();
+    const sph = screenToSph(e.clientX, e.clientY);
+    if(sph && typeof sph.yaw==="number"){
+      moved = true;
+      POS_LIVE[memberId] = { yaw:sph.yaw, pitch:sph.pitch };
+      try{ markers.updateMarker({ id:"tm_"+memberId, position: POS_LIVE[memberId] }); }catch(err){}
+    }
+  });
+  const up = e=>{
+    if(!dragging) return;
+    dragging = false; avatarDragId = null;
+    el.style.cursor = "grab";
+    e.stopPropagation();
+    if(moved && POS_LIVE[memberId] && team && db){
+      setDoc(doc(db, C_ROOMS, team.code, "members", memberId),
+        { pos: POS_LIVE[memberId] }, { merge:true }).catch(()=>{});
+      logEvent("move",{ });
+    }
+  };
+  el.addEventListener("pointerup", up);
+  el.addEventListener("pointercancel", up);
+}
 function teamMarkers(){
   if(!team) return [];
   return teamMembers
-    .filter(m=> m.id!==team.memberId && ROLES[m.role] && ROLES[m.role].yaw!==undefined && Date.now()-(m.lastSeen||0)<90000)
-    .map(m=>({ id:"tm_"+m.id, elementLayer: teamMemberEl(m),
-      position:{ yaw:ROLES[m.role].yaw, pitch:ROLES[m.role].pitch }, zIndex:2, data:{ __team:m.id } }));
+    .filter(m=> ROLES[m.role] && ROLES[m.role].yaw!==undefined && Date.now()-(m.lastSeen||0)<90000)
+    .map(m=>{
+      const pos = POS_LIVE[m.id] || (m.pos && typeof m.pos.yaw==="number" ? m.pos : { yaw:ROLES[m.role].yaw, pitch:ROLES[m.role].pitch });
+      return { id:"tm_"+m.id, elementLayer: teamMemberEl(m),
+        position: pos, zIndex:2, data:{ __team:m.id } };
+    });
 }
 $("tpToggle").onclick = ()=> $("teamPanel").classList.toggle("min");
 document.querySelectorAll(".trm-btn").forEach(b=>{
