@@ -248,7 +248,7 @@ const DEMO = {
       panorama:"tours/er/resus.jpg",
       initialView:{ yaw:0.2, pitch:-0.1 },
       props:[
-        { id:"vp_wife", image:"images/props/family-woman.png", yaw:0.13, pitch:-0.27, width:250, height:595, hotspot:"talk" }
+        { id:"vp_wife", image:"images/props/family-woman.svg", rig:true, yaw:0.13, pitch:-0.27, width:250, height:595, hotspot:"talk" }
       ],
       hotspots:[
         { id:"hh", type:"action", yaw:-2.36, pitch:-0.19, label:"手部衛生（洗手台）",
@@ -404,17 +404,54 @@ function propVisible(p){
   if(p.showIf && !condMatch(p.showIf)) return false;
   return true;
 }
+const PROP_RIG_EL = {};   // 可動 prop 的 DOM 快取（elementLayer 重繪時重用同一元素）
+function propRigElement(p){
+  let el = PROP_RIG_EL[p.id];
+  if(!el){
+    el = document.createElement("div");
+    el.className = "prop-rig";
+    el.style.width = (+p.width||300)+"px"; el.style.height = (+p.height||600)+"px";
+    if(p.hotspot){
+      el.style.cursor = "pointer";
+      el.addEventListener("click", ()=>{
+        if(Date.now()-lastHsFire<600) return; lastHsFire = Date.now();
+        const sc = curSceneObj();
+        const h = sc && (sc.hotspots||[]).find(x=>x.id===p.hotspot);
+        if(h && hsVisible(h)) onHotspot(h);
+      });
+    }
+    PROP_RIG_EL[p.id] = el;
+    fetch(p.image).then(r=> r.ok? r.text() : Promise.reject())
+      .then(txt=>{
+        el.innerHTML = txt;
+        const svg = el.querySelector("svg");
+        if(svg){ svg.style.width="100%"; svg.style.height="100%"; svg.style.display="block"; svg.removeAttribute("width"); svg.removeAttribute("height"); }
+        registerRig("prop:"+p.id, el, { hotspotId: p.hotspot||null, breathe: true });
+      }).catch(()=>{});
+  }
+  return el;
+}
 function propMarkers(scene){
-  return (scene.props||[]).filter(propVisible).map(p => ({
-    id: "prop_"+p.id,
-    imageLayer: p.image,
-    position: { yaw:+p.yaw||0, pitch:+p.pitch||0 },
-    size: { width:+p.width||600, height:+p.height||600 },
-    opacity: p.opacity ?? 1,
-    zIndex: p.zIndex ?? 1,
-    style: { cursor: p.hotspot ? "pointer" : "default" },
-    data: { __prop: p }
-  }));
+  const visible = (scene.props||[]).filter(propVisible);
+  // 清掉已不可見的 prop 骨架
+  [...rigs.keys()].forEach(k=>{
+    if(k.startsWith("prop:") && !visible.some(p=>p.rig && ("prop:"+p.id)===k)) unregisterRig(k);
+  });
+  return visible.map(p => {
+    const base = {
+      id: "prop_"+p.id,
+      position: { yaw:+p.yaw||0, pitch:+p.pitch||0 },
+      opacity: p.opacity ?? 1,
+      zIndex: p.zIndex ?? 1,
+      data: { __prop: p }
+    };
+    if(p.rig){   // 可動人物：SVG 以 elementLayer 進 3D 場景，與對話特寫同步演出
+      return { ...base, elementLayer: propRigElement(p) };
+    }
+    return { ...base, imageLayer: p.image,
+      size: { width:+p.width||600, height:+p.height||600 },
+      style: { cursor: p.hotspot ? "pointer" : "default" } };
+  });
 }
 
 // 只重畫熱點（不重載環景），變數改變 / 顯示隱藏熱點時使用
@@ -667,15 +704,30 @@ async function cpSpeak(t){
   } else { avatarMode("idle"); }
 }
 
-/* ===== 對話角色動畫：眨眼 / 嘴型同步 / 思考與說話表情 / 呼吸 ===== */
+/* ===== 角色動畫（多骨架同步）：對話特寫 + 場景內人物共用同一狀態機
+       眨眼各自隨機、呼吸各自起伏；思考/說話表情與嘴型「同步」演出 ===== */
 const AV_CACHE = {};
-const avState = { name:null, raf:0, blinkT:0, mode:"idle", mouth:0, audioCtx:null, analyser:null, arr:null, log:[] };
-window.__av = avState;   // 除錯用
+const rigs = new Map();   // key("bust"/"prop:<id>") → { el, hotspotId, breathe, blinkT, mouth, mode }
+const avState = { name:null, raf:0, mode:"idle", log:[] };
+window.__av = avState; window.__rigs = rigs;   // 除錯用
 function avLog(m){ avState.log.push(Date.now()%100000 + " " + m); if(avState.log.length>40) avState.log.shift(); }
-function avEl(id){ return $("cpAvatar").querySelector("#"+id); }
+function registerRig(key, el, opts){
+  const rig = { el, hotspotId:(opts&&opts.hotspotId)||null, breathe:!(opts&&opts.breathe===false),
+    blinkT:0, mouth:0, mode:"idle" };
+  const prep = (id, origin)=>{ const e = el.querySelector("#"+id);
+    if(e){ e.style.transformBox="fill-box"; if(origin) e.style.transformOrigin=origin; e.style.transition="transform .25s"; } };
+  prep("av-head","50% 88%"); prep("av-pupilL"); prep("av-pupilR"); prep("av-browL"); prep("av-browR");
+  const body = el.querySelector("#av-body");
+  if(body){ body.style.transformBox="fill-box"; body.style.transformOrigin="50% 100%"; }
+  ["av-lidL","av-lidR"].forEach(id=>{ const e=el.querySelector("#"+id);
+    if(e){ e.style.transformBox="fill-box"; e.style.transformOrigin="50% 0%"; } });
+  rigs.set(key, rig);
+  if(!avState.raf) avatarLoop();
+}
+function unregisterRig(key){ rigs.delete(key); }
 async function avatarShow(name){
   const wrap = $("cpAvatarWrap");
-  if(!name){ wrap.style.display="none"; avState.name=null; stopAvatarLoop(); return; }
+  if(!name){ wrap.style.display="none"; avState.name=null; unregisterRig("bust"); return; }
   if(avState.name !== name){
     let txt = AV_CACHE[name];
     if(!txt){
@@ -683,15 +735,8 @@ async function avatarShow(name){
       catch(e){ wrap.style.display="none"; avState.name=null; return; }
     }
     $("cpAvatar").innerHTML = txt;
-    avState.name = name; avState.mode="idle"; avState.mouth=0;
-    const head = avEl("av-head");
-    if(head){ head.style.transformBox="fill-box"; head.style.transformOrigin="50% 88%"; head.style.transition="transform .3s"; }
-    ["av-pupilL","av-pupilR","av-browL","av-browR"].forEach(id=>{
-      const e = avEl(id); if(e){ e.style.transformBox="fill-box"; e.style.transformOrigin="50% 50%"; e.style.transition="transform .25s"; }
-    });
-    const body = avEl("av-body");
-    if(body){ body.style.transformBox="fill-box"; body.style.transformOrigin="50% 100%"; }
-    ["av-lidL","av-lidR"].forEach(id=>{ const e=avEl(id); if(e){ e.style.transformBox="fill-box"; e.style.transformOrigin="50% 0%"; } });
+    avState.name = name;
+    registerRig("bust", $("cpAvatar"), { breathe:true });
   }
   wrap.style.display="block";
   positionAvatar();
@@ -702,10 +747,10 @@ function positionAvatar(){
   if(p.classList.contains("show")) w.style.bottom = (14 + p.offsetHeight - 6) + "px";
 }
 window.addEventListener("resize", positionAvatar);
-function avatarMode(m){
-  if(!avState.name) return;
-  avState.mode = m;
-  const head=avEl("av-head"), bl=avEl("av-browL"), br=avEl("av-browR"), pl=avEl("av-pupilL"), pr=avEl("av-pupilR");
+function avatarMode(m){ avState.mode = m; }   // 套用交給 avatarLoop 逐骨架處理
+function applyRigMode(rig, m){
+  const q = id => rig.el.querySelector("#"+id);
+  const head=q("av-head"), bl=q("av-browL"), br=q("av-browR"), pl=q("av-pupilL"), pr=q("av-pupilR");
   if(m === "thinking"){        // 思考：頭微傾、眼神飄向側上、眉微挑
     if(head) head.style.transform = "rotate(-2.5deg)";
     if(pl) pl.style.transform = "translate(3px,-3px)";
@@ -718,33 +763,38 @@ function avatarMode(m){
     if(bl) bl.style.transform = ""; if(br) br.style.transform = "";
   }
 }
-/* 嘴型採音節節奏開合（約 5 次/秒 + 隨機變化），不接 WebAudio 分析器：
+/* 嘴型採音節節奏開合（約 5 次/秒 + 慢速強弱），不接 WebAudio 分析器：
    data URI 音訊經 createMediaElementSource 會被當 opaque 來源 → 全零甚至消音。 */
 function avatarLoop(){
+  if(rigs.size === 0){ avState.raf = 0; return; }
   avState.raf = requestAnimationFrame(avatarLoop);
-  if(!avState.name) return;
   const t = performance.now();
-  const body = avEl("av-body");
-  if(body) body.style.transform = `translateY(${(Math.sin(t/1400)*1.5).toFixed(2)}px)`;   // 呼吸起伏
-  if(avState.mode==="speaking"){                                                          // 說話時頭微點
-    const head = avEl("av-head");
-    if(head) head.style.transform = `rotate(${(Math.sin(t/300)*0.8).toFixed(2)}deg)`;
-  }
-  if(t > avState.blinkT){ avatarBlink(); avState.blinkT = t + 1800 + Math.random()*3200; } // 隨機眨眼
-  let target = 0;
-  if(avState.mode==="speaking"){
-    // 音節節奏開合：主頻約 5 次/秒，疊一層慢速強弱讓它像自然語句
-    target = (0.1 + 0.85*Math.abs(Math.sin(t/95))) * (0.5 + 0.5*Math.abs(Math.sin(t/487)));
-  }
-  avState.mouth += (target - avState.mouth) * 0.5;
-  const mo = avEl("av-mouth-open"), mc = avEl("av-mouth-closed");
-  if(mo) mo.style.transform = `scaleY(${(0.08 + 0.92*avState.mouth).toFixed(3)})`;
-  if(mc) mc.style.opacity = String(Math.max(0, 1 - avState.mouth*1.7));
+  const chatOn = $("chatPanel").classList.contains("show");
+  rigs.forEach((rig, key)=>{
+    const q = id => rig.el.querySelector("#"+id);
+    // 這個骨架是否參與目前的對話（特寫必然參與；場景人物須連到目前對話的熱點）
+    const active = key==="bust" ? true : (chatOn && rig.hotspotId && rig.hotspotId === chatState.hsId);
+    const mode = active ? avState.mode : "idle";
+    if(rig.mode !== mode){ rig.mode = mode; applyRigMode(rig, mode); }
+    const body = q("av-body");
+    if(body && rig.breathe) body.style.transform = `translateY(${(Math.sin(t/1400)*1.5).toFixed(2)}px)`;
+    if(mode === "speaking"){
+      const head = q("av-head");
+      if(head) head.style.transform = `rotate(${(Math.sin(t/300)*0.8).toFixed(2)}deg)`;
+    }
+    if(t > rig.blinkT){ rigBlink(rig); rig.blinkT = t + 1800 + Math.random()*3200; }
+    let target = 0;
+    if(mode === "speaking")
+      target = (0.1 + 0.85*Math.abs(Math.sin(t/95))) * (0.5 + 0.5*Math.abs(Math.sin(t/487)));
+    rig.mouth += (target - rig.mouth) * 0.5;
+    const mo = q("av-mouth-open"), mc = q("av-mouth-closed");
+    if(mo) mo.style.transform = `scaleY(${(0.08 + 0.92*rig.mouth).toFixed(3)})`;
+    if(mc) mc.style.opacity = String(Math.max(0, 1 - rig.mouth*1.7));
+  });
 }
-function stopAvatarLoop(){ cancelAnimationFrame(avState.raf); avState.raf = 0; }
-function avatarBlink(){
+function rigBlink(rig){
   ["av-lidL","av-lidR"].forEach(id=>{
-    const e = avEl(id); if(!e) return;
+    const e = rig.el.querySelector("#"+id); if(!e) return;
     e.style.transition = "transform .07s";
     e.style.transform = "scaleY(1)";
     setTimeout(()=>{ e.style.transform = "scaleY(0)"; }, 95);

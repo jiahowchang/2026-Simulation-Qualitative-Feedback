@@ -1,4 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700">
+<g id="avatar-root">
   <defs>
     <linearGradient id="metalV" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="#B9C2CC"/>
@@ -103,39 +104,69 @@
         stroke="#86A9CF" stroke-width="2" fill="none" opacity="0.65" stroke-linecap="round"/>
   <path d="M322,262 Q334,268 346,266" stroke="#D69B72" stroke-width="1.5" fill="none" opacity="0.7" stroke-linecap="round"/>
 
-  <!-- head -->
-  <path d="M305,148 C278,150 260,168 257,196 C255,224 262,242 278,250
-           C288,255 302,256 316,252 C328,249 334,246 339,240
-           C345,235 347,230 344,227 L349,221 C352,218 351,214 347,211
-           L347,210 C356,208 360,204 357,200 C353,195 348,192 345,187
-           L348,180 C344,172 340,164 336,159 C328,151 317,148 305,148 Z" fill="#E8B48E"/>
+  <!-- head group (head, face, hair, ear, oxygen mask + straps) -->
+  <g id="av-head">
+    <!-- far-side brow and eye (occluded behind the opaque head fill; profile view) -->
+    <path id="av-browR" d="M319,184 Q331,179 343,183" stroke="#9AA2AD" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <g id="av-eyeR">
+      <path d="M324,195 Q333,200 342,197" stroke="#3A3F4A" stroke-width="2.3" fill="none" stroke-linecap="round"/>
+      <circle id="av-pupilR" cx="333" cy="198" r="1.1" fill="#3A3F4A"/>
+      <rect id="av-lidR" x="322" y="191" width="22.5" height="11" fill="#E8B48E" style="transform:scaleY(0);transform-box:fill-box;transform-origin:50% 0%"/>
+    </g>
 
-  <!-- sparse grey hair -->
-  <path d="M301,146 C280,147 262,162 258,190 C255,214 259,234 270,244
-           Q265,230 263,212 Q262,186 272,170 Q282,155 302,151 Q308,148 301,146 Z" fill="#9AA2AD"/>
-  <path d="M283,152 Q294,143 306,147 M268,164 Q278,151 292,150 M259,182 Q265,168 278,160"
-        stroke="#9AA2AD" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <!-- head -->
+    <path d="M305,148 C278,150 260,168 257,196 C255,224 262,242 278,250
+             C288,255 302,256 316,252 C328,249 334,246 339,240
+             C345,235 347,230 344,227 L349,221 C352,218 351,214 347,211
+             L347,210 C356,208 360,204 357,200 C353,195 348,192 345,187
+             L348,180 C344,172 340,164 336,159 C328,151 317,148 305,148 Z" fill="#E8B48E"/>
 
-  <!-- ear -->
-  <path d="M281,199 Q292,193 296,204 Q298,217 288,221 Q279,221 279,210 Q279,203 281,199 Z" fill="#E8B48E"/>
-  <path d="M285,203 Q291,203 291,211" stroke="#D69B72" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-  <path d="M282,196 Q279,206 281,214 L286,212 Q284,204 286,197 Z" fill="#9AA2AD" opacity="0.9"/>
+    <!-- sparse grey hair -->
+    <path d="M301,146 C280,147 262,162 258,190 C255,214 259,234 270,244
+             Q265,230 263,212 Q262,186 272,170 Q282,155 302,151 Q308,148 301,146 Z" fill="#9AA2AD"/>
+    <path d="M283,152 Q294,143 306,147 M268,164 Q278,151 292,150 M259,182 Q265,168 278,160"
+          stroke="#9AA2AD" stroke-width="3" fill="none" stroke-linecap="round"/>
 
-  <!-- face shading and strained features -->
-  <ellipse cx="317" cy="178" rx="7" ry="10" fill="#D69B72" opacity="0.25"/>
-  <path d="M315,214 Q321,228 334,233 Q320,231 312,220 Q311,215 315,214 Z" fill="#D69B72" opacity="0.5"/>
-  <path d="M292,246 Q312,255 333,245 Q316,257 297,252 Z" fill="#D69B72" opacity="0.5"/>
-  <path d="M311,164 Q324,160 336,164 M309,157 Q321,152 331,156"
-        stroke="#D69B72" stroke-width="1.5" fill="none" opacity="0.75" stroke-linecap="round"/>
-  <path d="M319,184 Q331,179 343,183" stroke="#9AA2AD" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-  <path d="M343,175 L346,168" stroke="#D69B72" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-  <path d="M324,195 Q333,200 342,197" stroke="#3A3F4A" stroke-width="2.3" fill="none" stroke-linecap="round"/>
-  <path d="M325,203 Q333,206 340,203" stroke="#D69B72" stroke-width="1.4" fill="none" opacity="0.8" stroke-linecap="round"/>
-  <path d="M344,214 Q340,222 341,229" stroke="#D69B72" stroke-width="1.4" fill="none" opacity="0.7" stroke-linecap="round"/>
-  <circle cx="348.5" cy="209" r="1.6" fill="#D69B72"/>
-  <ellipse cx="343" cy="227" rx="3.6" ry="4.6" fill="#D69B72" opacity="0.95"/>
-  <circle cx="296" cy="160" r="2" fill="#D69B72" opacity="0.5"/>
-  <circle cx="308" cy="153" r="1.6" fill="#D69B72" opacity="0.5"/>
+    <!-- ear -->
+    <path d="M281,199 Q292,193 296,204 Q298,217 288,221 Q279,221 279,210 Q279,203 281,199 Z" fill="#E8B48E"/>
+    <path d="M285,203 Q291,203 291,211" stroke="#D69B72" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    <path d="M282,196 Q279,206 281,214 L286,212 Q284,204 286,197 Z" fill="#9AA2AD" opacity="0.9"/>
+
+    <!-- face shading and strained features -->
+    <ellipse cx="317" cy="178" rx="7" ry="10" fill="#D69B72" opacity="0.25"/>
+    <path d="M315,214 Q321,228 334,233 Q320,231 312,220 Q311,215 315,214 Z" fill="#D69B72" opacity="0.5"/>
+    <path d="M292,246 Q312,255 333,245 Q316,257 297,252 Z" fill="#D69B72" opacity="0.5"/>
+    <path d="M311,164 Q324,160 336,164 M309,157 Q321,152 331,156"
+          stroke="#D69B72" stroke-width="1.5" fill="none" opacity="0.75" stroke-linecap="round"/>
+    <path id="av-browL" d="M319,184 Q331,179 343,183" stroke="#9AA2AD" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <path d="M343,175 L346,168" stroke="#D69B72" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <g id="av-eyeL">
+      <path d="M324,195 Q333,200 342,197" stroke="#3A3F4A" stroke-width="2.3" fill="none" stroke-linecap="round"/>
+      <circle id="av-pupilL" cx="333" cy="198" r="1.1" fill="#3A3F4A"/>
+      <rect id="av-lidL" x="322" y="191" width="22.5" height="11" fill="#E8B48E" style="transform:scaleY(0);transform-box:fill-box;transform-origin:50% 0%"/>
+    </g>
+    <path d="M325,203 Q333,206 340,203" stroke="#D69B72" stroke-width="1.4" fill="none" opacity="0.8" stroke-linecap="round"/>
+    <path d="M344,214 Q340,222 341,229" stroke="#D69B72" stroke-width="1.4" fill="none" opacity="0.7" stroke-linecap="round"/>
+    <circle cx="348.5" cy="209" r="1.6" fill="#D69B72"/>
+    <ellipse id="av-mouth-closed" cx="343" cy="227" rx="3.6" ry="4.6" fill="#D69B72" opacity="0.95"/>
+    <g id="av-mouth-open" style="transform:scaleY(0.08);transform-box:fill-box;transform-origin:50% 50%">
+      <ellipse cx="343" cy="227" rx="3.6" ry="2" fill="#5A2F2A"/>
+    </g>
+    <circle cx="296" cy="160" r="2" fill="#D69B72" opacity="0.5"/>
+    <circle cx="308" cy="153" r="1.6" fill="#D69B72" opacity="0.5"/>
+
+    <!-- oxygen mask straps -->
+    <path d="M342,190 Q300,176 264,184" stroke="#F4F7FA" stroke-width="4" fill="none" opacity="0.85" stroke-linecap="round"/>
+    <path d="M340,244 Q302,248 268,238" stroke="#F4F7FA" stroke-width="4" fill="none" opacity="0.85" stroke-linecap="round"/>
+
+    <!-- transparent oxygen mask -->
+    <path d="M341,183 Q364,189 371,208 Q376,227 363,239 Q350,249 338,246 Q331,243 332,228 L334,205 Q336,190 341,183 Z"
+          fill="#A9C7E8" fill-opacity="0.45"/>
+    <path d="M341,183 Q364,189 371,208 Q376,227 363,239 Q350,249 338,246 Q331,243 332,228 L334,205 Q336,190 341,183 Z"
+          fill="none" stroke="#F4F7FA" stroke-width="3" opacity="0.9" stroke-linejoin="round"/>
+    <path d="M348,192 Q360,197 365,210" stroke="#F4F7FA" stroke-width="3" fill="none" opacity="0.6" stroke-linecap="round"/>
+    <circle cx="363" cy="237" r="4.5" fill="#F4F7FA" stroke="#D9E2EA" stroke-width="1.5"/>
+  </g>
 
   <!-- blanket over legs up to abdomen -->
   <path d="M451,344 Q500,362 528,388 Q560,374 615,370 Q655,366 675,380
@@ -179,18 +210,6 @@
   <path d="M398,326 Q402,323 406,325 M396,333 Q400,330 404,332"
         stroke="#D69B72" stroke-width="1.2" fill="none" opacity="0.6" stroke-linecap="round"/>
 
-  <!-- oxygen mask straps -->
-  <path d="M342,190 Q300,176 264,184" stroke="#F4F7FA" stroke-width="4" fill="none" opacity="0.85" stroke-linecap="round"/>
-  <path d="M340,244 Q302,248 268,238" stroke="#F4F7FA" stroke-width="4" fill="none" opacity="0.85" stroke-linecap="round"/>
-
-  <!-- transparent oxygen mask -->
-  <path d="M341,183 Q364,189 371,208 Q376,227 363,239 Q350,249 338,246 Q331,243 332,228 L334,205 Q336,190 341,183 Z"
-        fill="#A9C7E8" fill-opacity="0.45"/>
-  <path d="M341,183 Q364,189 371,208 Q376,227 363,239 Q350,249 338,246 Q331,243 332,228 L334,205 Q336,190 341,183 Z"
-        fill="none" stroke="#F4F7FA" stroke-width="3" opacity="0.9" stroke-linejoin="round"/>
-  <path d="M348,192 Q360,197 365,210" stroke="#F4F7FA" stroke-width="3" fill="none" opacity="0.6" stroke-linecap="round"/>
-  <circle cx="363" cy="237" r="4.5" fill="#F4F7FA" stroke="#D9E2EA" stroke-width="1.5"/>
-
   <!-- green oxygen tubing to flowmeter -->
   <path d="M363,242 C370,270 352,300 332,328 C306,364 262,410 222,450
            C194,478 164,490 146,472 C130,456 122,418 118,382 Q114,368 106,358"
@@ -198,4 +217,5 @@
   <path d="M363,242 C370,270 352,300 332,328 C306,364 262,410 222,450
            C194,478 164,490 146,472 C130,456 122,418 118,382 Q114,368 106,358"
         fill="none" stroke="#17A093" stroke-width="4.5" stroke-linecap="round"/>
+</g>
 </svg>
