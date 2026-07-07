@@ -104,6 +104,14 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // InSim擬境 團隊模式：多人同場房間（共享狀態 + 成員出席 + 動作/TRM 事件）
+    match /tour_rooms/{room} {
+      allow read, write: if true;
+      match /{sub=**} {
+        allow read, write: if true;
+      }
+    }
+
     // 家庭記帳：只有家人白名單可讀寫（之後把家人 email 加進清單）
     function isFamily() {
       return request.auth != null &&

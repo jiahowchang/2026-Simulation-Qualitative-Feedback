@@ -66,6 +66,44 @@
   #chatPanel{ position:fixed; right:14px; bottom:14px; z-index:45; width:min(380px,92vw); background:#101826;
     border:1px solid #ffffff26; border-radius:14px; box-shadow:0 12px 40px #000c; display:none; flex-direction:column; overflow:hidden; }
   #chatPanel.show{ display:flex; }
+  /* 團隊模式面板（左側：成員/動態/TRM 標記） */
+  #teamPanel{ position:fixed; left:12px; top:56px; z-index:44; width:262px; max-height:70vh;
+    background:#101826ee; border:1px solid #ffffff22; border-radius:12px; color:#fff;
+    display:none; flex-direction:column; overflow:hidden; font-size:13px; }
+  #teamPanel.show{ display:flex; }
+  #teamPanel .tp-head{ display:flex; justify-content:space-between; align-items:center;
+    padding:8px 12px; background:#0b1220; font-weight:700; }
+  #teamPanel .tp-head button{ background:none; border:0; color:#fff; font-size:15px; cursor:pointer; }
+  #teamPanel.min #tpBody{ display:none; }
+  #tpBody{ overflow-y:auto; padding:8px 10px; display:flex; flex-direction:column; gap:6px; }
+  .tp-sub{ font-size:11px; color:#9aa7b8; margin-top:4px; letter-spacing:.1em; }
+  #tpMembers .tp-m{ display:flex; align-items:center; gap:7px; padding:3px 0; }
+  #tpMembers .dot{ width:10px; height:10px; border-radius:50%; flex:0 0 10px; }
+  #tpMembers .rl{ color:#9aa7b8; font-size:11px; margin-left:auto; }
+  #tpTrm{ display:none; }
+  #trmTarget{ width:100%; padding:6px 8px; border-radius:8px; border:1px solid #ffffff22;
+    background:#0b1220; color:#fff; font-size:12px; margin:4px 0 6px; font-family:inherit; }
+  .trm-grid{ display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+  .trm-btn{ border:0; border-radius:8px; padding:7px 4px; font-size:12px; font-weight:700;
+    cursor:pointer; font-family:inherit; }
+  .trm-btn.ok{ background:#14532d; color:#86efac; }
+  .trm-btn.bad{ background:#57281e; color:#fda4af; }
+  #tpFeed{ display:flex; flex-direction:column; gap:4px; }
+  #tpFeed .fe{ padding:5px 8px; background:#ffffff0d; border-radius:8px; line-height:1.45; }
+  #tpFeed .fe .who{ font-weight:700; }
+  #tpFeed .fe .tm{ color:#9aa7b8; font-size:10px; margin-right:5px; }
+  #tpFeed .fe.trm-ok{ background:#14532d55; }
+  #tpFeed .fe.trm-bad{ background:#57281e66; }
+  /* 場景內學員 Avatar 名牌與動作泡泡 */
+  .tm-fig{ position:relative; }
+  .tm-name{ position:absolute; top:-6px; left:50%; transform:translateX(-50%); white-space:nowrap;
+    color:#fff; font-size:22px; font-weight:800; padding:4px 14px; border-radius:12px;
+    text-shadow:0 1px 3px #000; }
+  .tm-bubble{ position:absolute; top:-52px; left:50%; transform:translateX(-50%); white-space:nowrap;
+    background:#fff; color:#1c2733; font-size:20px; font-weight:700; padding:6px 14px; border-radius:14px;
+    opacity:0; transition:opacity .3s; box-shadow:0 4px 12px #0008; }
+  .tm-bubble.show{ opacity:1; }
+
   /* 對話角色特寫（浮在面板右上方，會眨眼/對嘴型/做表情） */
   #cpAvatarWrap{ position:fixed; right:22px; z-index:46; width:132px; height:154px;
     pointer-events:none; display:none; }
@@ -157,7 +195,17 @@
     <select id="gateTour"><option value="demo">載入教案清單…</option></select>
     <input id="gateName" placeholder="姓名 / 學號" autocomplete="off">
     <input id="gateMon" placeholder="連動碼（通常留空）" inputmode="numeric" autocomplete="off" style="margin-top:10px">
-    <p style="opacity:.6;font-size:12px;margin:6px 0 0;line-height:1.5">進階：師生約定同一組 4 位數（例 5566）→ 教師在 iPad 控制台連同碼即可<b>即時操控本情境內的監視器</b>；也可連動另一台實體 SimMonitor（該機 START 後左上角的碼）</p>
+    <input id="gateTeam" placeholder="團隊碼（多人同場演練，選填）" inputmode="numeric" autocomplete="off" style="margin-top:10px">
+    <select id="gateRole" style="margin-top:10px;display:none">
+      <option value="leader">🔴 隊長 Leader</option>
+      <option value="airway">🔵 呼吸道 Airway</option>
+      <option value="compress">🟢 按壓手 Compressor</option>
+      <option value="meds">🟣 給藥／IV Medication</option>
+      <option value="recorder">🟡 紀錄 Recorder</option>
+      <option value="runner">⚪ 機動 Runner</option>
+      <option value="observer">🎓 教師觀察（TRM 標記）</option>
+    </select>
+    <p style="opacity:.6;font-size:12px;margin:6px 0 0;line-height:1.5">連動碼：教師 iPad 控制台連同碼可<b>即時操控本情境內的監視器</b>。團隊碼：全組輸入<b>同一組數字</b>即進入同一場景 — 互相看得到彼此的角色 Avatar、動作即時同步；教師選「教師觀察」可即時標記 <b>TRM 行為</b>（警覺/溝通/互助/領導）</p>
     <button class="btn primary" id="gateStart">開始</button>
     <div class="gate-logos">
       <img class="gl-hosp" src="images/logo-hsinchu.png" alt="新竹台大分院">
@@ -194,6 +242,26 @@
   <div class="mp-body"><iframe id="monPanelFrame" allow="autoplay"></iframe></div>
 </div>
 
+<!-- 團隊模式：成員清單 + 即時動態 + 教師 TRM 標記 -->
+<div id="teamPanel">
+  <div class="tp-head"><span>👥 團隊 <b id="tpRoom"></b></span><button id="tpToggle">—</button></div>
+  <div id="tpBody">
+    <div id="tpMembers"></div>
+    <div id="tpTrm">
+      <div class="tp-sub">TRM 行為標記（教師）</div>
+      <select id="trmTarget"><option value="">— 全隊 —</option></select>
+      <div class="trm-grid">
+        <button class="trm-btn ok" data-dim="A">警覺 ＋</button><button class="trm-btn bad" data-dim="A">警覺 △</button>
+        <button class="trm-btn ok" data-dim="C">溝通 ＋</button><button class="trm-btn bad" data-dim="C">溝通 △</button>
+        <button class="trm-btn ok" data-dim="S">互助 ＋</button><button class="trm-btn bad" data-dim="S">互助 △</button>
+        <button class="trm-btn ok" data-dim="L">領導 ＋</button><button class="trm-btn bad" data-dim="L">領導 △</button>
+      </div>
+    </div>
+    <div class="tp-sub">即時動態</div>
+    <div id="tpFeed"></div>
+  </div>
+</div>
+
 <div id="cpAvatarWrap"><div id="cpAvatar"></div></div>
 <div id="chatPanel">
   <div class="cp-head"><span id="cpTitle">🗣️ 對話</span><span><button id="cpVoice" title="語音朗讀開/關">🔊</button><button id="cpX">✕</button></span></div>
@@ -221,7 +289,8 @@
 import { Viewer } from '@photo-sphere-viewer/core';
 import { MarkersPlugin } from '@photo-sphere-viewer/markers-plugin';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, collection, serverTimestamp }
+import { getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, collection, serverTimestamp,
+         onSnapshot, query, orderBy, limit }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ---------- Firebase（沿用現有專案，新增獨立集合） ---------- */
@@ -303,6 +372,164 @@ const hiddenSet = new Set();       // 被動作隱藏的熱點 id
 const mistakes = [];               // 錯誤紀錄（除錯總結用）
 let quizTotal=0, quizCorrect=0;
 const $ = id => document.getElementById(id);
+
+/* ---------- 團隊模式：5-6 位學員同場（共享狀態 + 角色 Avatar + TRM 觀察） ---------- */
+const C_ROOMS = "tour_rooms";
+const ROLES = {
+  leader:  { label:"隊長",   color:"#EF5844", yaw: 0.80, pitch:-0.22 },
+  airway:  { label:"呼吸道", color:"#2B7DE9", yaw: 0.30, pitch:-0.06 },
+  compress:{ label:"按壓手", color:"#14B8A6", yaw: 0.52, pitch:-0.32 },
+  meds:    { label:"給藥",   color:"#8B5CF6", yaw: 0.68, pitch:-0.28 },
+  recorder:{ label:"紀錄",   color:"#F59E0B", yaw: 0.00, pitch:-0.24 },
+  runner:  { label:"機動",   color:"#64748B", yaw:-0.22, pitch:-0.26 },
+  observer:{ label:"教師",   color:"#1E2761" }   // 無站位 → 不出現在場景
+};
+let team = null;                 // { code, role, memberId, hb }
+let teamMembers = [];            // 房間成員（onSnapshot 最新）
+let teamEvents = [];             // 房間事件（新→舊）
+let applyingRemote = false;      // 套用遠端狀態時避免回寫迴圈
+const TEAM_EL = {};              // memberId → 場景 Avatar DOM（elementLayer 重用）
+let NURSE_TXT = null;
+const shade = (hex,f)=>"#"+hex.replace("#","").match(/../g).map(h=>Math.round(parseInt(h,16)*f).toString(16).padStart(2,"0")).join("");
+function esc2(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+async function joinTeam(code, role){
+  team = { code, role, memberId: (student+"_"+Math.random().toString(36).slice(2,6)).replace(/[^\w一-鿿-]/g,"_") };
+  const roomRef = doc(db, C_ROOMS, code);
+  try{
+    const s = await getDoc(roomRef);
+    if(!s.exists()) await setDoc(roomRef, { tourId: tour.id, createdAt: serverTimestamp(),
+      state: { vars: vars, revealed: [], hidden: [], done: [], foundHazards: [], score: 0 } });
+  }catch(e){ console.warn("joinTeam", e); }
+  const memRef = doc(db, C_ROOMS, code, "members", team.memberId);
+  await setDoc(memRef, { name: student, role, lastSeen: Date.now(), joinedAt: serverTimestamp() }).catch(()=>{});
+  team.hb = setInterval(()=> setDoc(memRef, { lastSeen: Date.now() }, { merge:true }).catch(()=>{}), 25000);
+
+  // 共享情境狀態：一人洗手/答題/找到危害 → 全隊同步解鎖與計分
+  onSnapshot(roomRef, snap=>{
+    const st = snap.data() && snap.data().state; if(!st) return;
+    applyingRemote = true;
+    try{
+      Object.assign(vars, st.vars||{});
+      (st.revealed||[]).forEach(id=>revealed.add(id));
+      (st.hidden||[]).forEach(id=>hiddenSet.add(id));
+      (st.done||[]).forEach(id=>done.add(id));
+      (st.foundHazards||[]).forEach(id=>foundHazards.add(id));
+      if(typeof st.score==="number" && st.score>score){ score=st.score; $("scoreVal").textContent=score; }
+      if(viewer){ drawMarkers(); }
+    }finally{ applyingRemote = false; }
+  });
+  // 成員出席（心跳 90 秒內視為在場）
+  onSnapshot(collection(db, C_ROOMS, code, "members"), snap=>{
+    teamMembers = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+    renderTeamMembers();
+    if(viewer) drawMarkers();
+  });
+  // 即時動態（動作 + TRM 標記）
+  onSnapshot(query(collection(db, C_ROOMS, code, "events"), orderBy("atLocal","desc"), limit(40)), snap=>{
+    teamEvents = snap.docs.map(d=>d.data());
+    renderTeamFeed();
+    if(teamEvents[0]) showTeamBubble(teamEvents[0]);
+  });
+  $("tpRoom").textContent = code;
+  $("teamPanel").classList.add("show");
+  if(role==="observer") $("tpTrm").style.display="block";
+}
+function publishTeamState(){
+  if(!team || applyingRemote || !db) return;
+  setDoc(doc(db, C_ROOMS, team.code), { state:{
+    vars, revealed:[...revealed], hidden:[...hiddenSet], done:[...done],
+    foundHazards:[...foundHazards], score }, seq: Date.now() }, { merge:true }).catch(()=>{});
+}
+function teamLogEvent(type, data){
+  if(!team || !db) return;
+  const label = evtLabel(type, data); if(!label) return;
+  addDoc(collection(db, C_ROOMS, team.code, "events"),
+    { atLocal: Date.now(), name: student, role: team.role, memberId: team.memberId, type, label,
+      dim: (data&&data.dim)||null, ok: (data&&typeof data.ok==="boolean")? data.ok : null,
+      target: (data&&data.target)||null }).catch(()=>{});
+}
+function evtLabel(type, d){
+  d = d||{};
+  switch(type){
+    case "start": return "進入情境";
+    case "hotspot": return "操作：" + (d.label||d.id||"");
+    case "quiz_answer": return d.correct ? "✅ 答對測驗" : "❌ 測驗答錯";
+    case "hazard_found": return "⚠️ 找到危害：" + (d.label||"");
+    case "open_patient": return "開始問診／對話";
+    case "patient_chat": return "問診：「" + String(d.q||"").slice(0,16) + "…」";
+    case "open_monitor": return "查看監視器";
+    case "media": return "查看：" + (d.label||"檢查結果");
+    case "info": return "查看：" + (d.label||"資訊");
+    case "nav": return "移動到其他場景";
+    case "trm": return (d.ok?"👍 ":"⚠️ ") + ({A:"警覺",C:"溝通",S:"互助",L:"領導"}[d.dim]||"") + (d.target? "→"+d.target : "（全隊）");
+    default: return null;
+  }
+}
+function renderTeamMembers(){
+  const alive = teamMembers.filter(m=>Date.now()-(m.lastSeen||0) < 90000);
+  $("tpMembers").innerHTML = alive.map(m=>{
+    const r = ROLES[m.role]||{label:m.role,color:"#888"};
+    return `<div class="tp-m"><span class="dot" style="background:${r.color}"></span>${esc2(m.name)}<span class="rl">${r.label}</span></div>`;
+  }).join("") || "<div class='tp-m'>等待成員加入…</div>";
+  const sel = $("trmTarget"), cur = sel.value;
+  sel.innerHTML = "<option value=''>— 全隊 —</option>" + alive.filter(m=>m.role!=="observer")
+    .map(m=>`<option value="${esc2(m.name)}">${esc2(m.name)}（${(ROLES[m.role]||{}).label||""}）</option>`).join("");
+  sel.value = cur;
+}
+function renderTeamFeed(){
+  $("tpFeed").innerHTML = teamEvents.slice(0,30).map(e=>{
+    const t = new Date(e.atLocal||0);
+    const hh = String(t.getHours()).padStart(2,"0"), mm = String(t.getMinutes()).padStart(2,"0");
+    const cls = e.type==="trm" ? (e.ok?"trm-ok":"trm-bad") : "";
+    const r = ROLES[e.role]||{};
+    return `<div class="fe ${cls}"><span class="tm">${hh}:${mm}</span><span class="who" style="color:${r.color||'#fff'}">${esc2(e.name)}</span>　${esc2(e.label)}</div>`;
+  }).join("");
+}
+function showTeamBubble(ev){
+  if(ev.type==="trm") return;
+  const el = TEAM_EL[ev.memberId]; if(!el) return;
+  const b = el.querySelector(".tm-bubble"); if(!b) return;
+  b.textContent = ev.label; b.classList.add("show");
+  clearTimeout(b._tm); b._tm = setTimeout(()=>b.classList.remove("show"), 4000);
+}
+function teamMemberEl(m){
+  let el = TEAM_EL[m.id];
+  if(!el){
+    const r = ROLES[m.role]||{ color:"#888", label:"" };
+    el = document.createElement("div");
+    el.className = "tm-fig";
+    el.style.width = "210px"; el.style.height = "540px";
+    el.innerHTML = `<div class="tm-bubble"></div><div class="tm-name" style="background:${r.color}cc">${esc2(m.name)}｜${r.label}</div><div class="tm-svg" style="width:100%;height:100%"></div>`;
+    TEAM_EL[m.id] = el;
+    (NURSE_TXT ? Promise.resolve(NURSE_TXT) : fetch("images/props/nurse.svg").then(x=>x.text()).then(t=>(NURSE_TXT=t)))
+      .then(txt=>{
+        const recolored = txt.replaceAll("#17A093", r.color).replaceAll("#0F7C72", shade(r.color, 0.72));
+        const box = el.querySelector(".tm-svg"); box.innerHTML = recolored;
+        const svg = box.querySelector("svg");
+        if(svg){ svg.style.width="100%"; svg.style.height="100%"; svg.style.display="block"; svg.removeAttribute("width"); svg.removeAttribute("height"); }
+      }).catch(()=>{});
+  }
+  return el;
+}
+function teamMarkers(){
+  if(!team) return [];
+  return teamMembers
+    .filter(m=> m.id!==team.memberId && ROLES[m.role] && ROLES[m.role].yaw!==undefined && Date.now()-(m.lastSeen||0)<90000)
+    .map(m=>({ id:"tm_"+m.id, elementLayer: teamMemberEl(m),
+      position:{ yaw:ROLES[m.role].yaw, pitch:ROLES[m.role].pitch }, zIndex:2, data:{ __team:m.id } }));
+}
+$("tpToggle").onclick = ()=> $("teamPanel").classList.toggle("min");
+document.querySelectorAll(".trm-btn").forEach(b=>{
+  b.onclick = ()=>{
+    if(!team) return;
+    teamLogEvent("trm", { dim:b.dataset.dim, ok:b.classList.contains("ok"), target:$("trmTarget").value||null });
+    toast("已標記 TRM：" + b.textContent.trim());
+  };
+});
+$("gateTeam").addEventListener("input", ()=>{
+  $("gateRole").style.display = $("gateTeam").value.trim() ? "block" : "none";
+});
 function condMatch(cond){ return Object.keys(cond||{}).every(k => vars[k] === cond[k]); }
 function hsVisible(h){
   if(hiddenSet.has(h.id)) return false;
@@ -315,6 +542,7 @@ function hsVisible(h){
 const progressId = () => `${tour.id}__${student}`.replace(/[^a-zA-Z0-9_一-鿿-]/g,"_");
 async function saveProgress(){
   if(!db) return;
+  publishTeamState();   // 團隊模式：把情境狀態同步給全隊
   try{
     await setDoc(doc(db, C_PROG, progressId()), {
       tourId:tour.id, student, score,
@@ -326,6 +554,7 @@ async function saveProgress(){
 }
 async function logEvent(type, data){
   if(!db) return;
+  teamLogEvent(type, data);   // 團隊模式：同步到房間即時動態
   try{ await addDoc(collection(db, C_EVT), { tourId:tour.id, student, type, data, at:serverTimestamp() }); }
   catch(e){ console.warn("logEvent", e); }
 }
@@ -470,7 +699,7 @@ function drawMarkers(){
       data: h
     };
   });
-  markers.setMarkers([...propMarkers(scene), ...ms]);
+  markers.setMarkers([...propMarkers(scene), ...teamMarkers(), ...ms]);
   updateHazardBar(scene);
 }
 
@@ -520,8 +749,9 @@ function onHotspot(h){
 
   if(h.type==="nav"){ logEvent("nav",{to:h.targetSceneId}); }
   else if(h.type==="hazard"){ onHazard(h); }
-  else if(h.type==="media"){ openMedia(h.media||h); logEvent("media",{id:h.id}); }
-  else if(h.type==="info"){ openInfo(h); logEvent("info",{id:h.id}); }
+  else if(h.type==="media"){ openMedia(h.media||h); logEvent("media",{id:h.id, label:h.label||h.title||""}); }
+  else if(h.type==="info"){ openInfo(h); logEvent("info",{id:h.id, label:h.label||h.title||""}); }
+  else if(h.type==="action"){ logEvent("hotspot",{id:h.id, label:h.label||h.title||""}); }
 
   // 通用動作序列（任何型別皆可掛）
   if(Array.isArray(h.onSelect) && h.onSelect.length) runActions(h.onSelect, h);
@@ -999,6 +1229,22 @@ function showDebrief(){
     else html += `<li class="okitem">👍 沒有記錄到錯誤，表現良好！</li>`;
     html += `</ul>`;
   }
+  // 團隊模式：TRM 行為標記統計（教師觀察）
+  if(team && teamEvents.some(e=>e.type==="trm")){
+    const dims = { A:"警覺", C:"溝通", S:"互助", L:"領導" };
+    html += `<h3 style="margin:14px 0 6px">TRM 行為觀察</h3>`;
+    Object.keys(dims).forEach(k=>{
+      const good = teamEvents.filter(e=>e.type==="trm"&&e.dim===k&&e.ok).length;
+      const bad  = teamEvents.filter(e=>e.type==="trm"&&e.dim===k&&!e.ok).length;
+      if(good||bad) html += `<div class="stat"><span>${dims[k]}</span><b>👍 ${good}　△ ${bad}</b></div>`;
+    });
+    const noted = teamEvents.filter(e=>e.type==="trm"&&e.target);
+    if(noted.length){
+      html += `<ul class="mist">`;
+      noted.slice(0,8).forEach(e=> html += `<li>${e.ok?"👍":"⚠️"} ${esc2(e.label)}</li>`);
+      html += `</ul>`;
+    }
+  }
   html += `<div class="foot">
     <button class="btn ghost" id="dbClose">繼續情境</button>
     <button class="btn primary" id="dbRestart">重新開始</button>
@@ -1036,6 +1282,8 @@ async function start(){
   if(monCode){ $("monCodeVal").textContent = monCode; $("monLink").style.display="block"; }
   await loadTour();
   vars = Object.assign({}, tour.variables || {});   // 初始化情境變數
+  const teamCode = ($("gateTeam").value||"").trim().replace(/\D/g,"").slice(0,6);
+  if(teamCode){ await joinTeam(teamCode, $("gateRole").value || "runner"); }
   startTime = Date.now();
   $("gateTitle").textContent = tour.title;
   $("tTitle").textContent = tour.title;
