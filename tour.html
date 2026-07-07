@@ -116,6 +116,10 @@
   .gate-logos .gl-hosp{ background:#fff; padding:6px 10px; box-sizing:border-box; }
   #gate p{ opacity:.8; font-size:14px; margin:0 0 20px; }
   #gate input{ width:100%; padding:12px 14px; border-radius:10px; border:1px solid #ffffff33; background:#ffffff14; color:#fff; font-size:16px; text-align:center; }
+  #gate select{ width:100%; padding:12px 14px; margin-bottom:10px; border-radius:10px; border:1px solid #5eead466;
+    background:#ffffff14; color:#5eead4; font-size:14px; font-weight:600; text-align:center; text-align-last:center;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    -webkit-appearance:none; appearance:none; cursor:pointer; font-family:inherit; }
   #gate button{ margin-top:14px; width:100%; }
   #toast{ position:fixed; bottom:70px; left:50%; transform:translateX(-50%); z-index:90; background:#111d; color:#fff; padding:10px 18px; border-radius:20px; font-size:14px; opacity:0; transition:opacity .3s; pointer-events:none; }
   #toast.show{ opacity:1; }
@@ -144,7 +148,8 @@
     <img class="gate-logo" src="images/logo-insim.png" alt="InSim擬境">
     <div class="gate-brand">360° 擬真情境教學平台</div>
     <h1 id="gateTitle">360 情境導覽</h1>
-    <p>請輸入你的姓名或學號開始</p>
+    <p>請選擇教案，並輸入姓名或學號開始</p>
+    <select id="gateTour"><option value="demo">載入教案清單…</option></select>
     <input id="gateName" placeholder="姓名 / 學號" autocomplete="off">
     <input id="gateMon" placeholder="連動碼（通常留空）" inputmode="numeric" autocomplete="off" style="margin-top:10px">
     <p style="opacity:.6;font-size:12px;margin:6px 0 0;line-height:1.5">進階：師生約定同一組 4 位數（例 5566）→ 教師在 iPad 控制台連同碼即可<b>即時操控本情境內的監視器</b>；也可連動另一台實體 SimMonitor（該機 START 後左上角的碼）</p>
@@ -210,7 +215,7 @@
 import { Viewer } from '@photo-sphere-viewer/core';
 import { MarkersPlugin } from '@photo-sphere-viewer/markers-plugin';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, addDoc, collection, serverTimestamp }
+import { getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, collection, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ---------- Firebase（沿用現有專案，新增獨立集合） ---------- */
@@ -822,15 +827,15 @@ $("finishBtn").onclick = showDebrief;
 
 /* ---------- 載入教案 ---------- */
 async function loadTour(){
-  const params = new URLSearchParams(location.search);
-  const tid = params.get("tour");
-  if(tid && db){
-    try{
-      const s = await getDoc(doc(db, C_DEFS, tid));
-      if(s.exists()){ tour = s.data(); if(typeof tour.scenes==="string") tour.scenes=JSON.parse(tour.scenes); }
-      else { alert("找不到教案 "+tid+"，改用 Demo"); }
-    }catch(e){ console.warn("loadTour",e); }
-  }
+  // 優先讀 gate 的教案選單；選單未初始化時退回 ?tour= 參數
+  let tid = ($("gateTour") && $("gateTour").value) || "";
+  if(!tid || tid==="demo") tid = tid || (new URLSearchParams(location.search).get("tour") || "demo");
+  if(tid==="demo" || !db){ tour = DEMO; return; }
+  try{
+    const s = await getDoc(doc(db, C_DEFS, tid));
+    if(s.exists()){ tour = s.data(); if(typeof tour.scenes==="string") tour.scenes=JSON.parse(tour.scenes); }
+    else { alert("找不到教案 "+tid+"，改用 Demo"); tour = DEMO; }
+  }catch(e){ console.warn("loadTour",e); tour = DEMO; }
 }
 
 /* ---------- 啟動 ---------- */
@@ -853,8 +858,30 @@ async function start(){
   logEvent("start",{});
   renderScene(tour.scenes.find(s=>s.id===startId) || tour.scenes[0]);
 }
-// 預載教案標題到 gate（若指定 ?tour=）
-loadTour().then(()=>{ $("gateTitle").textContent = tour.title; });
+// 教案選單：內建示範＋tour_defs 全部教案；?tour= 參數可預選
+async function initTourPicker(){
+  const sel = $("gateTour");
+  const urlTid = new URLSearchParams(location.search).get("tour") || "demo";
+  const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  let opts = [{ id:"demo", title: DEMO.title+"（示範）" }];
+  try{
+    const snap = await getDocs(collection(db, C_DEFS));
+    snap.docs.forEach(d=>{ if(d.id===DEMO.id) return;   // 內建示範已在清單首位，略過資料庫舊複本
+      const t=d.data()||{}; opts.push({ id:d.id, title:(t.title||d.id) }); });
+  }catch(e){ console.warn("tour list", e); }
+  const head = opts.shift();
+  opts.sort((a,b)=>a.title.localeCompare(b.title,"zh-Hant"));
+  opts.unshift(head);
+  sel.innerHTML = opts.map(o=>`<option value="${esc(o.id)}">${esc(o.title)}</option>`).join("");
+  sel.value = opts.some(o=>o.id===urlTid) ? urlTid : "demo";
+  const updateTitle = ()=>{
+    const o = opts.find(x=>x.id===sel.value);
+    $("gateTitle").textContent = o ? o.title.replace("（示範）","") : DEMO.title;
+  };
+  sel.onchange = updateTitle;
+  updateTitle();
+}
+initTourPicker();
 </script>
 </body>
 </html>
