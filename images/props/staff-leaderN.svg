@@ -1,0 +1,235 @@
+<svg viewBox="0 0 420 1000" xmlns="http://www.w3.org/2000/svg">
+  <!-- Leader N — 30歲護理領導(計時/讀秒/紀錄) 琥珀金刷手服 短bob 平板 -->
+  <defs>
+    <linearGradient id="irisGLN" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5C3A16"/>
+      <stop offset="0.55" stop-color="#A96F2A"/>
+      <stop offset="1" stop-color="#E3AB55"/>
+    </linearGradient>
+    <linearGradient id="screenGLN" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2A3648"/>
+      <stop offset="1" stop-color="#19212E"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 落地陰影 -->
+  <ellipse cx="210" cy="952" rx="126" ry="19" fill="rgba(0,0,0,0.16)"/>
+
+  <!-- ===== 後髮(短bob底層) ===== -->
+  <path d="M 210 40 C 166 40 143 72 143 120 C 143 152 148 172 158 184 C 166 193 179 194 186 188 C 194 193 226 193 234 188 C 241 194 254 193 262 184 C 272 172 277 152 277 120 C 277 72 254 40 210 40 Z" fill="#4A3527"/>
+  <!-- 後髮下緣暗帶 -->
+  <path d="M 150 158 C 156 175 168 185 184 189 C 204 193 232 192 248 186 C 260 181 268 170 271 156 C 268 173 261 184 250 189 C 232 196 196 197 176 192 C 162 188 153 176 150 158 Z" fill="#33241A"/>
+  <!-- 頸後暗髮(柔弧) -->
+  <path d="M 184 150 C 181 164 181 178 186 190 C 201 197 219 197 234 190 C 239 178 239 164 236 150 C 219 159 201 159 184 150 Z" fill="#33241A"/>
+  <!-- 髮尾尖束 -->
+  <path d="M 152 166 C 154 178 158 188 164 194 C 163 183 161 173 158 163 Z" fill="#4A3527"/>
+  <path d="M 170 186 C 173 194 175 201 174 207 C 179 200 181 192 180 184 Z" fill="#4A3527"/>
+  <path d="M 268 166 C 266 178 262 188 256 194 C 257 183 259 173 262 163 Z" fill="#4A3527"/>
+  <path d="M 250 186 C 247 194 245 201 246 207 C 241 200 239 192 240 184 Z" fill="#4A3527"/>
+  <path d="M 190 190 C 191 197 191 202 189 207 C 194 203 196 196 196 189 Z" fill="#4A3527"/>
+  <path d="M 230 190 C 229 197 229 202 231 207 C 226 203 224 196 224 189 Z" fill="#4A3527"/>
+
+  <!-- ===== 頸 ===== -->
+  <path d="M 198 146 C 198 166 198 184 198 204 C 204 211 216 211 222 204 C 222 184 222 166 222 146 Z" fill="#F2C6A0"/>
+  <path d="M 198 146 L 222 146 L 222 162 C 213 170 207 170 198 162 Z" fill="#DBA57E"/>
+  <path d="M 188 206 C 197 214 223 214 232 206 L 236 218 L 184 218 Z" fill="#F2C6A0"/>
+
+  <!-- ===== 臉 ===== -->
+  <path d="M 170 104 C 170 74 187 58 210 58 C 233 58 250 74 250 104 C 250 123 244 137 234 147 C 226 154 218 158 210 158 C 202 158 194 154 186 147 C 176 137 170 123 170 104 Z" fill="#F2C6A0"/>
+  <!-- 右頰側影 -->
+  <path d="M 250 104 C 250 123 244 137 234 147 C 231 150 227 152 224 154 C 231 148 238 140 242 128 C 245 120 246 111 246 104 Z" fill="#DBA57E" opacity="0.6"/>
+  <!-- 瀏海下方額影 -->
+  <path d="M 160 94 C 172 103 186 106 199 103 C 212 107 230 105 245 96 L 246 101 C 231 110 212 111 199 107 C 186 110 170 107 159 99 Z" fill="#DBA57E" opacity="0.5"/>
+
+  <!-- 眉(專注聰慧) -->
+  <path d="M 178 105 C 184 100 193 99 199 102" fill="none" stroke="#4A3527" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 221 102 C 227 99 236 100 242 105" fill="none" stroke="#4A3527" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- 左眼 -->
+  <path d="M 179 117 C 180 110 186 106 192 107 C 198 108 202 113 201 119 C 200 125 194 128 188 127 C 183 126 179 122 179 117 Z" fill="#FDFDFD"/>
+  <ellipse cx="190" cy="117.5" rx="7" ry="8.6" fill="url(#irisGLN)"/>
+  <ellipse cx="190" cy="118" rx="2.8" ry="3.8" fill="#241505"/>
+  <path d="M 184.5 122 C 187 126 193 126.5 196 123.5 C 194 126.5 188 127 184.5 124 Z" fill="#E8B25C" opacity="0.75"/>
+  <circle cx="187" cy="113" r="2.6" fill="#FFFFFF"/>
+  <circle cx="194" cy="122" r="1.3" fill="#FFFFFF" opacity="0.8"/>
+  <path d="M 176 115 C 179 106 191 102 200 107 L 202 112 C 194 105 183 107 178 116 Z" fill="#3A281B"/>
+  <path d="M 200 107 C 203 108 205 111 205 114 C 204 111 202 109 199 108.5 Z" fill="#3A281B"/>
+  <path d="M 181 125 C 186 129 194 129 199 126" fill="none" stroke="#D9A87E" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M 180 106 C 186 101 195 100 200 103" fill="none" stroke="#DBA57E" stroke-width="1.2" opacity="0.8" stroke-linecap="round"/>
+  <!-- 右眼 -->
+  <path d="M 241 117 C 240 110 234 106 228 107 C 222 108 218 113 219 119 C 220 125 226 128 232 127 C 237 126 241 122 241 117 Z" fill="#FDFDFD"/>
+  <ellipse cx="230" cy="117.5" rx="7" ry="8.6" fill="url(#irisGLN)"/>
+  <ellipse cx="230" cy="118" rx="2.8" ry="3.8" fill="#241505"/>
+  <path d="M 235.5 122 C 233 126 227 126.5 224 123.5 C 226 126.5 232 127 235.5 124 Z" fill="#E8B25C" opacity="0.75"/>
+  <circle cx="227" cy="113" r="2.6" fill="#FFFFFF"/>
+  <circle cx="234" cy="122" r="1.3" fill="#FFFFFF" opacity="0.8"/>
+  <path d="M 244 115 C 241 106 229 102 220 107 L 218 112 C 226 105 237 107 242 116 Z" fill="#3A281B"/>
+  <path d="M 220 107 C 217 108 215 111 215 114 C 216 111 218 109 221 108.5 Z" fill="#3A281B"/>
+  <path d="M 239 125 C 234 129 226 129 221 126" fill="none" stroke="#D9A87E" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M 240 106 C 234 101 225 100 220 103" fill="none" stroke="#DBA57E" stroke-width="1.2" opacity="0.8" stroke-linecap="round"/>
+
+  <!-- 鼻/口/腮紅 -->
+  <path d="M 206 130 C 209 133 210 137 208 140 L 204 139 C 206 136 206 133 206 130 Z" fill="#DBA57E" opacity="0.85"/>
+  <path d="M 203 146 C 207 149.5 213 149.5 217 146" fill="none" stroke="#B4654E" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M 206 152 C 209 153.5 211 153.5 214 152" fill="none" stroke="#DBA57E" stroke-width="1.3" opacity="0.7" stroke-linecap="round"/>
+  <ellipse cx="183" cy="133" rx="6" ry="2.8" fill="#E8967A" opacity="0.28"/>
+  <ellipse cx="237" cy="133" rx="6" ry="2.8" fill="#E8967A" opacity="0.28"/>
+
+  <!-- ===== 前髮(側分瀏海+側束) ===== -->
+  <path d="M 189 46 C 173 51 161 64 157 82 C 155 92 155 102 157 112 C 161 105 164 96 165 88 C 168 98 172 104 177 107 C 181 100 183 92 183 84 C 188 96 194 103 202 106 C 205 98 206 90 206 82 C 213 94 222 100 232 102 C 234 94 234 86 232 78 C 240 86 248 90 254 91 C 256 80 255 66 248 58 C 240 48 226 42 212 41 C 204 40.5 196 42 189 46 Z" fill="#4A3527"/>
+  <!-- 左側束(framing) -->
+  <path d="M 162 82 C 153 104 151 136 156 166 C 158 177 162 184 167 188 C 171 182 173 172 172 160 C 169 136 168 108 172 88 Z" fill="#4A3527"/>
+  <path d="M 156 166 C 158 177 162 184 167 188 C 165 178 164 166 164 152 Z" fill="#33241A" opacity="0.85"/>
+  <!-- 右側收束(夾別後) -->
+  <path d="M 248 84 C 254 94 257 106 256 118 C 252 110 247 104 242 98 C 244 93 246 88 248 84 Z" fill="#4A3527"/>
+  <!-- 瀏海內側陰影 -->
+  <path d="M 206 82 C 206 92 204 100 202 106 C 198 104 195 101 192 97 C 198 93 203 89 206 82 Z" fill="#33241A" opacity="0.55"/>
+  <path d="M 232 78 C 234 86 233 95 232 102 C 227 100 223 97 220 93 C 225 89 230 85 232 78 Z" fill="#33241A" opacity="0.55"/>
+  <!-- 髮光帶(順頭型的柔光弧+動漫缺口) -->
+  <path d="M 165 90 C 171 68 189 55 210 55 C 231 55 249 68 255 90 L 248 93 C 245 82 240 74 233 69 L 230 78 C 226 71 220 66 213 64 L 212 72 C 205 65 196 65 189 68 L 191 76 C 183 78 175 84 171 93 Z" fill="#6E5138" opacity="0.95"/>
+
+  <!-- 耳+耳釘 -->
+  <path d="M 246 112 C 253 105 260 109 259 119 C 258 130 252 137 246 134 Z" fill="#F2C6A0"/>
+  <path d="M 249 116 C 253 113 256 116 255 121 C 254 126 251 129 249 127" fill="none" stroke="#DBA57E" stroke-width="1.5" stroke-linecap="round"/>
+  <circle cx="252" cy="132" r="1.8" fill="#F5C15C" stroke="#C77A0A" stroke-width="0.6"/>
+  <!-- 金色髮夾(一側) -->
+  <g transform="rotate(-24 266 140)">
+    <rect x="257" y="136" width="18" height="4" rx="2" fill="#F59E0B" stroke="#C77A0A" stroke-width="1"/>
+    <rect x="259" y="143" width="15" height="3.5" rx="1.75" fill="#F5B23B" stroke="#C77A0A" stroke-width="0.8"/>
+  </g>
+
+  <!-- ===== 刷手褲 ===== -->
+  <path d="M 158 494 C 154 556 153 626 157 696 C 160 766 164 836 169 900 L 204 900 L 208 648 C 209 638 213 638 214 648 L 218 900 L 253 900 C 258 836 262 766 265 696 C 269 626 268 556 264 494 C 229 487 193 487 158 494 Z" fill="#F59E0B"/>
+  <path d="M 264 494 C 268 556 269 626 265 696 C 262 766 258 836 253 900 L 242 900 C 247 836 251 766 254 696 C 257 626 257 556 253 496 Z" fill="#C77A0A" opacity="0.9"/>
+  <path d="M 204 900 L 208 648 C 209 638 213 638 214 648 L 218 900 L 211 900 Z" fill="rgba(0,0,0,0.10)"/>
+  <path d="M 182 520 C 179 640 179 764 184 896" fill="none" stroke="#C77A0A" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+  <path d="M 240 520 C 243 640 243 764 238 896" fill="none" stroke="#C77A0A" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+  <path d="M 158 494 C 193 487 229 487 264 494 L 263 510 C 229 503 193 503 159 510 Z" fill="rgba(0,0,0,0.10)"/>
+
+  <!-- ===== 白鞋 ===== -->
+  <path d="M 170 896 C 162 911 156 926 154 938 C 152 952 160 958 174 958 L 199 958 C 205 958 208 952 207 943 L 205 896 Z" fill="#F7FAFC"/>
+  <path d="M 154 940 L 207 940 L 207 946 C 208 954 204 958 199 958 L 174 958 C 161 958 153 953 154 940 Z" fill="#D9E2EA"/>
+  <path d="M 170 896 L 205 896 L 206 907 C 192 913 178 911 167 903 Z" fill="#D9E2EA"/>
+  <path d="M 172 917 C 180 921 192 921 200 918" fill="none" stroke="#C4CFD9" stroke-width="2" stroke-linecap="round"/>
+  <path d="M 170 927 C 179 931 193 931 202 928" fill="none" stroke="#C4CFD9" stroke-width="2" stroke-linecap="round"/>
+  <path d="M 250 896 C 258 911 264 926 266 938 C 268 952 260 958 246 958 L 221 958 C 215 958 212 952 213 943 L 215 896 Z" fill="#F7FAFC"/>
+  <path d="M 266 940 L 213 940 L 213 946 C 212 954 216 958 221 958 L 246 958 C 259 958 267 953 266 940 Z" fill="#D9E2EA"/>
+  <path d="M 250 896 L 215 896 L 214 907 C 228 913 242 911 253 903 Z" fill="#D9E2EA"/>
+  <path d="M 248 917 C 240 921 228 921 220 918" fill="none" stroke="#C4CFD9" stroke-width="2" stroke-linecap="round"/>
+  <path d="M 250 927 C 241 931 227 931 218 928" fill="none" stroke="#C4CFD9" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- ===== 刷手衣上衣 ===== -->
+  <path d="M 156 306 C 152 276 154 246 164 232 C 178 219 193 213 210 213 C 227 213 242 219 256 232 C 266 246 268 276 264 306 C 260 344 257 378 256 410 C 255 446 262 476 269 500 C 231 511 189 511 151 500 C 156 476 162 446 164 410 C 165 378 161 340 156 306 Z" fill="#F59E0B"/>
+  <!-- 右側 cel 陰影 -->
+  <path d="M 258 236 C 266 250 268 276 264 306 C 260 344 257 378 256 410 C 255 446 262 476 269 499 L 258 502 C 252 476 246 446 247 410 C 248 378 251 344 254 306 C 257 280 257 256 252 242 Z" fill="#C77A0A" opacity="0.95"/>
+  <!-- 下襬陰影(落在褲上) -->
+  <path d="M 154 505 C 191 515 230 515 266 505 C 265 511 264 516 262 520 C 228 528 194 528 158 520 C 156 516 155 511 154 505 Z" fill="rgba(0,0,0,0.10)"/>
+  <!-- 胸口皮膚 V 區 -->
+  <path d="M 191 213 L 229 213 L 225 222 C 217 229 203 229 195 222 Z" fill="#F2C6A0"/>
+  <!-- 白色內搭 -->
+  <path d="M 195 222 C 203 229 217 229 225 222 L 212 245 L 208 245 Z" fill="#F7FAFC"/>
+  <path d="M 195 222 C 203 229 217 229 225 222" fill="none" stroke="#D9E2EA" stroke-width="1.6"/>
+  <!-- V領深色滾邊 -->
+  <path d="M 187 215 L 210 257 L 233 215 L 227 210 L 210 243 L 193 210 Z" fill="#C77A0A"/>
+  <!-- 胸型微影 -->
+  <path d="M 174 292 C 181 298 189 300 196 298" fill="none" stroke="#C77A0A" stroke-width="2" opacity="0.4" stroke-linecap="round"/>
+  <path d="M 246 292 C 239 298 231 300 224 298" fill="none" stroke="#C77A0A" stroke-width="2" opacity="0.4" stroke-linecap="round"/>
+
+  <!-- ===== 識別證(深藍掛繩+白卡) ===== -->
+  <path d="M 197 217 C 188 243 178 263 172 284" fill="none" stroke="#24407C" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M 223 217 C 219 240 202 262 180 286" fill="none" stroke="#24407C" stroke-width="4.5" stroke-linecap="round"/>
+  <g transform="translate(-7 0) rotate(6 179 296)">
+    <rect x="174" y="288" width="10" height="8" rx="2" fill="#AEB8C2"/>
+    <circle cx="179" cy="292" r="1.6" fill="#6E7B87"/>
+    <rect x="162" y="296" width="32" height="42" rx="3" fill="#FBFDFE" stroke="#C9D2DA" stroke-width="1"/>
+    <path d="M 162 299 Q 162 296 165 296 L 191 296 Q 194 296 194 299 L 194 305 L 162 305 Z" fill="#24407C"/>
+    <rect x="166" y="309" width="11" height="13" rx="1.5" fill="#D9E2EA"/>
+    <circle cx="171.5" cy="313.5" r="2.4" fill="#B4C2CF"/>
+    <path d="M 167.5 322 C 168.5 318.5 174.5 318.5 175.5 322 Z" fill="#B4C2CF"/>
+    <rect x="181" y="311" width="10" height="3" rx="1.5" fill="#C2CCD6"/>
+    <rect x="166" y="327" width="24" height="3" rx="1.5" fill="#C2CCD6"/>
+    <rect x="166" y="333" width="16" height="3" rx="1.5" fill="#C2CCD6"/>
+  </g>
+
+  <!-- ===== 手臂(皮膚) ===== -->
+  <!-- 左上臂 -->
+  <path d="M 149 224 C 141 248 135 298 135 342 C 135 356 138 366 143 371 C 151 374 159 370 162 362 C 163 322 165 276 168 232 Z" fill="#F2C6A0"/>
+  <!-- 左前臂(內收捧平板) -->
+  <path d="M 135 350 C 138 372 148 391 163 401 C 170 406 178 408 185 408 L 187 393 C 175 390 163 380 154 366 C 150 359 147 350 145 342 Z" fill="#F2C6A0"/>
+  <path d="M 141 372 C 149 388 162 399 178 404 L 185 406 L 185 408 C 178 408 170 406 163 401 C 153 394 145 384 141 372 Z" fill="#DBA57E" opacity="0.8"/>
+  <path d="M 146 358 C 150 364 156 368 162 369" fill="none" stroke="#DBA57E" stroke-width="1.6" stroke-linecap="round" opacity="0.9"/>
+  <!-- 右上臂 -->
+  <path d="M 271 224 C 279 248 285 298 285 342 C 285 356 282 366 277 371 C 269 374 261 370 258 362 C 257 322 255 276 252 232 Z" fill="#F2C6A0"/>
+  <path d="M 279 250 C 284 282 286 318 285 346 C 285 356 282 366 277 371 C 281 362 283 350 282 334 C 282 308 281 278 279 250 Z" fill="#DBA57E" opacity="0.7"/>
+  <!-- 右前臂 -->
+  <path d="M 285 350 C 282 372 272 391 257 401 C 250 406 242 408 235 408 L 233 393 C 245 390 257 380 266 366 C 270 359 273 350 275 342 Z" fill="#F2C6A0"/>
+  <path d="M 279 372 C 271 388 258 399 242 404 L 235 406 L 235 408 C 242 408 250 406 257 401 C 267 394 275 384 279 372 Z" fill="#DBA57E" opacity="0.8"/>
+  <path d="M 274 358 C 270 364 264 368 258 369" fill="none" stroke="#DBA57E" stroke-width="1.6" stroke-linecap="round" opacity="0.9"/>
+
+  <!-- ===== 袖(刷手短袖+白色內搭袖) ===== -->
+  <path d="M 138.5 303 C 147 308.5 158 309.5 167 306 L 166 319 C 158 322.5 148 321.5 140 317 Z" fill="#F7FAFC"/>
+  <path d="M 140 313 C 148 317 157 318 166.3 315 L 166 319 C 158 322.5 148 321.5 140 317 Z" fill="#DCE4EB"/>
+  <path d="M 174 221 C 150 214 138 231 137 255 C 136 270 136 286 138 301 C 147 307 159 308 168 304 C 171 283 175 252 177 230 C 176 225 175 222 174 221 Z" fill="#F59E0B"/>
+  <path d="M 138 291 C 147 297 158 298 167 294 L 167 304 C 159 308 147 307 138 301 Z" fill="#C77A0A"/>
+  <path d="M 281.5 303 C 273 308.5 262 309.5 253 306 L 254 319 C 262 322.5 272 321.5 280 317 Z" fill="#F7FAFC"/>
+  <path d="M 280 313 C 272 317 263 318 253.7 315 L 254 319 C 262 322.5 272 321.5 280 317 Z" fill="#DCE4EB"/>
+  <path d="M 246 221 C 270 214 282 231 283 255 C 284 270 284 286 282 301 C 273 307 261 308 252 304 C 249 283 245 252 243 230 C 244 225 245 222 246 221 Z" fill="#F59E0B"/>
+  <path d="M 282 291 C 273 297 262 298 253 294 L 253 304 C 261 308 273 307 282 301 Z" fill="#C77A0A"/>
+  <path d="M 248 228 C 260 237 269 249 274 263" fill="none" stroke="#C77A0A" stroke-width="2" opacity="0.5" stroke-linecap="round"/>
+  <path d="M 172 228 C 160 237 151 249 146 263" fill="none" stroke="#C77A0A" stroke-width="2" opacity="0.5" stroke-linecap="round"/>
+
+  <!-- ===== 左腕計時錶(她的左手=畫面右側) ===== -->
+  <g transform="rotate(35 268 377)">
+    <rect x="257" y="366" width="22" height="22" rx="3" fill="#333B49"/>
+    <rect x="278" y="373.5" width="3.5" height="7" rx="1.5" fill="#8D97A3"/>
+    <circle cx="268" cy="377" r="8.5" fill="#C7D0D9" stroke="#8D97A3" stroke-width="1.4"/>
+    <circle cx="268" cy="377" r="6" fill="#FAFCFE"/>
+    <path d="M 268 377 L 268 372.6" stroke="#2F4E7E" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M 268 377 L 271.2 377.8" stroke="#2F4E7E" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M 268 377 L 265.8 373.4" stroke="#E2574B" stroke-width="1" stroke-linecap="round"/>
+    <circle cx="268" cy="377" r="0.9" fill="#2F4E7E"/>
+  </g>
+
+  <!-- ===== 平板(深灰)+雙手 ===== -->
+  <g transform="rotate(-4 210 371)">
+    <rect x="176" y="316" width="80" height="122" rx="10" fill="rgba(0,0,0,0.10)"/>
+    <rect x="172" y="310" width="76" height="122" rx="9" fill="#313A47"/>
+    <rect x="173" y="311" width="74" height="120" rx="8.4" fill="none" stroke="#454F5E" stroke-width="1.2"/>
+    <circle cx="210" cy="314.4" r="1.6" fill="#12161D"/>
+    <rect x="178" y="318" width="64" height="98" rx="4" fill="url(#screenGLN)"/>
+    <rect x="182" y="323" width="56" height="9" rx="2.5" fill="#35506B"/>
+    <circle cx="192" cy="344" r="7.5" fill="none" stroke="#62B7DC" stroke-width="2.5"/>
+    <path d="M 192 344 L 192 338.4" stroke="#62B7DC" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M 192 344 L 196 346" stroke="#62B7DC" stroke-width="1.4" stroke-linecap="round"/>
+    <rect x="205" y="338" width="33" height="4" rx="2" fill="#97A9BD" opacity="0.95"/>
+    <rect x="205" y="346" width="24" height="4" rx="2" fill="#97A9BD" opacity="0.7"/>
+    <rect x="183" y="360" width="7" height="7" rx="1.8" fill="#3FBF8F"/>
+    <rect x="195" y="361.5" width="40" height="4" rx="2" fill="#97A9BD" opacity="0.95"/>
+    <rect x="183" y="373" width="7" height="7" rx="1.8" fill="#3FBF8F"/>
+    <rect x="195" y="374.5" width="32" height="4" rx="2" fill="#97A9BD" opacity="0.95"/>
+    <rect x="183" y="386" width="7" height="7" rx="1.8" fill="#56687C"/>
+    <rect x="195" y="387.5" width="43" height="4" rx="2" fill="#97A9BD" opacity="0.75"/>
+    <rect x="183" y="399" width="7" height="7" rx="1.8" fill="#56687C"/>
+    <rect x="195" y="400.5" width="26" height="4" rx="2" fill="#97A9BD" opacity="0.75"/>
+    <rect x="183" y="410" width="54" height="4.5" rx="2.25" fill="#35506B"/>
+    <circle cx="210" cy="424" r="3.2" fill="none" stroke="#4A5568" stroke-width="1.5"/>
+    <!-- 左手指(扣住左框) -->
+    <g transform="rotate(18 174 380)">
+      <rect x="170" y="372" width="9" height="17" rx="4.5" fill="#F2C6A0"/>
+    </g>
+    <rect x="164" y="392" width="20" height="9.5" rx="4.75" fill="#F2C6A0"/>
+    <rect x="163" y="403" width="22" height="9.5" rx="4.75" fill="#F2C6A0"/>
+    <rect x="164" y="414" width="20" height="9" rx="4.5" fill="#F2C6A0"/>
+    <path d="M 167 402.5 L 182 402.5" stroke="#DBA57E" stroke-width="1.1" stroke-linecap="round"/>
+    <path d="M 167 413.5 L 183 413.5" stroke="#DBA57E" stroke-width="1.1" stroke-linecap="round"/>
+    <!-- 右手指(扣住右框) -->
+    <g transform="rotate(-18 246 380)">
+      <rect x="241" y="372" width="9" height="17" rx="4.5" fill="#F2C6A0"/>
+    </g>
+    <rect x="236" y="392" width="20" height="9.5" rx="4.75" fill="#F2C6A0"/>
+    <rect x="235" y="403" width="22" height="9.5" rx="4.75" fill="#F2C6A0"/>
+    <rect x="236" y="414" width="20" height="9" rx="4.5" fill="#F2C6A0"/>
+    <path d="M 253 402.5 L 238 402.5" stroke="#DBA57E" stroke-width="1.1" stroke-linecap="round"/>
+    <path d="M 253 413.5 L 237 413.5" stroke="#DBA57E" stroke-width="1.1" stroke-linecap="round"/>
+  </g>
+</svg>

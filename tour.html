@@ -428,12 +428,12 @@ const $ = id => document.getElementById(id);
 
 /* ---------- 團隊模式：5-6 位學員同場（共享狀態 + 角色 Avatar + TRM 觀察） ---------- */
 const C_ROOMS = "tour_rooms";
-const ROLES = {   // 依院內 TRM 急救分工
-  leaderDr:    { label:"Leader Dr",   color:"#EF5844", yaw: 0.80, pitch:-0.22 },  // 總指揮
-  leaderN:     { label:"Leader N",    color:"#F59E0B", yaw: 0.02, pitch:-0.24 },  // 計時/讀秒/紀錄
-  airway:      { label:"Airway",      color:"#2B7DE9", yaw: 0.30, pitch:-0.06 },  // 呼吸道
-  circulation: { label:"Circulation", color:"#14B8A6", yaw: 0.52, pitch:-0.32 },  // 循環（按壓/電擊）
-  support:     { label:"Support",     color:"#8B5CF6", yaw: 0.68, pitch:-0.28 },  // 抽藥/打針
+const ROLES = {   // 依院內 TRM 急救分工（figure = 角色專屬立繪，缺檔時退回換色通用護理師）
+  leaderDr:    { label:"Leader Dr",   color:"#EF5844", yaw: 0.80, pitch:-0.22, figure:"images/props/staff-leaderDr.svg" },
+  leaderN:     { label:"Leader N",    color:"#F59E0B", yaw: 0.02, pitch:-0.24, figure:"images/props/staff-leaderN.svg" },
+  airway:      { label:"Airway",      color:"#2B7DE9", yaw: 0.30, pitch:-0.06, figure:"images/props/staff-airway.svg" },
+  circulation: { label:"Circulation", color:"#14B8A6", yaw: 0.52, pitch:-0.32, figure:"images/props/staff-circulation.svg" },
+  support:     { label:"Support",     color:"#8B5CF6", yaw: 0.68, pitch:-0.28, figure:"images/props/staff-support.svg" },
   observer:    { label:"教師",        color:"#1E2761" }   // 無站位 → 不出現在場景
 };
 let team = null;                 // { code, role, memberId, hb }
@@ -443,11 +443,15 @@ let applyingRemote = false;      // 套用遠端狀態時避免回寫迴圈
 const TEAM_EL = {};              // memberId → 場景 Avatar DOM（elementLayer 重用）
 window.__teamEl = TEAM_EL;       // 除錯用
 let NURSE_TXT = null;
+const FIGURE_TXT = {};           // role → 專屬立繪 SVG 快取
 const shade = (hex,f)=>"#"+hex.replace("#","").match(/../g).map(h=>Math.round(parseInt(h,16)*f).toString(16).padStart(2,"0")).join("");
 function esc2(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 
 async function joinTeam(code, role){
-  team = { code, role, memberId: (student+"_"+Math.random().toString(36).slice(2,6)).replace(/[^\w一-鿿-]/g,"_") };
+  // 裝置固定 ID：同一台裝置重整/重進會接回同一個成員，不會產生分身
+  let dev = localStorage.getItem("insim_dev");
+  if(!dev){ dev = Math.random().toString(36).slice(2,8); localStorage.setItem("insim_dev", dev); }
+  team = { code, role, memberId: (student+"_"+dev).replace(/[^\w一-鿿-]/g,"_") };
   const roomRef = doc(db, C_ROOMS, code);
   try{
     const s = await getDoc(roomRef);
@@ -572,10 +576,16 @@ function teamMemberEl(m){
     el.innerHTML = `<div class="tm-bubble"></div><div class="tm-name" style="background:${r.color}cc">${esc2(m.name)}｜${r.label}</div><div class="tm-svg" style="width:100%;height:100%"></div>`;
     TEAM_EL[m.id] = el;
     makeAvatarDraggable(el, m.id);
-    (NURSE_TXT ? Promise.resolve(NURSE_TXT) : fetch("images/props/nurse.svg").then(x=>x.text()).then(t=>(NURSE_TXT=t)))
+    // 優先載入角色專屬立繪；失敗才退回「通用護理師換色」
+    const loadFigure = r.figure
+      ? (FIGURE_TXT[m.role] ? Promise.resolve(FIGURE_TXT[m.role])
+          : fetch(r.figure).then(x=>{ if(!x.ok) throw 0; return x.text(); }).then(t=>(FIGURE_TXT[m.role]=t)))
+      : Promise.reject();
+    loadFigure
+      .catch(()=> (NURSE_TXT ? Promise.resolve(NURSE_TXT) : fetch("images/props/nurse.svg").then(x=>x.text()).then(t=>(NURSE_TXT=t)))
+        .then(txt=> txt.replaceAll("#17A093", r.color).replaceAll("#0F7C72", shade(r.color, 0.72))))
       .then(txt=>{
-        const recolored = txt.replaceAll("#17A093", r.color).replaceAll("#0F7C72", shade(r.color, 0.72));
-        const box = el.querySelector(".tm-svg"); box.innerHTML = recolored;
+        const box = el.querySelector(".tm-svg"); box.innerHTML = txt;
         const svg = box.querySelector("svg");
         if(svg){ svg.style.width="100%"; svg.style.height="100%"; svg.style.display="block"; svg.removeAttribute("width"); svg.removeAttribute("height"); }
       }).catch(()=>{});
