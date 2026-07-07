@@ -94,6 +94,17 @@
   #tpFeed .fe .tm{ color:#9aa7b8; font-size:10px; margin-right:5px; }
   #tpFeed .fe.trm-ok{ background:#14532d55; }
   #tpFeed .fe.trm-bad{ background:#57281e66; }
+  #tpChatRow{ display:flex; gap:6px; padding:8px; background:#0b1220; }
+  #tpChat{ flex:1; min-width:0; padding:8px 10px; border-radius:8px; border:1px solid #ffffff22;
+    background:#101826; color:#fff; font-size:12px; }
+  #tpChatRow button{ border:0; border-radius:8px; padding:0 12px; background:#2b7de9; color:#fff;
+    cursor:pointer; font-size:14px; }
+  /* 挑戰關卡 HUD（頂部中央） */
+  #stageBar{ position:fixed; top:8px; left:50%; transform:translateX(-50%); z-index:35;
+    background:#000a; border:1px solid #ffffff33; border-radius:20px; padding:7px 18px;
+    color:#fff; font-size:13.5px; display:none; white-space:nowrap; }
+  #stageBar b{ color:#ffd76a; }
+  #stageBar .sb-warn{ color:#ff7b6b; }
   /* 場景內學員 Avatar 名牌與動作泡泡 */
   .tm-fig{ position:relative; }
   .tm-name{ position:absolute; top:-6px; left:50%; transform:translateX(-50%); white-space:nowrap;
@@ -260,7 +271,14 @@
     <div class="tp-sub">即時動態</div>
     <div id="tpFeed"></div>
   </div>
+  <div id="tpChatRow">
+    <input id="tpChat" placeholder="隊內訊息…" autocomplete="off">
+    <button id="tpSend">➤</button>
+  </div>
 </div>
+
+<!-- 挑戰關卡 HUD -->
+<div id="stageBar"></div>
 
 <div id="cpAvatarWrap"><div id="cpAvatar"></div></div>
 <div id="chatPanel">
@@ -311,7 +329,16 @@ const DEMO = {
   id:"er-resus", title:"急救室 — 到院前心跳停止（OHCA）",
   startSceneId:"er",
   variables:{ handHygiene:false },
-  debrief:{ passScore:30, showMistakes:true },
+  debrief:{ passScore:80, showMistakes:true },
+  // 挑戰關卡：全隊分工依序完成（限時另有速度獎勵）
+  stages:[
+    { id:"s1", title:"現場準備",   tasks:["hh","assess"],        bonus:10 },
+    { id:"s2", title:"啟動 CPR",   tasks:["cpr","bvm","mon"],    bonus:15, timeLimit:120, fastBonus:10 },
+    { id:"s3", title:"節律判讀",   tasks:["q1"],                 bonus:10, timeLimit:60,  fastBonus:5 },
+    { id:"s4", title:"除顫",       tasks:["defib"],              bonus:15, timeLimit:60,  fastBonus:10 },
+    { id:"s5", title:"給藥與記錄", tasks:["iv","epi","record"],  bonus:15, timeLimit:120, fastBonus:10 },
+    { id:"s6", title:"ROSC 與交接", tasks:["handoff"],           bonus:20 }
+  ],
   scenes:[
     { id:"er", name:"急救室",
       panorama:"tours/er/resus.jpg",
@@ -327,8 +354,37 @@ const DEMO = {
             { do:"reveal", id:"assess" },
             { do:"toast", msg:"完成手部衛生，可接觸病人" }
           ] },
-        { id:"assess", type:"info", yaw:0.41, pitch:-0.24, startHidden:true, title:"評估病人 ABC",
+        { id:"assess", type:"info", yaw:0.41, pitch:-0.24, startHidden:true, gated:true, title:"評估病人 ABC",
           html:"確認意識、呼吸、脈搏。<b>此病人無反應、無呼吸、無脈搏</b> → 立即開始高品質 CPR，並接上監視器。（此熱點洗手後才出現）" },
+        { id:"cpr", type:"action", yaw:0.47, pitch:-0.26, startHidden:true, once:true, role:"compress",
+          label:"開始胸外按壓",
+          onSelect:[ { do:"addScore", points:10 },
+            { do:"toast", msg:"高品質按壓：深 5-6 公分、每分鐘 100-120 次、減少中斷" } ] },
+        { id:"bvm", type:"action", yaw:0.30, pitch:-0.10, startHidden:true, once:true, role:"airway",
+          label:"甦醒球給氧（BVM）",
+          onSelect:[ { do:"addScore", points:10 },
+            { do:"toast", msg:"壓額抬下巴開放呼吸道，按壓通氣比 30:2" } ] },
+        { id:"defib", type:"action", yaw:0.72, pitch:-0.16, startHidden:true, once:true, role:"leader",
+          label:"執行電擊 200J",
+          onSelect:[ { do:"addScore", points:15 },
+            { do:"pushMonitor", rhythm:"sinus", co2:"normal", trend:1, t:{ hr:108, sys:98, dia:60, spo2:94, rr:12, etco2:42 } },
+            { do:"reveal", id:"rosc" },
+            { do:"toast", msg:"⚡ 電擊完成 — 恢復竇性心律（ROSC）！" } ] },
+        { id:"iv", type:"action", yaw:0.60, pitch:-0.32, startHidden:true, once:true, role:"meds",
+          label:"建立靜脈輸液（IV）",
+          onSelect:[ { do:"addScore", points:10 }, { do:"toast", msg:"IV 建立完成，路徑通暢" } ] },
+        { id:"epi", type:"action", yaw:0.86, pitch:-0.26, startHidden:true, once:true, role:"meds",
+          label:"給予 Epinephrine 1mg",
+          onSelect:[ { do:"addScore", points:10 },
+            { do:"toast", msg:"Epinephrine 1mg IV，每 3-5 分鐘可重複" } ] },
+        { id:"record", type:"action", yaw:0.02, pitch:-0.18, startHidden:true, once:true, role:"recorder",
+          label:"記錄時間與處置",
+          onSelect:[ { do:"addScore", points:10 },
+            { do:"toast", msg:"已記錄：開始時間、電擊次數、給藥時間" } ] },
+        { id:"handoff", type:"action", yaw:1.05, pitch:-0.12, startHidden:true, once:true, role:"leader",
+          label:"SBAR 交接後送",
+          onSelect:[ { do:"addScore", points:15 },
+            { do:"toast", msg:"SBAR 交接完成，病人後送加護病房 🏁" } ] },
         { id:"talk", type:"action", yaw:0.24, pitch:-0.30, label:"與家屬對話（問病史）",
           onSelect:[ { do:"openPatient", title:"病人太太（家屬）", voice:"yating:tai_female_2", avatar:"bust-family-woman",
             patient:{ name:"病人太太", age:"58", sex:"女",
@@ -348,13 +404,11 @@ const DEMO = {
             caption:"（範例圖片，之後可在編輯器換成院內實際 VF / 12 導程影像）" } },
         { id:"cart", type:"info", yaw:-2.92, pitch:-0.41, title:"急救車 / 除顫器",
           html:"取出除顫器與腎上腺素。<b>可電擊心律 → 立即 200J 去顫</b>，之後不中斷 CPR。" },
-        { id:"q1", type:"quiz", yaw:0.62, pitch:-0.10, points:15,
+        { id:"q1", type:"quiz", yaw:0.62, pitch:-0.10, points:15, startHidden:true, role:"leader",
           question:"監視器顯示 <b>VF</b>，下一步<b>最優先</b>？",
           options:["立即電擊（去顫）200J","先給腎上腺素 1mg","先氣管插管","先量血壓"],
           answerIndex:0,
-          feedback:"VF/無脈性 VT 為可電擊心律，最優先立即去顫，之後持續高品質 CPR（壓胸不中斷）。",
-          onSelect:[ { do:"reveal", id:"rosc" },
-            { do:"pushMonitor", rhythm:"sinus", co2:"normal", trend:1, t:{ hr:108, sys:98, dia:60, spo2:94, rr:12, etco2:42 } } ] },
+          feedback:"VF/無脈性 VT 為可電擊心律，最優先立即去顫，之後持續高品質 CPR（壓胸不中斷）。答對後由隊長執行電擊。" },
         { id:"rosc", type:"info", yaw:1.30, pitch:-0.15, startHidden:true, title:"ROSC 循環恢復",
           html:"去顫後恢復自發性循環（ROSC）。持續監測、找可逆病因（H's & T's），準備後送。" },
         { id:"hz1", type:"hazard", yaw:-0.16, pitch:-0.55, points:5, label:"地面線材 / 床欄未拉起（絆倒與墜床風險）" }
@@ -416,8 +470,12 @@ async function joinTeam(code, role){
       (st.done||[]).forEach(id=>done.add(id));
       (st.foundHazards||[]).forEach(id=>foundHazards.add(id));
       if(typeof st.score==="number" && st.score>score){ score=st.score; $("scoreVal").textContent=score; }
+      Object.entries(st.stageStarts||{}).forEach(([k,v])=>{
+        if(!stageStarts[k] || v < stageStarts[k]) stageStarts[k] = v;   // 取最早開始時間
+      });
       if(viewer){ drawMarkers(); }
     }finally{ applyingRemote = false; }
+    checkStages();   // 隊友完成任務 → 本地也結算關卡/揭示下一關
   });
   // 成員出席（心跳 90 秒內視為在場）
   onSnapshot(collection(db, C_ROOMS, code, "members"), snap=>{
@@ -439,7 +497,7 @@ function publishTeamState(){
   if(!team || applyingRemote || !db) return;
   setDoc(doc(db, C_ROOMS, team.code), { state:{
     vars, revealed:[...revealed], hidden:[...hiddenSet], done:[...done],
-    foundHazards:[...foundHazards], score }, seq: Date.now() }, { merge:true }).catch(()=>{});
+    foundHazards:[...foundHazards], score, stageStarts }, seq: Date.now() }, { merge:true }).catch(()=>{});
 }
 function teamLogEvent(type, data){
   if(!team || !db) return;
@@ -462,6 +520,9 @@ function evtLabel(type, d){
     case "media": return "查看：" + (d.label||"檢查結果");
     case "info": return "查看：" + (d.label||"資訊");
     case "nav": return "移動到其他場景";
+    case "chat": return "💬 " + String(d.text||"").slice(0,50);
+    case "stage_done": return "🏁 完成關卡：" + (d.title||"") + (d.fast?"（限時達成）":"");
+    case "locked": return null;
     case "trm": return (d.ok?"👍 ":"⚠️ ") + ({A:"警覺",C:"溝通",S:"互助",L:"領導"}[d.dim]||"") + (d.target? "→"+d.target : "（全隊）");
     default: return null;
   }
@@ -530,6 +591,76 @@ document.querySelectorAll(".trm-btn").forEach(b=>{
 $("gateTeam").addEventListener("input", ()=>{
   $("gateRole").style.display = $("gateTeam").value.trim() ? "block" : "none";
 });
+
+/* ---------- 挑戰關卡系統：任務全隊分工完成 → 團隊獎勵分（限時再加速度獎勵） ----------
+   tour.stages = [{ id, title, tasks:[hotspotIds], bonus, timeLimit(秒,選填), fastBonus(選填) }]
+   任務熱點可加 role:"compress"（角色專屬）、once:true（防重複）、gated:true（不被關卡自動揭示，
+   仍走原本 reveal 動作鏈） */
+let stageStarts = {};            // stageId → 開始時間（隨房間同步，取最早值）
+function stagesOf(){ return Array.isArray(tour.stages) ? tour.stages : []; }
+function isStageTask(id){ return stagesOf().some(s=>(s.tasks||[]).includes(id)); }
+function curStageIdx(){
+  const ss = stagesOf();
+  for(let i=0;i<ss.length;i++){ if(!(ss[i].tasks||[]).every(id=>done.has(id))) return i; }
+  return ss.length;
+}
+function checkStages(){
+  const ss = stagesOf(); if(!ss.length) return;
+  const sc = curSceneObj();
+  ss.forEach((st,i)=>{
+    const doneAll = (st.tasks||[]).every(id=>done.has(id));
+    if(doneAll && !done.has("stg_"+st.id)){
+      done.add("stg_"+st.id);
+      let pts = st.bonus||0;
+      const t0 = stageStarts[st.id];
+      const fast = st.timeLimit && t0 && (Date.now()-t0)/1000 <= st.timeLimit;
+      if(fast) pts += (st.fastBonus||0);
+      if(pts) addScore(pts);
+      toast(`🎉 完成關卡「${st.title}」${fast?"（限時達成！）":""} +${pts} 分`);
+      logEvent("stage_done",{ id:st.id, title:st.title, fast:!!fast });
+    }
+  });
+  const idx = curStageIdx();
+  if(idx < ss.length){
+    const st = ss[idx];
+    if(!stageStarts[st.id]) stageStarts[st.id] = Date.now();
+    // 自動揭示目前關卡任務（gated:true 者除外——它們由前置動作鏈解鎖）
+    (st.tasks||[]).forEach(id=>{
+      const h = sc && (sc.hotspots||[]).find(x=>x.id===id);
+      if(h && h.startHidden && !h.gated) revealed.add(id);
+    });
+  }
+  renderStageBar();
+  if(viewer) drawMarkers();
+}
+function renderStageBar(){
+  const ss = stagesOf(), bar = $("stageBar");
+  if(!ss.length){ bar.style.display="none"; return; }
+  const idx = curStageIdx();
+  if(idx >= ss.length){
+    bar.style.display="block";
+    bar.innerHTML = "🏁 <b>全部關卡完成！</b>可按「結束情境」看總結";
+    return;
+  }
+  const st = ss[idx];
+  const doneN = (st.tasks||[]).filter(id=>done.has(id)).length;
+  let timer = "";
+  if(st.timeLimit && stageStarts[st.id]){
+    const left = Math.round(st.timeLimit - (Date.now()-stageStarts[st.id])/1000);
+    timer = ` ─ ⏱ <b class="${left<15?'sb-warn':''}">${left>=0? left+"s" : "逾時"}</b>`;
+  }
+  bar.style.display="block";
+  bar.innerHTML = `關卡 ${idx+1}/${ss.length}：<b>${esc2(st.title)}</b> ─ 任務 ${doneN}/${(st.tasks||[]).length}${timer}`;
+}
+setInterval(()=>{ if(stagesOf().length && startTime) renderStageBar(); }, 1000);
+// 隊內文字聊天（遠端連線溝通；訊息也會浮在該成員 Avatar 頭上）
+function sendTeamChat(){
+  const t = $("tpChat").value.trim(); if(!t || !team) return;
+  $("tpChat").value = "";
+  teamLogEvent("chat", { text: t });
+}
+$("tpSend").onclick = sendTeamChat;
+$("tpChat").addEventListener("keydown", e=>{ if(e.key==="Enter") sendTeamChat(); });
 function condMatch(cond){ return Object.keys(cond||{}).every(k => vars[k] === cond[k]); }
 function hsVisible(h){
   if(hiddenSet.has(h.id)) return false;
@@ -688,8 +819,9 @@ function drawMarkers(){
   const scene = curSceneObj(); if(!scene || !markers) return;
   const ms = (scene.hotspots||[]).filter(hsVisible).map(h => {
     const found = (h.type==="hazard" && foundHazards.has(h.id));
-    // 危害未找到前不顯示標籤（避免直接洩題）；其餘顯示 label / title
-    const label = h.type==="hazard" ? (found ? (h.label||"") : "") : (h.label || h.title || "");
+    // 危害未找到前不顯示標籤（避免直接洩題）；其餘顯示 label / title；角色任務加徽章
+    const roleTag = (h.role && ROLES[h.role]) ? ROLES[h.role].label+"｜" : "";
+    const label = h.type==="hazard" ? (found ? (h.label||"") : "") : roleTag + (h.label || h.title || "");
     return {
       id: h.id,
       position: { yaw:h.yaw, pitch:h.pitch },
@@ -747,16 +879,30 @@ function onHotspot(h){
   if(h.type==="quiz"){ openQuiz(h); return; }
   if(h.type==="branch"){ openBranch(h); return; }
 
+  // 角色專屬任務（團隊模式）：非本角色不能執行 → 逼出分工合作
+  if(team && h.role && team.role!==h.role && team.role!=="observer"){
+    const rl = ROLES[h.role] ? ROLES[h.role].label : h.role;
+    toast(`🔒 這是「${rl}」的任務，請隊友執行`);
+    logEvent("locked",{ id:h.id, need:h.role });
+    return;
+  }
+  // once 任務防重複（已完成就不再計分/觸發）
+  if(h.once && done.has(h.id)){ toast("✅ 此任務已完成"); return; }
+
   if(h.type==="nav"){ logEvent("nav",{to:h.targetSceneId}); }
   else if(h.type==="hazard"){ onHazard(h); }
   else if(h.type==="media"){ openMedia(h.media||h); logEvent("media",{id:h.id, label:h.label||h.title||""}); }
-  else if(h.type==="info"){ openInfo(h); logEvent("info",{id:h.id, label:h.label||h.title||""}); }
-  else if(h.type==="action"){ logEvent("hotspot",{id:h.id, label:h.label||h.title||""}); }
+  else if(h.type==="info"){ openInfo(h); if(isStageTask(h.id)) done.add(h.id); logEvent("info",{id:h.id, label:h.label||h.title||""}); }
+  else if(h.type==="action"){
+    if(h.once || isStageTask(h.id)) done.add(h.id);
+    logEvent("hotspot",{id:h.id, label:h.label||h.title||""});
+  }
 
   // 通用動作序列（任何型別皆可掛）
   if(Array.isArray(h.onSelect) && h.onSelect.length) runActions(h.onSelect, h);
   // nav 的跳轉放最後，讓 onSelect（如設定變數）先生效
   if(h.type==="nav" && h.targetSceneId) go(h.targetSceneId);
+  checkStages();
   saveProgress();
 }
 
@@ -1179,6 +1325,7 @@ function openQuiz(h){
         if(correct){ quizCorrect++; addScore(h.points||10); if(Array.isArray(h.onSelect)) runActions(h.onSelect,h); }
         else mistakes.push(`測驗答錯：${(h.question||"").replace(/<[^>]+>/g,"").slice(0,40)}`);
       }
+      checkStages();
       saveProgress();
     };
   });
@@ -1292,6 +1439,7 @@ async function start(){
   const startId = resumeScene || tour.startSceneId || tour.scenes[0].id;
   logEvent("start",{});
   renderScene(tour.scenes.find(s=>s.id===startId) || tour.scenes[0]);
+  checkStages();   // 關卡系統：揭示第一關任務 + 顯示 HUD
 }
 // 教案選單：內建示範＋tour_defs 全部教案；?tour= 參數可預選
 async function initTourPicker(){
