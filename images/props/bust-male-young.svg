@@ -1,0 +1,166 @@
+<svg viewBox="0 0 480 560" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gradFace" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F0BF98"/>
+      <stop offset="0.55" stop-color="#E8B48E"/>
+      <stop offset="1" stop-color="#E0A87E"/>
+    </linearGradient>
+    <linearGradient id="gradHair" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#33333E"/>
+      <stop offset="1" stop-color="#1E1E26"/>
+    </linearGradient>
+    <linearGradient id="gradCollar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F6F8FA"/>
+      <stop offset="0.6" stop-color="#E6EAEE"/>
+      <stop offset="1" stop-color="#D3D9DF"/>
+    </linearGradient>
+    <linearGradient id="gradGown" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C8DFEF"/>
+      <stop offset="1" stop-color="#A3C4DA"/>
+    </linearGradient>
+    <clipPath id="eyeClipL">
+      <path d="M 170 233 C 177 221 189 216 199 217 C 210 218 219 225 223 232 C 218 241 207 246 196 245 C 185 244 175 240 170 233 Z"/>
+    </clipPath>
+    <clipPath id="eyeClipR">
+      <path d="M 310 233 C 303 221 291 216 281 217 C 270 218 261 225 257 232 C 262 241 273 246 284 245 C 295 244 305 240 310 233 Z"/>
+    </clipPath>
+    <clipPath id="mouthClip">
+      <ellipse cx="240" cy="321" rx="27" ry="16"/>
+    </clipPath>
+  </defs>
+
+  <g id="avatar-root">
+    <!-- ======================= BODY ======================= -->
+    <g id="av-body">
+      <!-- neck (mostly hidden behind cervical collar) -->
+      <path d="M 206 318 C 216 326 264 326 274 318 L 278 425 L 202 425 Z" fill="#D69B72"/>
+      <!-- patient gown : shoulders and upper chest -->
+      <path d="M 58 560 C 62 496 88 446 148 420 C 185 404 212 398 240 398 C 268 398 295 404 332 420 C 392 446 418 496 422 560 Z" fill="url(#gradGown)"/>
+      <!-- left shoulder highlight -->
+      <path d="M 96 560 C 100 500 120 458 162 434 C 130 464 116 508 114 560 Z" fill="#DCEBF5" opacity="0.6"/>
+      <!-- gown neckline seam (visible below collar) -->
+      <path d="M 168 452 C 200 472 280 472 312 452" fill="none" stroke="#8FB2C7" stroke-width="4" stroke-linecap="round" opacity="0.8"/>
+      <!-- shoulder seams -->
+      <path d="M 118 480 C 132 452 152 436 176 428" fill="none" stroke="#8FB2C7" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+      <path d="M 362 480 C 348 452 328 436 304 428" fill="none" stroke="#8FB2C7" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+      <!-- chest folds -->
+      <path d="M 198 486 C 204 512 201 540 195 560" fill="none" stroke="#92B4C8" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+      <path d="M 282 486 C 276 512 279 540 285 560" fill="none" stroke="#92B4C8" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+      <path d="M 240 470 C 240 500 240 532 240 558" fill="none" stroke="#92B4C8" stroke-width="2.5" stroke-linecap="round" opacity="0.35"/>
+
+      <!-- cervical collar (white-gray, wraps neck below jaw) -->
+      <g>
+        <path d="M 150 340 C 178 330 205 348 240 352 C 275 348 302 330 330 340 C 336 372 336 400 328 422 C 300 436 270 442 240 442 C 210 442 180 436 152 422 C 144 400 144 372 150 340 Z" fill="url(#gradCollar)"/>
+        <!-- top rim highlight -->
+        <path d="M 150 340 C 178 330 205 348 240 352 C 275 348 302 330 330 340 C 330 346 329 349 328 351 C 302 342 276 358 240 362 C 204 358 178 342 152 351 C 151 349 150 346 150 340 Z" fill="#FBFCFD" opacity="0.9"/>
+        <!-- shadow under chin cup -->
+        <path d="M 206 356 C 224 364 256 364 274 356 C 270 374 254 382 240 382 C 226 382 210 374 206 356 Z" fill="#C3CAD1" opacity="0.75"/>
+        <!-- bottom edge shading -->
+        <path d="M 152 421 C 180 435 210 441 240 441 C 270 441 300 435 328 421 C 329 425 328 428 327 430 C 300 443 270 449 240 449 C 210 449 180 443 153 430 C 152 428 151 425 152 421 Z" fill="#C3CAD1" opacity="0.8"/>
+        <!-- tracheal access vent -->
+        <ellipse cx="240" cy="404" rx="15" ry="9" fill="#B6BEC6"/>
+        <ellipse cx="240" cy="404" rx="10" ry="5.5" fill="#9AA4AD"/>
+        <!-- side velcro straps -->
+        <path d="M 150 368 L 192 376 L 192 394 L 150 386 Z" fill="#AEB6BE"/>
+        <circle cx="164" cy="381" r="3.5" fill="#8D959D"/>
+        <path d="M 330 368 L 288 376 L 288 394 L 330 386 Z" fill="#AEB6BE"/>
+        <circle cx="316" cy="381" r="3.5" fill="#8D959D"/>
+      </g>
+    </g>
+
+    <!-- ======================= HEAD ======================= -->
+    <g id="av-head">
+      <!-- ears -->
+      <ellipse cx="154" cy="236" rx="13" ry="21" fill="#E8B48E"/>
+      <path d="M 150 226 C 156 224 160 230 159 238 C 158 246 153 250 149 247 C 152 242 152 232 150 226 Z" fill="#C88F63" opacity="0.8"/>
+      <ellipse cx="326" cy="236" rx="13" ry="21" fill="#E8B48E"/>
+      <path d="M 330 226 C 324 224 320 230 321 238 C 322 246 327 250 331 247 C 328 242 328 232 330 226 Z" fill="#C88F63" opacity="0.8"/>
+
+      <!-- face -->
+      <path d="M 240 92 C 178 92 158 150 158 210 C 158 262 170 300 196 336 C 212 358 226 368 240 368 C 254 368 268 358 284 336 C 310 300 322 262 322 210 C 322 150 302 92 240 92 Z" fill="url(#gradFace)"/>
+      <!-- right side shadow -->
+      <path d="M 322 210 C 322 262 310 300 284 336 C 296 300 303 258 301 216 C 300 188 296 158 288 136 C 309 152 322 176 322 210 Z" fill="#D69B72" opacity="0.5"/>
+      <!-- left soft highlight -->
+      <path d="M 168 202 C 170 160 182 122 206 106 C 192 132 186 168 186 204 C 186 240 192 272 202 298 C 184 272 168 242 168 202 Z" fill="#F4C89E" opacity="0.45"/>
+      <!-- under-chin shadow -->
+      <path d="M 212 342 C 226 356 254 356 268 342 C 264 358 252 366 240 366 C 228 366 216 358 212 342 Z" fill="#D69B72" opacity="0.55"/>
+
+      <!-- hair : short black, slightly messy -->
+      <path d="M 200 76 L 188 52 L 212 66 Z" fill="#2A2A34"/>
+      <path d="M 238 64 L 240 40 L 254 62 Z" fill="#2A2A34"/>
+      <path d="M 276 74 L 290 54 L 292 74 Z" fill="#2A2A34"/>
+      <path d="M 158 216 C 150 150 168 94 208 72 C 220 64 232 60 240 60 C 250 60 262 64 274 72 C 312 94 330 150 322 216 C 316 186 310 166 302 152 L 294 164 C 288 152 282 144 276 140 L 268 152 C 260 140 250 134 242 132 L 232 144 C 224 134 214 132 206 138 L 200 152 C 192 146 184 152 180 162 C 172 176 164 194 158 216 Z" fill="url(#gradHair)"/>
+      <!-- hair shine -->
+      <path d="M 198 88 C 220 74 262 74 286 92 C 262 80 220 80 198 88 Z" fill="#454553" opacity="0.7"/>
+      <!-- sideburns -->
+      <path d="M 158 208 C 156 222 156 236 159 248 L 169 244 C 165 232 164 218 165 206 Z" fill="#26262E"/>
+      <path d="M 322 208 C 324 222 324 236 321 248 L 311 244 C 315 232 316 218 315 206 Z" fill="#26262E"/>
+
+      <!-- forehead wrinkles (pain / anxiety) -->
+      <path d="M 198 170 C 218 163 262 163 282 170" fill="none" stroke="#D0945F" stroke-width="2.2" stroke-linecap="round" opacity="0.55"/>
+      <path d="M 206 184 C 224 178 256 178 274 184" fill="none" stroke="#D0945F" stroke-width="2" stroke-linecap="round" opacity="0.45"/>
+      <!-- glabellar furrow lines -->
+      <path d="M 231 196 C 229 203 228 209 228 214" fill="none" stroke="#CE9268" stroke-width="2" stroke-linecap="round" opacity="0.65"/>
+      <path d="M 249 196 C 251 203 252 209 252 214" fill="none" stroke="#CE9268" stroke-width="2" stroke-linecap="round" opacity="0.65"/>
+
+      <!-- brows : inner ends pulled up and together (distress) -->
+      <path id="av-browL" d="M 165 214 C 178 209 196 203 214 196 C 217 197 218 200 217 203 C 200 209 182 215 169 221 C 166 220 164 217 165 214 Z" fill="#2C2830"/>
+      <path id="av-browR" d="M 315 214 C 302 209 284 203 266 196 C 263 197 262 200 263 203 C 280 209 298 215 311 221 C 314 220 316 217 315 214 Z" fill="#2C2830"/>
+
+      <!-- left eye -->
+      <g id="av-eyeL">
+        <path d="M 170 233 C 177 221 189 216 199 217 C 210 218 219 225 223 232 C 218 241 207 246 196 245 C 185 244 175 240 170 233 Z" fill="#F7F3EC"/>
+        <g clip-path="url(#eyeClipL)">
+          <circle cx="198" cy="233" r="11" fill="#4E3826"/>
+          <circle id="av-pupilL" cx="198" cy="233" r="5" fill="#1C120C"/>
+          <circle cx="194.5" cy="229.5" r="2" fill="#FFFFFF" opacity="0.85"/>
+          <path d="M 170 231 C 178 219 192 214 202 216 C 212 217 221 224 224 231 C 219 223 208 221 198 221 C 186 221 176 225 170 231 Z" fill="#C89263" opacity="0.6"/>
+        </g>
+        <rect id="av-lidL" x="167" y="213" width="60" height="36" rx="8" fill="#E8B48E" style="transform:scaleY(0);transform-box:fill-box;transform-origin:50% 0%"/>
+      </g>
+      <!-- right eye -->
+      <g id="av-eyeR">
+        <path d="M 310 233 C 303 221 291 216 281 217 C 270 218 261 225 257 232 C 262 241 273 246 284 245 C 295 244 305 240 310 233 Z" fill="#F7F3EC"/>
+        <g clip-path="url(#eyeClipR)">
+          <circle cx="282" cy="233" r="11" fill="#4E3826"/>
+          <circle id="av-pupilR" cx="282" cy="233" r="5" fill="#1C120C"/>
+          <circle cx="278.5" cy="229.5" r="2" fill="#FFFFFF" opacity="0.85"/>
+          <path d="M 310 231 C 302 219 288 214 278 216 C 268 217 259 224 256 231 C 261 223 272 221 282 221 C 294 221 304 225 310 231 Z" fill="#C89263" opacity="0.6"/>
+        </g>
+        <rect id="av-lidR" x="253" y="213" width="60" height="36" rx="8" fill="#E8B48E" style="transform:scaleY(0);transform-box:fill-box;transform-origin:50% 0%"/>
+      </g>
+      <!-- under-eye tension lines -->
+      <path d="M 176 250 C 188 256 206 256 218 251" fill="none" stroke="#D1975F" stroke-width="1.6" stroke-linecap="round" opacity="0.5"/>
+      <path d="M 262 251 C 274 256 292 256 304 250" fill="none" stroke="#D1975F" stroke-width="1.6" stroke-linecap="round" opacity="0.5"/>
+
+      <!-- nose -->
+      <path d="M 236 232 C 232 252 228 268 222 280 L 228 283 C 233 270 237 252 241 232 Z" fill="#D69B72" opacity="0.4"/>
+      <path d="M 222 280 C 218 287 220 293 228 295 C 236 297 246 297 252 295 C 260 293 262 287 258 280 C 252 286 246 288 240 288 C 234 288 228 286 222 280 Z" fill="#DFA277"/>
+      <ellipse cx="228" cy="289" rx="4" ry="2.6" fill="#B97F52"/>
+      <ellipse cx="252" cy="289" rx="4" ry="2.6" fill="#B97F52"/>
+      <ellipse cx="240" cy="278" rx="6" ry="4" fill="#F4C89E" opacity="0.55"/>
+
+      <!-- abrasion on left zygoma (viewer right) -->
+      <path d="M 288 240 C 298 236 308 240 312 248 C 314 256 308 262 300 263 C 292 264 285 259 283 252 C 282 246 284 242 288 240 Z" fill="#E8887A" opacity="0.55"/>
+      <path d="M 292 245 C 299 242 306 246 307 252 C 307 257 302 259 297 258 C 291 257 288 252 289 248 Z" fill="#D96A5B" opacity="0.5"/>
+      <path d="M 290 244 L 306 250" fill="none" stroke="#C1503F" stroke-width="1.4" stroke-linecap="round" opacity="0.6"/>
+      <path d="M 289 251 L 304 257" fill="none" stroke="#C1503F" stroke-width="1.4" stroke-linecap="round" opacity="0.6"/>
+      <path d="M 293 241 L 305 245" fill="none" stroke="#C1503F" stroke-width="1.4" stroke-linecap="round" opacity="0.6"/>
+
+      <!-- mouth -->
+      <g id="av-mouth">
+        <ellipse cx="240" cy="340" rx="14" ry="4" fill="#D69B72" opacity="0.35"/>
+        <path id="av-mouth-closed" d="M 212 325 Q 240 310 268 325 Q 240 322 212 325 Z" fill="#A86256"/>
+        <g id="av-mouth-open" style="transform:scaleY(0.08);transform-box:fill-box;transform-origin:50% 50%">
+          <ellipse cx="240" cy="321" rx="27" ry="16" fill="#5A2F2A"/>
+          <g clip-path="url(#mouthClip)">
+            <rect x="218" y="305" width="44" height="10" rx="3" fill="#F3EFE4"/>
+            <ellipse cx="240" cy="333" rx="15" ry="8" fill="#C96B60"/>
+          </g>
+        </g>
+      </g>
+      <!-- chin tension crease -->
+      <path d="M 228 350 C 236 346 244 346 252 350" fill="none" stroke="#D69B72" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+    </g>
+  </g>
+</svg>

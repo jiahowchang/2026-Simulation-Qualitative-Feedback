@@ -1,0 +1,202 @@
+<svg viewBox="0 0 480 560" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gownBust" x1="0" y1="0" x2="0.55" y2="1">
+      <stop offset="0" stop-color="#A9C7E8"/>
+      <stop offset="1" stop-color="#86A9CF"/>
+    </linearGradient>
+    <linearGradient id="scalpSheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F0C29B"/>
+      <stop offset="1" stop-color="#E8B48E"/>
+    </linearGradient>
+  </defs>
+
+  <g id="avatar-root">
+
+    <!-- ======================= BODY ======================= -->
+    <g id="av-body">
+      <!-- neck (thin, gaunt) -->
+      <path d="M214,318 L266,318 L270,388 Q283,400 305,408 L175,408 Q197,400 210,388 Z" fill="#E8B48E"/>
+      <!-- shadow cast by jaw -->
+      <path d="M212,330 Q240,344 268,330 L270,356 Q240,366 210,356 Z" fill="#D69B72" opacity="0.4"/>
+      <!-- neck tendons -->
+      <path d="M226,354 Q228,372 231,388 M254,354 Q252,372 249,388" stroke="#C98F68" stroke-width="2" fill="none" opacity="0.6" stroke-linecap="round"/>
+      <ellipse cx="240" cy="404" rx="7" ry="4" fill="#D69B72" opacity="0.5"/>
+
+      <!-- upper chest skin visible in gown V-neck -->
+      <path d="M196,404 L284,404 L266,476 Q240,490 214,476 Z" fill="#E8B48E"/>
+      <path d="M200,424 Q220,434 238,429 M280,424 Q260,434 242,429" stroke="#C98F68" stroke-width="2.4" fill="none" opacity="0.65" stroke-linecap="round"/>
+      <ellipse cx="214" cy="419" rx="10" ry="4" fill="#D69B72" opacity="0.35"/>
+      <ellipse cx="266" cy="419" rx="10" ry="4" fill="#D69B72" opacity="0.35"/>
+      <path d="M240,438 L240,470" stroke="#D69B72" stroke-width="1.5" fill="none" opacity="0.4" stroke-linecap="round"/>
+
+      <!-- patient gown -->
+      <path d="M50,560 L50,506 Q54,456 92,430 Q142,402 204,398 L240,482 L276,398 Q338,402 388,430 Q426,456 430,506 L430,560 Z" fill="url(#gownBust)"/>
+      <!-- shoulder top shading -->
+      <path d="M92,430 Q142,402 204,398 L204,404 Q146,408 96,436 Z" fill="#86A9CF" opacity="0.5"/>
+      <path d="M388,430 Q338,402 276,398 L276,404 Q334,408 384,436 Z" fill="#86A9CF" opacity="0.5"/>
+      <!-- V-neck bias trim -->
+      <path d="M204,398 L240,482 L276,398" stroke="#F4F7FA" stroke-width="6" fill="none" opacity="0.95" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="M206,402 L240,476 L274,402" stroke="#86A9CF" stroke-width="1.2" fill="none" opacity="0.5" stroke-linejoin="round"/>
+      <!-- gown folds -->
+      <path d="M240,486 Q236,524 238,560 M222,470 Q204,516 198,560 M258,470 Q276,516 282,560 M118,436 Q134,498 130,560 M362,436 Q346,498 350,560"
+            stroke="#86A9CF" stroke-width="2.5" fill="none" opacity="0.55" stroke-linecap="round"/>
+      <!-- shoulder seam + snap buttons -->
+      <path d="M100,430 Q140,406 200,400" stroke="#86A9CF" stroke-width="1.5" fill="none" opacity="0.5"/>
+      <circle cx="128" cy="416" r="4.5" fill="#F4F7FA"/>
+      <circle cx="128" cy="416" r="1.8" fill="#86A9CF"/>
+      <circle cx="152" cy="409" r="4.5" fill="#F4F7FA"/>
+      <circle cx="152" cy="409" r="1.8" fill="#86A9CF"/>
+      <!-- bottom shade -->
+      <path d="M50,560 L50,542 Q240,556 430,542 L430,560 Z" fill="#86A9CF" opacity="0.3"/>
+
+      <!-- nasal cannula: converge under chin, slider, single tube down chest -->
+      <g fill="none" stroke-linecap="round">
+        <path d="M218,366 Q228,378 236,388 M262,366 Q252,378 244,388" stroke="#8CC7B2" stroke-width="6.5" opacity="0.5"/>
+        <path d="M218,366 Q228,378 236,388 M262,366 Q252,378 244,388" stroke="#BFE3D6" stroke-width="4.5" opacity="0.95"/>
+        <path d="M219,367 Q228,378 235,387 M261,367 Q252,378 245,387" stroke="#E7F5EE" stroke-width="1.5" opacity="0.75"/>
+        <rect x="232" y="384" width="16" height="19" rx="5" fill="#BFE3D6" stroke="#8CC7B2" stroke-width="1.4" opacity="0.95"/>
+        <rect x="236.5" y="388" width="7" height="11" rx="3" fill="#E7F5EE" stroke="none" opacity="0.7"/>
+        <path d="M240,402 Q236,446 240,492 Q242,526 238,560" stroke="#8CC7B2" stroke-width="6.5" opacity="0.5"/>
+        <path d="M240,402 Q236,446 240,492 Q242,526 238,560" stroke="#BFE3D6" stroke-width="4.5" opacity="0.95"/>
+        <path d="M239,404 Q235,446 239,492 Q241,526 237,558" stroke="#E7F5EE" stroke-width="1.5" opacity="0.75"/>
+      </g>
+    </g>
+
+    <!-- ======================= HEAD ======================= -->
+    <g id="av-head">
+      <!-- ears (behind face) -->
+      <path d="M150,192 Q132,186 127,204 Q124,230 136,250 Q145,262 154,253 Q158,246 157,236 L155,202 Q154,194 150,192 Z" fill="#E8B48E"/>
+      <path d="M140,206 Q134,222 141,240" stroke="#D69B72" stroke-width="2.4" fill="none" opacity="0.7" stroke-linecap="round"/>
+      <ellipse cx="142" cy="246" rx="5" ry="4" fill="#D69B72" opacity="0.4"/>
+      <path d="M330,192 Q348,186 353,204 Q356,230 344,250 Q335,262 326,253 Q322,246 323,236 L325,202 Q326,194 330,192 Z" fill="#E8B48E"/>
+      <path d="M340,206 Q346,222 339,240" stroke="#D69B72" stroke-width="2.4" fill="none" opacity="0.7" stroke-linecap="round"/>
+      <ellipse cx="338" cy="246" rx="5" ry="4" fill="#D69B72" opacity="0.4"/>
+
+      <!-- gaunt face -->
+      <path d="M240,76 C192,76 158,106 152,160 C149,196 153,236 164,268
+               C174,298 198,330 228,346 Q240,351 252,346
+               C282,330 306,298 316,268 C327,236 331,196 328,160
+               C322,106 288,76 240,76 Z" fill="url(#scalpSheen)"/>
+
+      <!-- temple hollows / sunken cheeks -->
+      <ellipse cx="168" cy="196" rx="8" ry="16" fill="#D69B72" opacity="0.25"/>
+      <ellipse cx="312" cy="196" rx="8" ry="16" fill="#D69B72" opacity="0.25"/>
+      <path d="M174,248 Q170,270 184,292 Q172,278 168,260 Q168,250 174,248 Z" fill="#D69B72" opacity="0.4"/>
+      <path d="M306,248 Q310,270 296,292 Q308,278 312,260 Q312,250 306,248 Z" fill="#D69B72" opacity="0.4"/>
+
+      <!-- forehead wrinkles + glabella -->
+      <path d="M196,112 Q240,102 284,112 M190,128 Q240,117 290,128 M196,144 Q240,134 284,144"
+            stroke="#D69B72" stroke-width="1.8" fill="none" opacity="0.55" stroke-linecap="round"/>
+      <path d="M232,168 L230,186 M248,168 L250,186" stroke="#D69B72" stroke-width="1.5" fill="none" opacity="0.5" stroke-linecap="round"/>
+
+      <!-- age spots -->
+      <circle cx="200" cy="150" r="2" fill="#C98F68" opacity="0.55"/>
+      <circle cx="274" cy="140" r="1.7" fill="#C98F68" opacity="0.55"/>
+      <circle cx="216" cy="96" r="1.8" fill="#C98F68" opacity="0.5"/>
+      <circle cx="262" cy="102" r="1.5" fill="#C98F68" opacity="0.5"/>
+
+      <!-- crow's feet -->
+      <path d="M156,206 L146,202 M156,212 L146,215" stroke="#D69B72" stroke-width="1.4" fill="none" opacity="0.6" stroke-linecap="round"/>
+      <path d="M324,206 L334,202 M324,212 L334,215" stroke="#D69B72" stroke-width="1.4" fill="none" opacity="0.6" stroke-linecap="round"/>
+
+      <!-- LEFT EYE -->
+      <g id="av-eyeL">
+        <path d="M166,209 Q177,200 190,200 Q204,200 214,208 Q204,217 189,217 Q176,217 166,209 Z" fill="#F3EDE2"/>
+        <circle cx="167" cy="209" r="1.5" fill="#C97B66" opacity="0.6"/>
+        <circle cx="190" cy="207" r="8.5" fill="#4E3722"/>
+        <circle id="av-pupilL" cx="190" cy="207" r="3.8" fill="#1C1310"/>
+        <circle cx="187.2" cy="204" r="1.8" fill="#FFFFFF" opacity="0.75"/>
+        <path d="M164,210 Q190,199 216,209 L218,193 Q204,186 190,186 Q176,186 162,193 Z" fill="#E8B48E"/>
+        <path d="M164,210 Q190,199 216,209" stroke="#8A5540" stroke-width="2" fill="none" opacity="0.9" stroke-linecap="round"/>
+        <path d="M166,204 Q190,194 214,204" stroke="#D69B72" stroke-width="1.5" fill="none" opacity="0.6" stroke-linecap="round"/>
+        <rect id="av-lidL" x="158" y="185" width="62" height="38" fill="#E8B48E" style="transform:scaleY(0);transform-box:fill-box;transform-origin:50% 0%"/>
+      </g>
+
+      <!-- RIGHT EYE -->
+      <g id="av-eyeR">
+        <path d="M314,209 Q303,200 290,200 Q276,200 266,208 Q276,217 291,217 Q304,217 314,209 Z" fill="#F3EDE2"/>
+        <circle cx="313" cy="209" r="1.5" fill="#C97B66" opacity="0.6"/>
+        <circle cx="290" cy="207" r="8.5" fill="#4E3722"/>
+        <circle id="av-pupilR" cx="290" cy="207" r="3.8" fill="#1C1310"/>
+        <circle cx="287.2" cy="204" r="1.8" fill="#FFFFFF" opacity="0.75"/>
+        <path d="M264,209 Q290,199 316,210 L318,193 Q304,186 290,186 Q276,186 262,193 Z" fill="#E8B48E"/>
+        <path d="M264,209 Q290,199 316,210" stroke="#8A5540" stroke-width="2" fill="none" opacity="0.9" stroke-linecap="round"/>
+        <path d="M266,204 Q290,194 314,204" stroke="#D69B72" stroke-width="1.5" fill="none" opacity="0.6" stroke-linecap="round"/>
+        <rect id="av-lidR" x="258" y="185" width="62" height="38" fill="#E8B48E" style="transform:scaleY(0);transform-box:fill-box;transform-origin:50% 0%"/>
+      </g>
+
+      <!-- under-eye bags -->
+      <path d="M168,222 Q184,232 210,224" stroke="#D69B72" stroke-width="2" fill="none" opacity="0.5" stroke-linecap="round"/>
+      <path d="M172,228 Q188,236 206,230" stroke="#D69B72" stroke-width="1.5" fill="none" opacity="0.35" stroke-linecap="round"/>
+      <path d="M270,224 Q296,232 312,222" stroke="#D69B72" stroke-width="2" fill="none" opacity="0.5" stroke-linecap="round"/>
+      <path d="M274,230 Q292,236 308,228" stroke="#D69B72" stroke-width="1.5" fill="none" opacity="0.35" stroke-linecap="round"/>
+
+      <!-- eyebrows: grey, outer ends drooping (tired) -->
+      <path id="av-browL" d="M158,196 Q172,180 196,177 Q208,176 216,179 L214,185 Q202,183 190,185 Q172,188 162,200 Z" fill="#878D96"/>
+      <path id="av-browR" d="M322,196 Q308,180 284,177 Q272,176 264,179 L266,185 Q278,183 290,185 Q308,188 318,200 Z" fill="#878D96"/>
+
+      <!-- nose (elderly, slightly bulbous) -->
+      <path d="M235,190 Q229,222 226,244 Q229,254 240,258 L240,251 Q234,247 233,240 Q235,214 239,192 Z" fill="#D69B72" opacity="0.45"/>
+      <ellipse cx="243" cy="246" rx="6" ry="5" fill="#F1C39C" opacity="0.5"/>
+      <path d="M225,246 Q217,252 221,261 Q225,265 231,263 Q226,255 227,247 Z" fill="#D69B72" opacity="0.5"/>
+      <path d="M255,246 Q263,252 259,261 Q255,265 249,263 Q254,255 253,247 Z" fill="#D69B72" opacity="0.5"/>
+      <ellipse cx="231" cy="259" rx="3.4" ry="2" fill="#9C5F42" transform="rotate(-14 231 259)"/>
+      <ellipse cx="249" cy="259" rx="3.4" ry="2" fill="#9C5F42" transform="rotate(14 249 259)"/>
+      <path d="M226,264 Q240,269 254,264" stroke="#D69B72" stroke-width="1.6" fill="none" opacity="0.5" stroke-linecap="round"/>
+
+      <!-- nasolabial folds -->
+      <path d="M219,252 Q207,274 211,292" stroke="#C98F68" stroke-width="2.2" fill="none" opacity="0.6" stroke-linecap="round"/>
+      <path d="M261,252 Q273,274 269,292" stroke="#C98F68" stroke-width="2.2" fill="none" opacity="0.6" stroke-linecap="round"/>
+      <path d="M237,278 L236,290 M243,278 L244,290" stroke="#D69B72" stroke-width="1.2" fill="none" opacity="0.35" stroke-linecap="round"/>
+
+      <!-- MOUTH -->
+      <g id="av-mouth">
+        <path id="av-mouth-closed" d="M206,303 Q222,293 240,294 Q258,293 274,303 Q258,306.5 240,305.5 Q222,306.5 206,303 Z" fill="#B5715F"/>
+        <g id="av-mouth-open" style="transform:scaleY(0.08);transform-box:fill-box;transform-origin:50% 50%">
+          <path d="M210,285 Q240,276 270,285 Q279,299 271,315 Q252,327 240,327 Q228,327 209,315 Q201,299 210,285 Z" fill="#5A2F2A"/>
+          <path d="M216,285.5 Q240,279.5 264,285.5 L262,297 Q240,302 218,297 Z" fill="#F2ECDE"/>
+          <path d="M231,283 L231.5,299 M240,282 L240,300 M249,283 L248.5,299" stroke="#D8CDBB" stroke-width="1" fill="none"/>
+          <ellipse cx="240" cy="315" rx="16" ry="8" fill="#C96B60"/>
+          <ellipse cx="240" cy="312" rx="9" ry="3.5" fill="#D98476" opacity="0.7"/>
+        </g>
+      </g>
+
+      <!-- marionette lines, chin -->
+      <path d="M206,310 Q200,322 204,332" stroke="#D69B72" stroke-width="1.8" fill="none" opacity="0.5" stroke-linecap="round"/>
+      <path d="M274,310 Q280,322 276,332" stroke="#D69B72" stroke-width="1.8" fill="none" opacity="0.5" stroke-linecap="round"/>
+      <path d="M228,334 Q240,338 252,334" stroke="#D69B72" stroke-width="1.6" fill="none" opacity="0.5" stroke-linecap="round"/>
+      <ellipse cx="240" cy="344" rx="16" ry="5" fill="#D69B72" opacity="0.3"/>
+
+      <!-- sparse grey hair: side patches + thin comb-over strands -->
+      <path d="M152,158 Q142,176 142,198 Q142,206 146,212 L158,206 Q152,190 156,170 Q158,160 152,158 Z" fill="#9AA2AD"/>
+      <path d="M148,170 Q144,186 146,202" stroke="#B9C0C9" stroke-width="1.6" fill="none" opacity="0.8" stroke-linecap="round"/>
+      <path d="M328,158 Q338,176 338,198 Q338,206 334,212 L322,206 Q328,190 324,170 Q322,160 328,158 Z" fill="#9AA2AD"/>
+      <path d="M332,170 Q336,186 334,202" stroke="#B9C0C9" stroke-width="1.6" fill="none" opacity="0.8" stroke-linecap="round"/>
+      <path d="M178,92 Q240,62 302,92" stroke="#9AA2AD" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M170,104 Q240,72 310,104" stroke="#9AA2AD" stroke-width="2.4" fill="none" opacity="0.85" stroke-linecap="round"/>
+      <path d="M186,84 Q240,58 294,84" stroke="#9AA2AD" stroke-width="2" fill="none" opacity="0.7" stroke-linecap="round"/>
+      <path d="M186,80 Q196,70 208,66 M294,80 Q284,70 272,66" stroke="#9AA2AD" stroke-width="2" fill="none" opacity="0.6" stroke-linecap="round"/>
+
+      <!-- nasal cannula (pale translucent green): prongs, cross-piece, cheek tubes over ears -->
+      <g fill="none" stroke-linecap="round">
+        <path d="M219,268 Q240,276 261,268" stroke="#8CC7B2" stroke-width="7" opacity="0.5"/>
+        <path d="M219,268 Q240,276 261,268" stroke="#BFE3D6" stroke-width="5" opacity="0.95"/>
+        <path d="M220,267 Q240,274 260,267" stroke="#E7F5EE" stroke-width="1.6" opacity="0.8"/>
+        <path d="M231,271 L230,260 M249,271 L250,260" stroke="#BFE3D6" stroke-width="4.5" opacity="0.95"/>
+        <path d="M231,270 L230.4,261 M249,270 L249.6,261" stroke="#E7F5EE" stroke-width="1.4" opacity="0.8"/>
+        <path d="M221,270 Q196,279 176,266 Q158,252 152,222 Q150,212 151,203" stroke="#8CC7B2" stroke-width="6.5" opacity="0.5"/>
+        <path d="M221,270 Q196,279 176,266 Q158,252 152,222 Q150,212 151,203" stroke="#BFE3D6" stroke-width="4.5" opacity="0.95"/>
+        <path d="M220,269 Q196,277 177,264 Q160,251 153,222 Q151,212 152,204" stroke="#E7F5EE" stroke-width="1.5" opacity="0.75"/>
+        <path d="M259,270 Q284,279 304,266 Q322,252 328,222 Q330,212 329,203" stroke="#8CC7B2" stroke-width="6.5" opacity="0.5"/>
+        <path d="M259,270 Q284,279 304,266 Q322,252 328,222 Q330,212 329,203" stroke="#BFE3D6" stroke-width="4.5" opacity="0.95"/>
+        <path d="M260,269 Q284,277 303,264 Q320,251 327,222 Q329,212 328,204" stroke="#E7F5EE" stroke-width="1.5" opacity="0.75"/>
+        <path d="M145,254 Q142,274 152,298 Q164,328 188,350 Q204,363 218,371" stroke="#8CC7B2" stroke-width="6.5" opacity="0.5"/>
+        <path d="M145,254 Q142,274 152,298 Q164,328 188,350 Q204,363 218,371" stroke="#BFE3D6" stroke-width="4.5" opacity="0.95"/>
+        <path d="M146,255 Q143,274 153,297 Q165,327 189,349 Q204,362 217,370" stroke="#E7F5EE" stroke-width="1.5" opacity="0.75"/>
+        <path d="M335,254 Q338,274 328,298 Q316,328 292,350 Q276,363 262,371" stroke="#8CC7B2" stroke-width="6.5" opacity="0.5"/>
+        <path d="M335,254 Q338,274 328,298 Q316,328 292,350 Q276,363 262,371" stroke="#BFE3D6" stroke-width="4.5" opacity="0.95"/>
+        <path d="M334,255 Q337,274 327,297 Q315,327 291,349 Q276,362 263,370" stroke="#E7F5EE" stroke-width="1.5" opacity="0.75"/>
+      </g>
+    </g>
+  </g>
+</svg>

@@ -66,6 +66,11 @@
   #chatPanel{ position:fixed; right:14px; bottom:14px; z-index:45; width:min(380px,92vw); background:#101826;
     border:1px solid #ffffff26; border-radius:14px; box-shadow:0 12px 40px #000c; display:none; flex-direction:column; overflow:hidden; }
   #chatPanel.show{ display:flex; }
+  /* 對話角色特寫（浮在面板右上方，會眨眼/對嘴型/做表情） */
+  #cpAvatarWrap{ position:fixed; right:22px; z-index:46; width:132px; height:154px;
+    pointer-events:none; display:none; }
+  #cpAvatar, #cpAvatar svg{ width:100%; height:100%; display:block; }
+  #cpAvatar svg{ filter: drop-shadow(0 6px 14px rgba(0,0,0,.5)); }
   #chatPanel .cp-head{ display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:#0b1220; color:#fff; font-size:14px; font-weight:700; }
   #chatPanel .cp-head button{ background:none; border:0; color:#fff; font-size:16px; cursor:pointer; padding:0 4px; }
   #chatPanel .cp-head button.off{ opacity:.35; }
@@ -189,6 +194,7 @@
   <div class="mp-body"><iframe id="monPanelFrame" allow="autoplay"></iframe></div>
 </div>
 
+<div id="cpAvatarWrap"><div id="cpAvatar"></div></div>
 <div id="chatPanel">
   <div class="cp-head"><span id="cpTitle">🗣️ 對話</span><span><button id="cpVoice" title="語音朗讀開/關">🔊</button><button id="cpX">✕</button></span></div>
   <div id="cpMsgs"></div>
@@ -255,7 +261,7 @@ const DEMO = {
         { id:"assess", type:"info", yaw:0.41, pitch:-0.24, startHidden:true, title:"評估病人 ABC",
           html:"確認意識、呼吸、脈搏。<b>此病人無反應、無呼吸、無脈搏</b> → 立即開始高品質 CPR，並接上監視器。（此熱點洗手後才出現）" },
         { id:"talk", type:"action", yaw:0.24, pitch:-0.30, label:"與家屬對話（問病史）",
-          onSelect:[ { do:"openPatient", title:"病人太太（家屬）", voice:"yating:tai_female_2",
+          onSelect:[ { do:"openPatient", title:"病人太太（家屬）", voice:"yating:tai_female_2", avatar:"bust-family-woman",
             patient:{ name:"病人太太", age:"58", sex:"女",
               hpi:"你先生 60 歲，晚餐後突然說胸口很痛、冒冷汗，幾分鐘後就倒下叫不醒，你打 119 送到急診。你是陪同的家屬。",
               pmh:"先生有高血壓、糖尿病，抽菸 30 多年；藥有時忘記吃。對盤尼西林過敏。",
@@ -583,8 +589,10 @@ async function openPatientChat(a, h){
   chatState.hsId = id;
   chatState.sysPrompt = patientSystemPrompt(p);
   chatState.voiceName = a.voice || null;   // 可依角色指定聲音（cmn-TW-Wavenet-A/B/C…）
+  avatarShow(a.avatar || null);            // 對話角色特寫（會眨眼/對嘴型/表情）
   $("cpTitle").textContent = "🗣️ " + (a.title || p.name || "對話");
   $("chatPanel").classList.add("show");
+  positionAvatar();
   if(!chatState.messages.length) cpAddMsg("sys","開始對話：輸入文字或按 🎤 說話");
   setTimeout(()=>$("cpInput").focus(), 100);
   logEvent("open_patient",{ id });
@@ -595,6 +603,7 @@ async function cpSend(){
   $("cpInput").value = ""; cpAddMsg("user", t);
   chatState.messages.push({ role:"user", content:t });
   chatState.busy = true;
+  avatarMode("thinking");
   const wait = cpAddMsg("ai","…");
   try{
     const r = await fetch(PROXY_URL, { method:"POST", headers:{ "content-type":"application/json" },
@@ -603,15 +612,18 @@ async function cpSend(){
     const text = (d.content && d.content[0] && d.content[0].text) || (d.error && d.error.message) || "（沒有回應）";
     wait.textContent = text;
     chatState.messages.push({ role:"assistant", content:text });
+    avatarMode("idle");
     cpSpeak(text);
     logEvent("patient_chat", { q:t, a:text.slice(0,300) });
-  }catch(e){ wait.textContent = "連線失敗，請再試一次"; chatState.messages.pop(); }
+  }catch(e){ wait.textContent = "連線失敗，請再試一次"; chatState.messages.pop(); avatarMode("idle"); }
   chatState.busy = false;
   $("cpMsgs").scrollTop = $("cpMsgs").scrollHeight;
 }
 $("cpSend").onclick = cpSend;
 $("cpInput").addEventListener("keydown", e=>{ if(e.key==="Enter") cpSend(); });
-$("cpX").onclick = ()=>{ $("chatPanel").classList.remove("show"); if("speechSynthesis" in window) speechSynthesis.cancel(); };
+$("cpX").onclick = ()=>{ $("chatPanel").classList.remove("show"); avatarShow(null);
+  if(cpAudio){ cpAudio.pause(); cpAudio = null; }
+  if("speechSynthesis" in window) speechSynthesis.cancel(); };
 $("cpVoice").onclick = ()=>{
   chatState.voice = !chatState.voice;
   $("cpVoice").classList.toggle("off", !chatState.voice);
@@ -633,16 +645,110 @@ async function cpSpeak(t){
     const d = await r.json();
     if(!d.audio) throw new Error("no audio");
     cpAudio = new Audio("data:" + (d.mime || "audio/mp3") + ";base64," + d.audio);
+    // 注意：不要把 <audio> 接進 WebAudio（data URI 經 MediaElementSource 會被視為 opaque
+    // → 分析器全零、甚至整段消音）。嘴型改用音節節奏開合（analyser=null 走備援）。
+    avState.analyser = null;
+    avatarMode("speaking"); avLog("speaking start");
+    cpAudio.onended = ()=>{ avLog("audio ended"); avatarMode("idle"); };
+    cpAudio.onpause = ()=>{ avLog("audio pause"); avatarMode("idle"); };
     await cpAudio.play();
+    avLog("play ok");
     return;
-  }catch(e){ /* 退回瀏覽器合成音 */ }
+  }catch(e){ avLog("tts fail: " + (e && e.message || e)); /* 退回瀏覽器合成音 */ }
   if("speechSynthesis" in window){
     const u = new SpeechSynthesisUtterance(clean);
     u.lang = "zh-TW"; u.rate = 1.05;
     const v = speechSynthesis.getVoices().find(v=>v.lang && v.lang.startsWith("zh"));
     if(v) u.voice = v;
+    avState.analyser = null;                // 無振幅資料 → 規律開合
+    avatarMode("speaking");
+    u.onend = ()=> avatarMode("idle");
     speechSynthesis.speak(u);
+  } else { avatarMode("idle"); }
+}
+
+/* ===== 對話角色動畫：眨眼 / 嘴型同步 / 思考與說話表情 / 呼吸 ===== */
+const AV_CACHE = {};
+const avState = { name:null, raf:0, blinkT:0, mode:"idle", mouth:0, audioCtx:null, analyser:null, arr:null, log:[] };
+window.__av = avState;   // 除錯用
+function avLog(m){ avState.log.push(Date.now()%100000 + " " + m); if(avState.log.length>40) avState.log.shift(); }
+function avEl(id){ return $("cpAvatar").querySelector("#"+id); }
+async function avatarShow(name){
+  const wrap = $("cpAvatarWrap");
+  if(!name){ wrap.style.display="none"; avState.name=null; stopAvatarLoop(); return; }
+  if(avState.name !== name){
+    let txt = AV_CACHE[name];
+    if(!txt){
+      try{ const r = await fetch("images/props/"+name+".svg"); if(!r.ok) throw 0; txt = await r.text(); AV_CACHE[name]=txt; }
+      catch(e){ wrap.style.display="none"; avState.name=null; return; }
+    }
+    $("cpAvatar").innerHTML = txt;
+    avState.name = name; avState.mode="idle"; avState.mouth=0;
+    const head = avEl("av-head");
+    if(head){ head.style.transformBox="fill-box"; head.style.transformOrigin="50% 88%"; head.style.transition="transform .3s"; }
+    ["av-pupilL","av-pupilR","av-browL","av-browR"].forEach(id=>{
+      const e = avEl(id); if(e){ e.style.transformBox="fill-box"; e.style.transformOrigin="50% 50%"; e.style.transition="transform .25s"; }
+    });
+    const body = avEl("av-body");
+    if(body){ body.style.transformBox="fill-box"; body.style.transformOrigin="50% 100%"; }
+    ["av-lidL","av-lidR"].forEach(id=>{ const e=avEl(id); if(e){ e.style.transformBox="fill-box"; e.style.transformOrigin="50% 0%"; } });
   }
+  wrap.style.display="block";
+  positionAvatar();
+  if(!avState.raf) avatarLoop();
+}
+function positionAvatar(){
+  const p = $("chatPanel"), w = $("cpAvatarWrap");
+  if(p.classList.contains("show")) w.style.bottom = (14 + p.offsetHeight - 6) + "px";
+}
+window.addEventListener("resize", positionAvatar);
+function avatarMode(m){
+  if(!avState.name) return;
+  avState.mode = m;
+  const head=avEl("av-head"), bl=avEl("av-browL"), br=avEl("av-browR"), pl=avEl("av-pupilL"), pr=avEl("av-pupilR");
+  if(m === "thinking"){        // 思考：頭微傾、眼神飄向側上、眉微挑
+    if(head) head.style.transform = "rotate(-2.5deg)";
+    if(pl) pl.style.transform = "translate(3px,-3px)";
+    if(pr) pr.style.transform = "translate(3px,-3px)";
+    if(bl) bl.style.transform = "translateY(-3px)";
+    if(br) br.style.transform = "translateY(-1.5px)";
+  } else {                     // 說話/待機：回正、看著對方
+    if(head) head.style.transform = "";
+    if(pl) pl.style.transform = ""; if(pr) pr.style.transform = "";
+    if(bl) bl.style.transform = ""; if(br) br.style.transform = "";
+  }
+}
+/* 嘴型採音節節奏開合（約 5 次/秒 + 隨機變化），不接 WebAudio 分析器：
+   data URI 音訊經 createMediaElementSource 會被當 opaque 來源 → 全零甚至消音。 */
+function avatarLoop(){
+  avState.raf = requestAnimationFrame(avatarLoop);
+  if(!avState.name) return;
+  const t = performance.now();
+  const body = avEl("av-body");
+  if(body) body.style.transform = `translateY(${(Math.sin(t/1400)*1.5).toFixed(2)}px)`;   // 呼吸起伏
+  if(avState.mode==="speaking"){                                                          // 說話時頭微點
+    const head = avEl("av-head");
+    if(head) head.style.transform = `rotate(${(Math.sin(t/300)*0.8).toFixed(2)}deg)`;
+  }
+  if(t > avState.blinkT){ avatarBlink(); avState.blinkT = t + 1800 + Math.random()*3200; } // 隨機眨眼
+  let target = 0;
+  if(avState.mode==="speaking"){
+    // 音節節奏開合：主頻約 5 次/秒，疊一層慢速強弱讓它像自然語句
+    target = (0.1 + 0.85*Math.abs(Math.sin(t/95))) * (0.5 + 0.5*Math.abs(Math.sin(t/487)));
+  }
+  avState.mouth += (target - avState.mouth) * 0.5;
+  const mo = avEl("av-mouth-open"), mc = avEl("av-mouth-closed");
+  if(mo) mo.style.transform = `scaleY(${(0.08 + 0.92*avState.mouth).toFixed(3)})`;
+  if(mc) mc.style.opacity = String(Math.max(0, 1 - avState.mouth*1.7));
+}
+function stopAvatarLoop(){ cancelAnimationFrame(avState.raf); avState.raf = 0; }
+function avatarBlink(){
+  ["av-lidL","av-lidR"].forEach(id=>{
+    const e = avEl(id); if(!e) return;
+    e.style.transition = "transform .07s";
+    e.style.transform = "scaleY(1)";
+    setTimeout(()=>{ e.style.transform = "scaleY(0)"; }, 95);
+  });
 }
 // 語音輸入：台語角色走雅婷即時 ASR（國台語混講），其餘走瀏覽器 webkitSpeechRecognition
 const STT_URL = "https://stt-mkargc7maa-uc.a.run.app";

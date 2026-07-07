@@ -1,0 +1,171 @@
+<svg viewBox="0 0 480 560" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bustSkinG" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#E8B48E"/>
+      <stop offset="0.72" stop-color="#E3AC84"/>
+      <stop offset="1" stop-color="#D69B72"/>
+    </linearGradient>
+    <linearGradient id="bustCardG" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#9C95B5"/>
+      <stop offset="0.6" stop-color="#8D86A6"/>
+      <stop offset="1" stop-color="#6F6890"/>
+    </linearGradient>
+  </defs>
+
+  <g id="avatar-root">
+
+    <!-- ============ BODY: shoulders / chest / clothes ============ -->
+    <g id="av-body">
+      <!-- neck -->
+      <path d="M212,296 L212,392 C222,410 258,410 268,392 L268,296 Z" fill="url(#bustSkinG)"/>
+      <path d="M212,296 L268,296 L268,338 C250,352 230,352 212,338 Z" fill="#D69B72" opacity="0.85"/>
+
+      <!-- blouse panel under cardigan (visible in the V) -->
+      <path d="M196,368 C204,390 218,402 240,402 C262,402 276,390 284,368
+               L292,560 L188,560 Z" fill="#F4F7FA"/>
+      <path d="M218,398 C232,406 250,406 264,396 C258,412 246,418 237,416
+               C228,414 221,407 218,398 Z" fill="#D9E2EA" opacity="0.85"/>
+      <path d="M276,388 C282,440 284,500 283,560 L292,560 C292,490 289,424 284,368
+               C282,376 279,383 276,388 Z" fill="#D9E2EA" opacity="0.7"/>
+      <circle cx="240" cy="424" r="4" fill="#1E2761"/>
+      <circle cx="240" cy="456" r="4" fill="#1E2761"/>
+
+      <!-- cardigan body with deep V neckline -->
+      <path d="M186,368 C158,374 120,388 92,410 C66,434 52,492 48,560
+               L432,560 C428,492 414,434 388,410 C360,388 322,374 294,368
+               C282,404 262,446 240,478 C218,446 198,404 186,368 Z" fill="url(#bustCardG)"/>
+      <path d="M294,368 C322,374 360,388 388,410 C414,434 428,492 432,560
+               L362,560 C360,480 346,420 318,392 C310,382 302,374 294,368 Z"
+            fill="#6F6890" opacity="0.4"/>
+      <!-- shoulder seams / folds -->
+      <path d="M120,414 C130,450 134,502 134,560" fill="none" stroke="#6F6890" stroke-width="4" opacity="0.3"/>
+      <path d="M360,414 C352,450 348,502 348,560" fill="none" stroke="#6F6890" stroke-width="4" opacity="0.3"/>
+      <path d="M158,432 C164,472 166,516 164,560" fill="none" stroke="#6F6890" stroke-width="3" opacity="0.25"/>
+      <path d="M322,432 C318,472 316,516 318,560" fill="none" stroke="#6F6890" stroke-width="3" opacity="0.25"/>
+      <!-- cardigan front bands -->
+      <path d="M184,372 C200,414 220,452 240,482" fill="none" stroke="#6F6890" stroke-width="14"/>
+      <path d="M296,372 C280,414 260,452 240,482" fill="none" stroke="#6F6890" stroke-width="14"/>
+      <path d="M240,478 L240,560" fill="none" stroke="#6F6890" stroke-width="17"/>
+      <circle cx="240" cy="512" r="5" fill="#57517B"/>
+      <circle cx="240" cy="542" r="5" fill="#57517B"/>
+    </g>
+
+    <!-- ============ HEAD ============ -->
+    <g id="av-head">
+      <!-- back hair mass, shoulder-length, ends curving inward -->
+      <path d="M240,46 C156,46 108,106 104,188 C100,268 110,348 132,404
+               C143,430 170,440 188,431 C210,441 270,441 292,431
+               C310,440 337,430 348,404 C370,348 380,268 376,188
+               C372,106 324,46 240,46 Z" fill="#4A4038"/>
+      <path d="M118,220 C114,280 120,340 136,392 C142,408 152,418 164,420
+               C150,384 142,330 142,272 C140,252 130,232 118,220 Z" fill="#5C5248" opacity="0.55"/>
+      <path d="M362,220 C366,280 360,340 344,392 C338,408 328,418 316,420
+               C330,384 338,330 338,272 C340,252 350,232 362,220 Z" fill="#5C5248" opacity="0.55"/>
+
+      <!-- face -->
+      <path d="M240,88 C192,88 160,118 155,170 C151,214 158,258 172,288
+               C186,316 212,336 240,336 C268,336 294,316 308,288
+               C322,258 329,214 325,170 C320,118 288,88 240,88 Z" fill="url(#bustSkinG)"/>
+      <!-- right-side jaw shading -->
+      <path d="M312,230 C318,262 308,296 286,318 C282,320 278,318 280,313
+               C296,292 304,262 304,232 Z" fill="#D69B72" opacity="0.35"/>
+      <!-- soft cheeks -->
+      <ellipse cx="192" cy="248" rx="14" ry="8" fill="#DB9A74" opacity="0.35"/>
+      <ellipse cx="288" cy="248" rx="14" ry="8" fill="#DB9A74" opacity="0.35"/>
+
+      <!-- right face-framing lock (hair tucked behind the exposed ear) -->
+      <path d="M348,124 C360,166 364,226 354,290 C350,324 340,350 324,362
+               C316,368 306,364 305,355 C304,348 310,344 316,342
+               C328,318 334,282 332,240 C331,200 340,164 348,124 Z" fill="#4A4038"/>
+      <!-- exposed right ear over the lock -->
+      <path d="M324,196 C336,188 346,196 344,212 C342,230 332,242 322,238
+               C317,228 318,208 324,196 Z" fill="#E8B48E"/>
+      <path d="M330,206 C335,203 339,208 337,215 C336,221 331,222 329,218"
+            fill="none" stroke="#D69B72" stroke-width="2.4" stroke-linecap="round" opacity="0.8"/>
+      <!-- left ear (mostly hidden by the left lock later) -->
+      <path d="M156,196 C144,188 134,196 136,212 C138,230 148,242 158,238
+               C163,228 162,208 156,196 Z" fill="#E8B48E"/>
+
+      <!-- gently worried brows: inner ends raised -->
+      <path id="av-browL" d="M170,187 C182,178 202,174 219,177"
+            fill="none" stroke="#55483C" stroke-width="6" stroke-linecap="round"/>
+      <path id="av-browR" d="M310,187 C298,178 278,174 261,177"
+            fill="none" stroke="#55483C" stroke-width="6" stroke-linecap="round"/>
+      <!-- very subtle knit between brows -->
+      <path d="M235,181 C237,187 237,192 235,196" fill="none" stroke="#D69B72" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+      <path d="M245,181 C243,187 243,192 245,196" fill="none" stroke="#D69B72" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+
+      <!-- left eye -->
+      <g id="av-eyeL">
+        <path d="M180,203 C186,193 201,190 213,196 C218,199 219,205 214,209
+                 C203,215 186,213 180,203 Z" fill="#F7FAFC"/>
+        <circle cx="197" cy="202" r="7" fill="#5B4632"/>
+        <circle id="av-pupilL" cx="197" cy="202" r="3.2" fill="#241812"/>
+        <circle cx="194.5" cy="199.5" r="1.8" fill="#FFFFFF" opacity="0.9"/>
+        <path d="M179,202 C186,192 203,189 215,196" fill="none" stroke="#3E332B" stroke-width="3" stroke-linecap="round"/>
+        <path d="M185,211 C193,214 205,214 212,210" fill="none" stroke="#D69B72" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+        <rect id="av-lidL" x="176" y="187" width="45" height="29" fill="#E8B48E"
+              style="transform:scaleY(0);transform-box:fill-box;transform-origin:50% 0%"/>
+      </g>
+      <!-- right eye -->
+      <g id="av-eyeR">
+        <path d="M300,203 C294,193 279,190 267,196 C262,199 261,205 266,209
+                 C277,215 294,213 300,203 Z" fill="#F7FAFC"/>
+        <circle cx="283" cy="202" r="7" fill="#5B4632"/>
+        <circle id="av-pupilR" cx="283" cy="202" r="3.2" fill="#241812"/>
+        <circle cx="280.5" cy="199.5" r="1.8" fill="#FFFFFF" opacity="0.9"/>
+        <path d="M301,202 C294,192 277,189 265,196" fill="none" stroke="#3E332B" stroke-width="3" stroke-linecap="round"/>
+        <path d="M295,211 C287,214 275,214 268,210" fill="none" stroke="#D69B72" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+        <rect id="av-lidR" x="259" y="187" width="45" height="29" fill="#E8B48E"
+              style="transform:scaleY(0);transform-box:fill-box;transform-origin:50% 0%"/>
+      </g>
+
+      <!-- nose, front view -->
+      <path d="M234,206 C232,224 230,240 228,252" fill="none" stroke="#D69B72" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+      <path d="M228,252 C226,260 229,265 236,266" fill="none" stroke="#D69B72" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M252,252 C254,260 251,265 244,266" fill="none" stroke="#D69B72" stroke-width="3.5" stroke-linecap="round"/>
+      <ellipse cx="229" cy="263" rx="2.4" ry="1.7" fill="#C08155" opacity="0.7"/>
+      <ellipse cx="251" cy="263" rx="2.4" ry="1.7" fill="#C08155" opacity="0.7"/>
+
+      <!-- mouth -->
+      <g id="av-mouth">
+        <path d="M226,301 C234,304 246,304 254,301" fill="none" stroke="#D69B72" stroke-width="2" stroke-linecap="round" opacity="0.45"/>
+        <path id="av-mouth-closed" d="M216,291 C224,286 232,285 240,286 C248,285 256,286 264,291"
+              fill="none" stroke="#B97F60" stroke-width="4" stroke-linecap="round"/>
+        <g id="av-mouth-open" style="transform:scaleY(0.08);transform-box:fill-box;transform-origin:50% 50%">
+          <path d="M216,280 C224,274 256,274 264,280 C262,298 252,310 240,310
+                   C228,310 218,298 216,280 Z" fill="#5A2F2A"/>
+          <path d="M220,279 C232,275 248,275 260,279 L258,287 C246,291 234,291 222,287 Z" fill="#F7F3EE"/>
+          <ellipse cx="240" cy="302" rx="13" ry="6.5" fill="#C96B60"/>
+        </g>
+      </g>
+      <path d="M232,318 C237,320 243,320 248,318" fill="none" stroke="#D69B72" stroke-width="2" stroke-linecap="round" opacity="0.35"/>
+
+      <!-- side-parted bangs sweeping from the right part across the forehead -->
+      <path d="M240,46 C166,46 122,86 114,148 C110,176 114,202 124,218
+               C132,182 146,150 170,130 C200,106 246,98 272,82
+               C288,102 306,122 320,144 C330,160 336,178 340,196
+               C352,168 354,130 342,100 C324,58 292,46 240,46 Z" fill="#4A4038"/>
+      <!-- left face-framing lock over the left ear -->
+      <path d="M130,128 C116,168 110,228 118,290 C122,324 132,350 148,362
+               C156,368 166,364 167,355 C168,348 162,344 156,342
+               C144,318 138,282 140,240 C141,200 138,162 130,128 Z" fill="#4A4038"/>
+
+      <!-- hair highlights -->
+      <path d="M200,58 C176,64 154,78 140,98 C136,104 133,110 131,116
+               C146,96 168,80 196,70 C199,65 200,61 200,58 Z" fill="#5C5248" opacity="0.85"/>
+      <path d="M120,160 C114,200 113,248 120,296 C122,312 127,324 133,331
+               C126,302 124,254 129,208 C130,190 126,172 120,160 Z" fill="#5C5248" opacity="0.85"/>
+      <path d="M347,148 C354,182 356,224 350,268 C348,284 343,298 337,306
+               C344,276 346,232 342,192 C341,176 343,160 347,148 Z" fill="#5C5248" opacity="0.85"/>
+
+      <!-- fine gray streaks -->
+      <path d="M168,70 C150,82 136,100 128,122" fill="none" stroke="#9AA2AD" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+      <path d="M118,192 C116,232 118,274 126,310" fill="none" stroke="#9AA2AD" stroke-width="2.5" stroke-linecap="round" opacity="0.5"/>
+      <path d="M296,58 C312,70 326,86 334,104" fill="none" stroke="#9AA2AD" stroke-width="2.5" stroke-linecap="round" opacity="0.5"/>
+      <path d="M336,124 C344,148 348,172 347,198" fill="none" stroke="#9AA2AD" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+      <path d="M138,182 C132,232 133,282 142,328" fill="none" stroke="#9AA2AD" stroke-width="2.2" stroke-linecap="round" opacity="0.45"/>
+      <path d="M344,164 C350,212 348,264 336,310" fill="none" stroke="#9AA2AD" stroke-width="2.2" stroke-linecap="round" opacity="0.45"/>
+    </g>
+  </g>
+</svg>
