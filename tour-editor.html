@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>InSim擬境 編輯器</title>
+<title>InSim擬境 教師後台</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core@5/index.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/markers-plugin@5/index.min.css">
 <style>
@@ -46,7 +46,7 @@
 <div id="app">
   <div id="side">
     <header>
-      <h1>360 導覽編輯器</h1>
+      <h1>🏥 InSim擬境 教師後台</h1>
       <div class="field">
         <label>教案 ID（存檔用，英數）</label>
         <input id="tourId" placeholder="例：ward-safety">
@@ -76,6 +76,12 @@
     </header>
 
     <div class="scroll">
+      <div class="sect" id="cloudSect">
+        <h2>☁️ 雲端教案（點一下載入編輯）</h2>
+        <div id="cloudList" class="muted">載入中…</div>
+        <button class="btn ghost sm" id="cloudRefresh">🔄 重新整理清單</button>
+      </div>
+
       <div class="sect">
         <h2>場景</h2>
         <div id="sceneList"></div>
@@ -129,7 +135,7 @@
 <div id="authGate" style="position:fixed;inset:0;background:#0f172a;z-index:300;display:flex;align-items:center;justify-content:center;padding:24px">
   <div style="text-align:center;max-width:360px;color:#fff">
     <div style="font-size:44px;margin-bottom:6px">🏥</div>
-    <h1 style="font-size:20px;margin:0 0 4px">360 導覽編輯器</h1>
+    <h1 style="font-size:20px;margin:0 0 4px">InSim擬境 教師後台</h1>
     <div id="authBody" style="font-size:14px;color:#9aa7b8;margin-top:10px">檢查登入狀態…</div>
   </div>
 </div>
@@ -148,7 +154,7 @@
 import { Viewer } from '@photo-sphere-viewer/core';
 import { MarkersPlugin } from '@photo-sphere-viewer/markers-plugin';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp }
+import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -328,11 +334,15 @@ function renderTypeFields(){
     html+=field("標籤（滑過顯示）",`<input id="f_label" value="${(h.label||"").replace(/"/g,'&quot;')}">`);
     html+=`<div class="muted">動作型熱點只執行下方「進階」的動作序列（例如設定變數、顯示其他熱點、加分）。</div>`;
   }
-  // 進階（擬真）：所有型別共用 —— 起始隱藏 / 條件顯示 / 動作序列
+  // 進階（擬真）：所有型別共用 —— 角色 / 防重複 / 起始隱藏 / 條件顯示 / 動作序列
   const cond = h.showIf ? Object.entries(h.showIf)[0]||["",""] : ["",""];
-  html+=`<details class="advbox" ${(h.startHidden||h.showIf||h.onSelect)?"open":""}>
-    <summary>進階（擬真）：條件顯示 / 動作序列</summary>
-    <div class="field" style="margin-top:8px"><label><input type="checkbox" id="f_hidden" ${h.startHidden?"checked":""}> 起始隱藏（被動作 reveal 才出現）</label></div>
+  const ROLE_OPTS=[["","（不限角色）"],["leaderDr","Leader Dr 總指揮"],["leaderN","Leader N 計時讀秒紀錄"],["airway","Airway 呼吸道"],["circulation","Circulation 循環"],["support","Support 抽藥打針"]];
+  html+=`<details class="advbox" ${(h.role||h.once||h.gated||h.startHidden||h.showIf||h.onSelect)?"open":""}>
+    <summary>進階（團隊/擬真）：角色 / 防重複 / 條件顯示 / 動作序列</summary>
+    ${field("團隊模式：角色專屬（只有此角色能執行；教師與單人模式不受限）",`<select id="f_role">${ROLE_OPTS.map(([v,t])=>`<option value="${v}" ${(h.role||"")===v?"selected":""}>${t}</option>`).join("")}</select>`)}
+    <div class="field"><label><input type="checkbox" id="f_once" ${h.once?"checked":""}> 防重複（once：完成一次後不能再觸發、不能重複得分）</label></div>
+    <div class="field"><label><input type="checkbox" id="f_hidden" ${h.startHidden?"checked":""}> 起始隱藏（被動作 reveal 或關卡自動揭示才出現）</label></div>
+    <div class="field"><label><input type="checkbox" id="f_gated" ${h.gated?"checked":""}> 不隨關卡自動揭示（gated：起始隱藏時，只能靠其他熱點的 reveal 動作揭示）</label></div>
     ${field("條件顯示 showIf（變數＝值才顯示）",`<div class="row"><input id="f_condk" value="${(cond[0]||"").replace(/"/g,'&quot;')}" placeholder="變數名 如 handHygiene"><input id="f_condv" value="${cond[1]===undefined?"":String(cond[1])}" placeholder="值 如 true"></div>`)}
     ${field("動作序列 onSelect（JSON 陣列）",`<textarea id="f_onselect" placeholder='[{"do":"setVar","name":"gloves","value":true},{"do":"reveal","id":"h9"},{"do":"addScore","points":10}]'>${h.onSelect?JSON.stringify(h.onSelect,null,1):""}</textarea>`)}
     <div class="muted">動作：setVar(name,value) / addScore(points) / reveal(id) / hide(id) / goto(id) / media(kind,url,title) / toast(msg) / finish / pushMonitor(rhythm,co2,t:{hr,sys,dia,spo2,rr,etco2}) / openMonitor（彈出內嵌 SimMonitor） / openPatient(title, patient:{name,age,sex,hpi,pmh,persona,mental,hidden} 或 caseId:"SimPatient教案ID")（AI 病人/家屬對話）</div>
@@ -350,8 +360,11 @@ $("saveHs").onclick=()=>{
   else if(h.type==="hazard"){ h.label=g("f_label"); h.points=+g("f_points")||5; }
   else if(h.type==="media"){ h.label=g("f_label"); h.media={ kind:g("f_mkind"), url:(g("f_murl")||"").trim(), title:g("f_mtitle"), caption:g("f_mcaption") }; }
   else if(h.type==="action"){ h.label=g("f_label"); }
-  // 進階（擬真）共用欄位
-  h.startHidden = !!$("f_hidden")?.checked;
+  // 進階（團隊/擬真）共用欄位：不勾選就刪除欄位，保持教案 JSON 乾淨
+  const rv=g("f_role"); if(rv) h.role=rv; else delete h.role;
+  if($("f_once")?.checked) h.once=true; else delete h.once;
+  if($("f_gated")?.checked) h.gated=true; else delete h.gated;
+  if($("f_hidden")?.checked) h.startHidden=true; else delete h.startHidden;
   const ck=(g("f_condk")||"").trim();
   if(ck){ h.showIf = { [ck]: parseVal(g("f_condv")) }; } else { delete h.showIf; }
   const os=(g("f_onselect")||"").trim();
@@ -494,6 +507,7 @@ $("saveBtn").onclick=async()=>{
     catch(e){ alert("挑戰關卡 JSON 格式錯誤："+e.message); return; } }
   else { delete tour.stages; }
   try{ await setDoc(doc(db,C_DEFS,id),{ ...tour, updatedAt:serverTimestamp() });
+    loadCloudList();
     alert(`已存到雲端！\n學員連結： tour.html?tour=${id}`); }
   catch(e){ alert("存檔失敗："+e.message); }
 };
@@ -524,9 +538,44 @@ function loadTourObj(t){
   renderSceneList(); if(tour.scenes[0]) selectScene(tour.scenes[0]);
 }
 
+/* ---------- 雲端教案清單（管理後台：總覽 / 載入編輯 / 刪除） ---------- */
+const SITE_NAMES={ biomed:"生醫急診", hsinchu:"新竹急診" };
+async function loadCloudList(){
+  const box=$("cloudList"); if(!db){ box.textContent="Firebase 未連線"; return; }
+  box.textContent="載入中…";
+  try{
+    const qs=await getDocs(collection(db,C_DEFS));
+    const rows=[]; qs.forEach(d=>rows.push({ id:d.id, ...d.data() }));
+    rows.sort((a,b)=>(a.site||"").localeCompare(b.site||"") || (a.title||a.id).localeCompare(b.title||b.id,"zh-Hant"));
+    box.innerHTML="";
+    if(!rows.length){ box.textContent="雲端目前沒有教案"; return; }
+    rows.forEach(t=>{
+      const d=document.createElement("div"); d.className="hs-item";
+      const esc=s=>String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;");
+      d.innerHTML=`<span class="tag" style="background:${t.site==="hsinchu"?"#14b8a6":"#2b7de9"}">${SITE_NAMES[t.site]||"生醫急診"}</span>
+        <span class="grow">${esc(t.title||t.id)}<br><code style="font-size:10px;color:#6b7885">${esc(t.id)}</code></span>
+        <button class="btn ghost sm" data-act="edit" type="button">編輯</button>
+        <button class="btn danger sm" data-act="del" type="button">🗑</button>`;
+      const openIt=()=>{
+        if(tour.scenes.length && !confirm(`載入「${t.title||t.id}」編輯？目前編輯中的內容會被取代`)) return;
+        loadTourObj(JSON.parse(JSON.stringify(t))); setMoveMode(false);
+      };
+      d.onclick=openIt;
+      d.querySelector('[data-act=edit]').onclick=e=>{ e.stopPropagation(); openIt(); };
+      d.querySelector('[data-act=del]').onclick=async e=>{ e.stopPropagation();
+        if(!confirm(`⚠️ 確定刪除雲端教案「${t.title||t.id}」？\n刪除後學員將無法開啟此教案，且無法復原。`)) return;
+        try{ await deleteDoc(doc(db,C_DEFS,t.id)); loadCloudList(); }
+        catch(err){ alert("刪除失敗："+err.message); } };
+      box.appendChild(d);
+    });
+  }catch(e){ box.textContent="載入失敗："+e.message; }
+}
+$("cloudRefresh").onclick=loadCloudList;
+
 /* ---------- 啟動：預設直接載入急救室範本（教師可修改後另存） ---------- */
 initViewer(DEMO_PANO);
 loadTourObj(JSON.parse(JSON.stringify(ER_TEMPLATE)));
+loadCloudList();
 </script>
 </body>
 </html>
