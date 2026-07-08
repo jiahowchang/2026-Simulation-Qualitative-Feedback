@@ -644,7 +644,8 @@ function makeAvatarDraggable(el, memberId){
 function teamMarkers(){
   if(!team) return [];
   return teamMembers
-    .filter(m=> ROLES[m.role] && ROLES[m.role].yaw!==undefined && Date.now()-(m.lastSeen||0)<90000)
+    .filter(m=> ROLES[m.role] && ROLES[m.role].yaw!==undefined && Date.now()-(m.lastSeen||0)<90000
+      && (m.scene || tour.startSceneId) === curScene)   // 只顯示同場景的隊友
     .map(m=>{
       const pos = POS_LIVE[m.id] || (m.pos && typeof m.pos.yaw==="number" ? m.pos : { yaw:ROLES[m.role].yaw, pitch:ROLES[m.role].pitch });
       return { id:"tm_"+m.id, elementLayer: teamMemberEl(m),
@@ -923,6 +924,9 @@ function drawMarkers(){
 
 function renderScene(scene){
   curScene = scene.id;
+  if(team && db){   // 同步我在哪個場景（Avatar 只出現在同場景隊友的畫面裡）
+    setDoc(doc(db, C_ROOMS, team.code, "members", team.memberId), { scene: curScene }, { merge:true }).catch(()=>{});
+  }
   $("tScene").textContent = scene.name || scene.id;
   if(!viewer){ initViewer(scene); }
   else { viewer.setPanorama(scene.panorama, { position:{ yaw:scene.initialView?.yaw||0, pitch:scene.initialView?.pitch||0 } }); }
