@@ -204,7 +204,11 @@
     <img class="gate-logo" src="images/logo-insim.png" alt="InSim擬境">
     <div class="gate-brand">360° 擬真情境教學平台</div>
     <h1 id="gateTitle">360 情境導覽</h1>
-    <p>請選擇教案，並輸入姓名或學號開始</p>
+    <p>請選擇場景與教案，並輸入姓名或學號開始</p>
+    <select id="gateSite">
+      <option value="biomed">🏥 場景：生醫急診</option>
+      <option value="hsinchu">🏥 場景：新竹急診（多場景）</option>
+    </select>
     <select id="gateTour"><option value="demo">載入教案清單…</option></select>
     <input id="gateName" placeholder="姓名 / 學號" autocomplete="off">
     <input id="gateMon" placeholder="連動碼（通常留空）" inputmode="numeric" autocomplete="off" style="margin-top:10px">
@@ -1531,28 +1535,38 @@ async function start(){
   renderScene(tour.scenes.find(s=>s.id===startId) || tour.scenes[0]);
   checkStages();   // 關卡系統：揭示第一關任務 + 顯示 HUD
 }
-// 教案選單：內建示範＋tour_defs 全部教案；?tour= 參數可預選
+// 教案選單：先選「場景」（生醫急診 / 新竹急診）再選該場景的教案；?tour= 參數可預選
 async function initTourPicker(){
-  const sel = $("gateTour");
+  const sel = $("gateTour"), siteSel = $("gateSite");
   const urlTid = new URLSearchParams(location.search).get("tour") || "demo";
   const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-  let opts = [{ id:"demo", title: DEMO.title+"（示範）" }];
+  let opts = [{ id:"demo", title: DEMO.title+"（示範）", site:"biomed" }];
   try{
     const snap = await getDocs(collection(db, C_DEFS));
     snap.docs.forEach(d=>{ if(d.id===DEMO.id) return;   // 內建示範已在清單首位，略過資料庫舊複本
-      const t=d.data()||{}; opts.push({ id:d.id, title:(t.title||d.id) }); });
+      const t=d.data()||{}; opts.push({ id:d.id, title:(t.title||d.id), site:(t.site||"biomed") }); });
   }catch(e){ console.warn("tour list", e); }
   const head = opts.shift();
   opts.sort((a,b)=>a.title.localeCompare(b.title,"zh-Hant"));
   opts.unshift(head);
-  sel.innerHTML = opts.map(o=>`<option value="${esc(o.id)}">${esc(o.title)}</option>`).join("");
-  sel.value = opts.some(o=>o.id===urlTid) ? urlTid : "demo";
   const updateTitle = ()=>{
     const o = opts.find(x=>x.id===sel.value);
     $("gateTitle").textContent = o ? o.title.replace("（示範）","") : DEMO.title;
   };
+  const renderOptions = (keepTid)=>{
+    const site = siteSel.value;
+    const list = opts.filter(o=>o.site===site);
+    sel.innerHTML = list.map(o=>`<option value="${esc(o.id)}">${esc(o.title)}</option>`).join("")
+      || `<option value="demo">此場景尚無教案</option>`;
+    sel.value = (keepTid && list.some(o=>o.id===keepTid)) ? keepTid : (list[0] ? list[0].id : "demo");
+    updateTitle();
+  };
+  // ?tour= 預選：自動切到該教案所屬場景
+  const urlOpt = opts.find(o=>o.id===urlTid);
+  if(urlOpt) siteSel.value = urlOpt.site;
+  renderOptions(urlTid);
+  siteSel.onchange = ()=> renderOptions();
   sel.onchange = updateTitle;
-  updateTitle();
 }
 initTourPicker();
 </script>

@@ -64,7 +64,9 @@
       <input type="file" id="importFile" accept="application/json" hidden>
       <details style="margin-top:8px">
         <summary style="font-size:12px;color:#6b7885;cursor:pointer">情境設定（變數 / 通過門檻）</summary>
-        <div class="field" style="margin-top:8px"><label>初始變數（JSON 物件）</label><textarea id="tVars" placeholder='{"handHygiene":false,"gloves":false}'></textarea></div>
+        <div class="field" style="margin-top:8px"><label>所屬場景（首頁的場景選擇分類）</label>
+          <select id="tSite"><option value="biomed">生醫急診</option><option value="hsinchu">新竹急診（多場景）</option></select></div>
+        <div class="field"><label>初始變數（JSON 物件）</label><textarea id="tVars" placeholder='{"handHygiene":false,"gloves":false}'></textarea></div>
         <div class="field"><label>通過門檻分數（除錯總結用，選填）</label><input id="tPass" type="number" placeholder="例：70"></div>
         <div class="field"><label>虛擬人物/物件（JSON 陣列，套用到第一個場景；image 可用 images/props/ 內建素材；hotspot=點擊觸發的熱點 id）</label>
         <textarea id="tProps" style="min-height:72px" placeholder='[{"id":"vp_patient","image":"images/props/patient-supine.png","yaw":0.41,"pitch":-0.34,"width":820,"height":508,"hotspot":"assess"}]'></textarea></div>
@@ -475,6 +477,7 @@ $("saveBtn").onclick=async()=>{
   if(!id){ alert("請先填教案 ID"); return; }
   if(!db){ alert("Firebase 未連線"); return; }
   tour.id=id; tour.title=$("tourTitle").value||tour.title;
+  tour.site=$("tSite").value||"biomed";
   // 情境設定：變數 + 通過門檻
   const vt=($("tVars").value||"").trim();
   if(vt){ try{ tour.variables=JSON.parse(vt); }catch(e){ alert("初始變數 JSON 格式錯誤"); return; } } else { delete tour.variables; }
@@ -511,6 +514,7 @@ $("importFile").onchange=e=>{ const f=e.target.files[0]; if(!f) return; const r=
 function loadTourObj(t){
   tour=t; if(typeof tour.scenes==="string") tour.scenes=JSON.parse(tour.scenes);
   $("tourId").value=tour.id||""; $("tourTitle").value=tour.title||"";
+  $("tSite").value = tour.site || "biomed";
   $("tVars").value = tour.variables ? JSON.stringify(tour.variables) : "";
   $("tPass").value = tour.debrief?.passScore ?? "";
   $("tProps").value = tour.scenes[0]?.props ? JSON.stringify(tour.scenes[0].props) : "";
