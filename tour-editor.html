@@ -78,6 +78,12 @@
     <div class="scroll">
       <div class="sect" id="cloudSect">
         <h2>☁️ 雲端教案（點一下載入編輯）</h2>
+        <div class="field"><label>選擇場景（與學員首頁相同的分站）</label>
+          <select id="cloudSite">
+            <option value="">全部場景</option>
+            <option value="biomed">生醫急診</option>
+            <option value="hsinchu">新竹急診（多場景）</option>
+          </select></div>
         <div id="cloudList" class="muted">載入中…</div>
         <button class="btn ghost sm" id="cloudRefresh">🔄 重新整理清單</button>
       </div>
@@ -91,6 +97,8 @@
       <div class="sect" id="sceneEdit" style="display:none">
         <h2>場景設定</h2>
         <div class="field"><label>場景名稱</label><input id="scName"></div>
+        <div class="field"><label>內建環景（依場景分站；選了立即套用）</label>
+          <select id="scPanoPick"><option value="">— 手動填網址 —</option></select></div>
         <div class="field"><label>環景圖網址 / 路徑</label><input id="scPano" placeholder="tours/xxx/scene1.jpg"></div>
         <div class="muted">提示：把環景照片放進 <code>tours/</code> 資料夾，這裡填相對路徑；或貼完整網址。</div>
         <div class="row" style="margin-top:8px">
@@ -252,6 +260,7 @@ function selectScene(s){
   if(moveMode) setMoveMode(false);
   $("sceneEdit").style.display="block"; $("hsSect").style.display="block"; $("hsEdit").style.display="none"; $("hint").style.display="block";
   $("scName").value=s.name||""; $("scPano").value=s.panorama||"";
+  const pick=$("scPanoPick"); pick.value=s.panorama||""; if(pick.value!==(s.panorama||"")) pick.value="";
   if(!viewer) initViewer(s.panorama); else viewer.setPanorama(s.panorama||DEMO_PANO).then(drawMarkers);
   if(viewer && viewer.state?.ready) drawMarkers();
   renderSceneList(); renderHsList();
@@ -538,39 +547,71 @@ function loadTourObj(t){
   renderSceneList(); if(tour.scenes[0]) selectScene(tour.scenes[0]);
 }
 
-/* ---------- 雲端教案清單（管理後台：總覽 / 載入編輯 / 刪除） ---------- */
+/* ---------- 雲端教案清單（管理後台：場景篩選 / 總覽 / 載入編輯 / 刪除） ---------- */
 const SITE_NAMES={ biomed:"生醫急診", hsinchu:"新竹急診" };
+let CLOUD_ROWS=[];
+function renderCloudList(){
+  const box=$("cloudList"), site=$("cloudSite").value;
+  const rows=CLOUD_ROWS.filter(t=>!site || (t.site||"biomed")===site);
+  box.innerHTML="";
+  if(!rows.length){ box.textContent = CLOUD_ROWS.length ? "此場景目前沒有教案" : "雲端目前沒有教案"; return; }
+  rows.forEach(t=>{
+    const d=document.createElement("div"); d.className="hs-item";
+    const esc=s=>String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;");
+    d.innerHTML=`<span class="tag" style="background:${t.site==="hsinchu"?"#14b8a6":"#2b7de9"}">${SITE_NAMES[t.site]||"生醫急診"}</span>
+      <span class="grow">${esc(t.title||t.id)}<br><code style="font-size:10px;color:#6b7885">${esc(t.id)}</code></span>
+      <button class="btn ghost sm" data-act="edit" type="button">編輯</button>
+      <button class="btn danger sm" data-act="del" type="button">🗑</button>`;
+    const openIt=()=>{
+      if(tour.scenes.length && !confirm(`載入「${t.title||t.id}」編輯？目前編輯中的內容會被取代`)) return;
+      loadTourObj(JSON.parse(JSON.stringify(t))); setMoveMode(false);
+    };
+    d.onclick=openIt;
+    d.querySelector('[data-act=edit]').onclick=e=>{ e.stopPropagation(); openIt(); };
+    d.querySelector('[data-act=del]').onclick=async e=>{ e.stopPropagation();
+      if(!confirm(`⚠️ 確定刪除雲端教案「${t.title||t.id}」？\n刪除後學員將無法開啟此教案，且無法復原。`)) return;
+      try{ await deleteDoc(doc(db,C_DEFS,t.id)); loadCloudList(); }
+      catch(err){ alert("刪除失敗："+err.message); } };
+    box.appendChild(d);
+  });
+}
 async function loadCloudList(){
   const box=$("cloudList"); if(!db){ box.textContent="Firebase 未連線"; return; }
   box.textContent="載入中…";
   try{
     const qs=await getDocs(collection(db,C_DEFS));
-    const rows=[]; qs.forEach(d=>rows.push({ id:d.id, ...d.data() }));
-    rows.sort((a,b)=>(a.site||"").localeCompare(b.site||"") || (a.title||a.id).localeCompare(b.title||b.id,"zh-Hant"));
-    box.innerHTML="";
-    if(!rows.length){ box.textContent="雲端目前沒有教案"; return; }
-    rows.forEach(t=>{
-      const d=document.createElement("div"); d.className="hs-item";
-      const esc=s=>String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;");
-      d.innerHTML=`<span class="tag" style="background:${t.site==="hsinchu"?"#14b8a6":"#2b7de9"}">${SITE_NAMES[t.site]||"生醫急診"}</span>
-        <span class="grow">${esc(t.title||t.id)}<br><code style="font-size:10px;color:#6b7885">${esc(t.id)}</code></span>
-        <button class="btn ghost sm" data-act="edit" type="button">編輯</button>
-        <button class="btn danger sm" data-act="del" type="button">🗑</button>`;
-      const openIt=()=>{
-        if(tour.scenes.length && !confirm(`載入「${t.title||t.id}」編輯？目前編輯中的內容會被取代`)) return;
-        loadTourObj(JSON.parse(JSON.stringify(t))); setMoveMode(false);
-      };
-      d.onclick=openIt;
-      d.querySelector('[data-act=edit]').onclick=e=>{ e.stopPropagation(); openIt(); };
-      d.querySelector('[data-act=del]').onclick=async e=>{ e.stopPropagation();
-        if(!confirm(`⚠️ 確定刪除雲端教案「${t.title||t.id}」？\n刪除後學員將無法開啟此教案，且無法復原。`)) return;
-        try{ await deleteDoc(doc(db,C_DEFS,t.id)); loadCloudList(); }
-        catch(err){ alert("刪除失敗："+err.message); } };
-      box.appendChild(d);
-    });
+    CLOUD_ROWS=[]; qs.forEach(d=>CLOUD_ROWS.push({ id:d.id, ...d.data() }));
+    CLOUD_ROWS.sort((a,b)=>(a.site||"").localeCompare(b.site||"") || (a.title||a.id).localeCompare(b.title||b.id,"zh-Hant"));
+    renderCloudList();
   }catch(e){ box.textContent="載入失敗："+e.message; }
 }
+$("cloudSite").onchange=renderCloudList;
 $("cloudRefresh").onclick=loadCloudList;
+
+/* ---------- 內建環景庫（場景設定的快選；依場景分站分組） ---------- */
+const PANO_LIB=[
+  { name:"生醫急診", panos:[["tours/er/resus.jpg","急救室"]] },
+  { name:"新竹急診", panos:[
+    ["tours/er/waiting.jpg?v=3","候診區"],
+    ["tours/er/triage.jpg?v=3","掛號檢傷"],
+    ["tours/er/corridor.jpg?v=3","治療區走廊"],
+    ["tours/er/resus-a.jpg?v=3","急救室（入口側）"],
+    ["tours/er/resus-b.jpg?v=3","急救室（床側）"],
+    ["tours/er/resus-c.jpg?v=3","急救室（流程牆側）"]] }
+];
+(function fillPanoPick(){
+  const sel=$("scPanoPick");
+  PANO_LIB.forEach(g=>{
+    const og=document.createElement("optgroup"); og.label=g.name;
+    g.panos.forEach(([url,label])=>{ const o=document.createElement("option"); o.value=url; o.textContent=label; og.appendChild(o); });
+    sel.appendChild(og);
+  });
+})();
+$("scPanoPick").onchange=()=>{
+  const v=$("scPanoPick").value; if(!v||!curScene) return;
+  $("scPano").value=v; curScene.panorama=v;
+  viewer.setPanorama(v).then(drawMarkers);
+};
 
 /* ---------- 啟動：預設直接載入急救室範本（教師可修改後另存） ---------- */
 initViewer(DEMO_PANO);
