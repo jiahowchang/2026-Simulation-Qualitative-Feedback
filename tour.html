@@ -808,6 +808,7 @@ function initViewer(scene){
     plugins: [[MarkersPlugin, {}]]
   });
   markers = viewer.getPlugin(MarkersPlugin);
+  window.__markers = markers; window.__viewer = viewer;   // 除錯用
   markers.addEventListener("select-marker", ({ marker }) => {
     if(Date.now()-lastHsFire<600) return;   // 觸控備援已處理過就跳過
     lastHsFire = Date.now();
@@ -905,10 +906,46 @@ function propMarkers(scene){
   });
 }
 
+/* 街景式地面導航箭頭：nav 熱點以 elementLayer「平躺」在地板上（放在通往下一個攝影點的地面） */
+const NAV_EL = {};
+function navArrowEl(h){
+  let el = NAV_EL[h.id];
+  if(!el){
+    el = document.createElement("div");
+    el.style.width = "260px"; el.style.height = "260px";
+    el.style.cursor = "pointer"; el.style.touchAction = "manipulation";
+    el.innerHTML = `
+      <svg viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block">
+        <ellipse cx="130" cy="130" rx="118" ry="118" fill="rgba(255,255,255,0.28)"/>
+        <ellipse cx="130" cy="130" rx="96" ry="96" fill="rgba(255,255,255,0.85)"/>
+        <path d="M130 42 L196 138 L148 138 L148 208 L112 208 L112 138 L64 138 Z" fill="#2b7de9"/>
+        <text x="130" y="245" text-anchor="middle" font-family="-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif"
+          font-size="30" font-weight="800" fill="#ffffff" stroke="#00000088" stroke-width="5" paint-order="stroke">${esc2(h.label||"前往")}</text>
+      </svg>`;
+    el.addEventListener("click", ()=>{
+      if(Date.now()-lastHsFire<600) return; lastHsFire = Date.now();
+      onHotspot(h);
+    });
+    NAV_EL[h.id] = el;
+  }
+  return el;
+}
+function navMarkers(scene){
+  return (scene.hotspots||[]).filter(h=>hsVisible(h) && h.type==="nav").map(h=>({
+    id: "hs_"+h.id,
+    elementLayer: navArrowEl(h),
+    position: { yaw:+h.yaw||0, pitch:+h.pitch||-0.4 },
+    // 平躺於地面：完全水平會與視線近共面而變成薄邊，保留 ~0.33rad 朝鏡頭微傾（Google 街景同款）
+    rotation: { pitch: -(Math.PI/2) - (+h.pitch||-0.4) + 0.33 },
+    zIndex: 3,
+    data: h
+  }));
+}
+
 // 只重畫熱點（不重載環景），變數改變 / 顯示隱藏熱點時使用
 function drawMarkers(){
   const scene = curSceneObj(); if(!scene || !markers) return;
-  const ms = (scene.hotspots||[]).filter(hsVisible).map(h => {
+  const ms = (scene.hotspots||[]).filter(h=>hsVisible(h) && h.type!=="nav").map(h => {
     const found = (h.type==="hazard" && foundHazards.has(h.id));
     // 危害未找到前不顯示標籤（避免直接洩題）；其餘顯示 label / title；角色任務加徽章
     const roleTag = (h.role && ROLES[h.role]) ? ROLES[h.role].label+"｜" : "";
@@ -922,7 +959,7 @@ function drawMarkers(){
       data: h
     };
   });
-  markers.setMarkers([...propMarkers(scene), ...teamMarkers(), ...ms]);
+  markers.setMarkers([...propMarkers(scene), ...teamMarkers(), ...navMarkers(scene), ...ms]);
   updateHazardBar(scene);
 }
 
