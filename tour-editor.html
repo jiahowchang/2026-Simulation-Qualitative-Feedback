@@ -78,7 +78,7 @@
     <div class="scroll">
       <div class="sect" id="cloudSect">
         <h2>☁️ 雲端教案（點一下載入編輯）</h2>
-        <div class="field"><label>選擇場景（與學員首頁相同的分站）</label>
+        <div class="field"><label>選擇場景（篩選教案清單，並同步切換編輯中教案的分站與環景）</label>
           <select id="cloudSite">
             <option value="">全部場景</option>
             <option value="biomed">生醫急診</option>
@@ -587,7 +587,13 @@ async function loadCloudList(){
     renderCloudList();
   }catch(e){ box.textContent="載入失敗："+e.message; }
 }
-$("cloudSite").onchange=renderCloudList;
+$("cloudSite").onchange=()=>{
+  renderCloudList();
+  // 上方的「選擇場景」同時就是工作分站：同步 情境設定 的所屬場景，
+  // 並觸發其連動（內建環景立即換成該分站、預覽刷新）
+  const site=$("cloudSite").value;
+  if(site && $("tSite").value!==site){ $("tSite").value=site; $("tSite").dispatchEvent(new Event("change")); }
+};
 $("cloudRefresh").onclick=loadCloudList;
 
 /* ---------- 內建環景庫（場景設定的快選；依場景分站分組） ---------- */
