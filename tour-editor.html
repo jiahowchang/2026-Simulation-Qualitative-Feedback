@@ -251,7 +251,9 @@ function bg(t){ return {nav:"#2b7de9cc",info:"#8b5cf6cc",quiz:"#f59e0bcc",branch
 
 /* ---------- 場景 ---------- */
 function addSceneObj(){
-  const s={ id:nid("scene"), name:`場景${tour.scenes.length+1}`, panorama:DEMO_PANO, initialView:{yaw:0,pitch:0}, hotspots:[] };
+  const lib=PANO_LIB.find(g=>g.site===($("tSite").value||"biomed"));
+  const pano=lib ? lib.panos[Math.min(tour.scenes.length, lib.panos.length-1)][0] : DEMO_PANO;
+  const s={ id:nid("scene"), name:`場景${tour.scenes.length+1}`, panorama:pano, initialView:{yaw:0,pitch:0}, hotspots:[] };
   tour.scenes.push(s); if(!tour.startSceneId) tour.startSceneId=s.id;
   selectScene(s); renderSceneList();
 }
@@ -590,8 +592,8 @@ $("cloudRefresh").onclick=loadCloudList;
 
 /* ---------- 內建環景庫（場景設定的快選；依場景分站分組） ---------- */
 const PANO_LIB=[
-  { name:"生醫急診", panos:[["tours/er/resus.jpg","急救室"]] },
-  { name:"新竹急診", panos:[
+  { site:"biomed", name:"生醫急診", panos:[["tours/er/resus.jpg","急救室"]] },
+  { site:"hsinchu", name:"新竹急診", panos:[
     ["tours/er/waiting.jpg?v=3","候診區"],
     ["tours/er/triage.jpg?v=3","掛號檢傷"],
     ["tours/er/corridor.jpg?v=3","治療區走廊"],
@@ -612,6 +614,23 @@ $("scPanoPick").onchange=()=>{
   $("scPano").value=v; curScene.panorama=v;
   viewer.setPanorama(v).then(drawMarkers);
 };
+
+/* 所屬場景（分站）切換 → 用內建環景的場景立即換成新分站的環景並刷新預覽；
+   自訂網址的環景不動（避免蓋掉老師自己的照片） */
+const builtinSiteOf = url => { for(const g of PANO_LIB){ if(g.panos.some(p=>p[0]===url)) return g.site; } return null; };
+$("tSite").addEventListener("change", ()=>{
+  const site=$("tSite").value, lib=PANO_LIB.find(g=>g.site===site); if(!lib) return;
+  let idx=0, changed=false;
+  tour.scenes.forEach(s=>{
+    const bs=builtinSiteOf(s.panorama);
+    if(bs && bs!==site){ s.panorama=lib.panos[Math.min(idx, lib.panos.length-1)][0]; idx++; changed=true; }
+  });
+  if(changed && curScene){
+    $("scPano").value=curScene.panorama||"";
+    const pick=$("scPanoPick"); pick.value=curScene.panorama||""; if(pick.value!==(curScene.panorama||"")) pick.value="";
+    if(viewer) viewer.setPanorama(curScene.panorama||DEMO_PANO).then(drawMarkers);
+  }
+});
 
 /* ---------- 啟動：預設直接載入急救室範本（教師可修改後另存） ---------- */
 initViewer(DEMO_PANO);
