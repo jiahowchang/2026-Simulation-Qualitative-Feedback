@@ -70,8 +70,8 @@
         <div class="field"><label>通過門檻分數（除錯總結用，選填）</label><input id="tPass" type="number" placeholder="例：70"></div>
         <div class="field"><label>虛擬人物/物件（JSON 陣列，套用到第一個場景；image 可用 images/props/ 內建素材；hotspot=點擊觸發的熱點 id）</label>
         <textarea id="tProps" style="min-height:72px" placeholder='[{"id":"vp_patient","image":"images/props/patient-supine.png","yaw":0.41,"pitch":-0.34,"width":820,"height":508,"hotspot":"assess"}]'></textarea></div>
-        <div class="field"><label>挑戰關卡（JSON 陣列；tasks=熱點 id；熱點可加 role:"leaderDr/leaderN/airway/circulation/support"（角色專屬）、once:true（防重複）、startHidden:true（由關卡自動揭示））</label>
-        <textarea id="tStages" style="min-height:72px" placeholder='[{"id":"s1","title":"現場準備","tasks":["hh","assess"],"bonus":10,"timeLimit":120,"fastBonus":10}]'></textarea></div>
+        <div class="field"><label>挑戰關卡（JSON 陣列；tasks=熱點 id；熱點可加 role:"leaderDr/leaderN/airway/circulation/support"（角色專屬）、once:true（防重複）、startHidden:true（由關卡自動揭示）；關卡可加 teamfight:{"need":3,"bonus":15}＝團戰：需 N 位不同成員完成任務才拿額外分）</label>
+        <textarea id="tStages" style="min-height:72px" placeholder='[{"id":"s2","title":"啟動 CPR","tasks":["cpr","bvm","mon"],"bonus":15,"timeLimit":120,"fastBonus":10,"teamfight":{"need":3,"bonus":15}}]'></textarea></div>
       </details>
     </header>
 
@@ -406,10 +406,10 @@ const ER_TEMPLATE = {
   debrief:{ passScore:80, showMistakes:true },
   stages:[
     { id:"s1", title:"現場準備",   tasks:["hh","assess"],        bonus:10 },
-    { id:"s2", title:"啟動 CPR",   tasks:["cpr","bvm","mon"],    bonus:15, timeLimit:120, fastBonus:10 },
+    { id:"s2", title:"啟動 CPR",   tasks:["cpr","bvm","mon"],    bonus:15, timeLimit:120, fastBonus:10, teamfight:{ need:3, bonus:15 } },
     { id:"s3", title:"節律判讀",   tasks:["q1"],                 bonus:10, timeLimit:60,  fastBonus:5 },
     { id:"s4", title:"除顫",       tasks:["defib"],              bonus:15, timeLimit:60,  fastBonus:10 },
-    { id:"s5", title:"給藥與記錄", tasks:["iv","epi","record"],  bonus:15, timeLimit:120, fastBonus:10 },
+    { id:"s5", title:"給藥與記錄", tasks:["iv","epi","record"],  bonus:15, timeLimit:120, fastBonus:10, teamfight:{ need:2, bonus:10 } },
     { id:"s6", title:"ROSC 與交接", tasks:["handoff"],           bonus:20 }
   ],
   scenes:[

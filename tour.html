@@ -103,10 +103,22 @@
   #tpMic.on{ background:#e0533d !important; animation:pulse 1.2s infinite; }
   /* 挑戰關卡 HUD（頂部中央） */
   #stageBar{ position:fixed; top:8px; left:50%; transform:translateX(-50%); z-index:35;
-    background:#000a; border:1px solid #ffffff33; border-radius:20px; padding:7px 18px;
-    color:#fff; font-size:13.5px; display:none; white-space:nowrap; }
+    background:#000a; border:1px solid #ffffff33; border-radius:16px; padding:6px 18px 7px;
+    color:#fff; font-size:13.5px; display:none; white-space:nowrap; text-align:center; }
   #stageBar b{ color:#ffd76a; }
   #stageBar .sb-warn{ color:#ff7b6b; }
+  /* LoL 式推塔軌道：💥已破 / 🏰目前 / 🗼未來，最後一關＝👑主堡 */
+  #stageBar .sb-track{ font-size:15px; letter-spacing:4px; line-height:1.2; }
+  #stageBar .sb-track .twr{ opacity:.35; }
+  #stageBar .sb-track .twr.done{ opacity:.95; }
+  #stageBar .sb-track .twr.cur{ opacity:1; animation:twrPulse 1.2s infinite; }
+  @keyframes twrPulse{ 0%,100%{ filter:none; } 50%{ filter:drop-shadow(0 0 7px #ffd76a); } }
+  /* 團戰關卡：紅光警示 */
+  #stageBar.sb-fight{ border-color:#ff5a4d; box-shadow:0 0 16px #ff5a4d77; }
+  #stageBar .sb-fightline{ color:#ff9b91; font-size:12px; margin-top:2px; }
+  /* 我的分路（角色專屬任務線） */
+  #stageBar .sb-lane{ color:#9fe0ff; font-size:12px; margin-top:2px; }
+  #tpMembers .gold{ color:#ffd76a; font-size:11px; }
   /* 場景內學員 Avatar 名牌與動作泡泡 */
   .tm-fig{ position:relative; }
   .tm-name{ position:absolute; top:-6px; left:50%; transform:translateX(-50%); white-space:nowrap;
@@ -339,10 +351,10 @@ const DEMO = {
   // 挑戰關卡：全隊分工依序完成（限時另有速度獎勵）
   stages:[
     { id:"s1", title:"現場準備",   tasks:["hh","assess"],        bonus:10 },
-    { id:"s2", title:"啟動 CPR",   tasks:["cpr","bvm","mon"],    bonus:15, timeLimit:120, fastBonus:10 },
+    { id:"s2", title:"啟動 CPR",   tasks:["cpr","bvm","mon"],    bonus:15, timeLimit:120, fastBonus:10, teamfight:{ need:3, bonus:15 } },
     { id:"s3", title:"節律判讀",   tasks:["q1"],                 bonus:10, timeLimit:60,  fastBonus:5 },
     { id:"s4", title:"除顫",       tasks:["defib"],              bonus:15, timeLimit:60,  fastBonus:10 },
-    { id:"s5", title:"給藥與記錄", tasks:["iv","epi","record"],  bonus:15, timeLimit:120, fastBonus:10 },
+    { id:"s5", title:"給藥與記錄", tasks:["iv","epi","record"],  bonus:15, timeLimit:120, fastBonus:10, teamfight:{ need:2, bonus:10 } },
     { id:"s6", title:"ROSC 與交接", tasks:["handoff"],           bonus:20 }
   ],
   scenes:[
@@ -488,6 +500,13 @@ async function joinTeam(code, role){
       Object.entries(st.stageStarts||{}).forEach(([k,v])=>{
         if(!stageStarts[k] || v < stageStarts[k]) stageStarts[k] = v;   // 取最早開始時間
       });
+      // 個人金幣合併：同任務兩人幾乎同時搶到時，全隊一致取 memberId 較小者（確定性收斂）
+      Object.entries(st.credits||{}).forEach(([k,v])=>{
+        if(!v || !v.m) return;
+        const cur = teamCredits[k];
+        if(!cur || (cur.m!==v.m && String(v.m)<String(cur.m))) teamCredits[k]=v;
+      });
+      renderTeamMembers();
       if(viewer){ drawMarkers(); }
     }finally{ applyingRemote = false; }
     checkStages();   // 隊友完成任務 → 本地也結算關卡/揭示下一關
@@ -514,7 +533,7 @@ function publishTeamState(){
   if(!team || applyingRemote || !db) return;
   setDoc(doc(db, C_ROOMS, team.code), { state:{
     vars, revealed:[...revealed], hidden:[...hiddenSet], done:[...done],
-    foundHazards:[...foundHazards], score, stageStarts }, seq: Date.now() }, { merge:true }).catch(()=>{});
+    foundHazards:[...foundHazards], score, stageStarts, credits: teamCredits }, seq: Date.now() }, { merge:true }).catch(()=>{});
 }
 function teamLogEvent(type, data){
   if(!team || !db) return;
@@ -547,9 +566,11 @@ function evtLabel(type, d){
 }
 function renderTeamMembers(){
   const alive = teamMembers.filter(m=>Date.now()-(m.lastSeen||0) < 90000);
+  const goldOf = id => Object.values(teamCredits).reduce((s,c)=>s+((c&&c.m===id)?(c.g||0):0),0);
   $("tpMembers").innerHTML = alive.map(m=>{
     const r = ROLES[m.role]||{label:m.role,color:"#888"};
-    return `<div class="tp-m"><span class="dot" style="background:${r.color}"></span>${esc2(m.name)}<span class="rl">${r.label}</span></div>`;
+    const g = m.role==="observer" ? "" : `<span class="gold">💰${goldOf(m.id)}</span>`;
+    return `<div class="tp-m"><span class="dot" style="background:${r.color}"></span>${esc2(m.name)}<span class="rl">${r.label}</span>${g}</div>`;
   }).join("") || "<div class='tp-m'>等待成員加入…</div>";
   const sel = $("trmTarget"), cur = sel.value;
   sel.innerHTML = "<option value=''>— 全隊 —</option>" + alive.filter(m=>m.role!=="observer")
@@ -674,6 +695,29 @@ $("gateTeam").addEventListener("input", ()=>{
    任務熱點可加 role:"circulation"（角色專屬）、once:true（防重複）、gated:true（不被關卡自動揭示，
    仍走原本 reveal 動作鏈） */
 let stageStarts = {};            // stageId → 開始時間（隨房間同步，取最早值）
+let teamCredits = {};            // taskId → { m:memberId, g:金幣 }（LoL 式個人經濟：首位完成者得，隨房間同步）
+/* LoL 式個人經濟：完成任務的金幣數（quiz/hazard 用本身分數；action/info 加總 addScore，至少 5） */
+function taskGold(h){
+  if(h.type==="quiz") return h.points||10;
+  if(h.type==="hazard") return h.points||5;
+  const acts = Array.isArray(h.onSelect)? h.onSelect : [];
+  const g = acts.filter(a=>["addScore","score"].includes(a.do||a.action)).reduce((s,a)=>s+(a.points||0),0);
+  return g||5;
+}
+function creditTask(h){
+  // 教師（observer）示範點擊不搶學員金幣、不算團戰參戰
+  if(!team || team.role==="observer" || !h || teamCredits[h.id]) return;
+  teamCredits[h.id] = { m: team.memberId, g: taskGold(h) };
+  renderTeamMembers();
+}
+function isObserverId(id){ const m=teamMembers.find(x=>x.id===id); return !!(m && m.role==="observer"); }
+function fightersOf(st){   // 團戰參戰者：本關任務的（非教師）完成者集合
+  return new Set((st.tasks||[]).map(id=>teamCredits[id]&&teamCredits[id].m).filter(Boolean).filter(id=>!isObserverId(id)));
+}
+function findTaskHs(id){
+  for(const s of (tour.scenes||[])){ const h=(s.hotspots||[]).find(x=>x.id===id); if(h) return h; }
+  return null;
+}
 function stagesOf(){ return Array.isArray(tour.stages) ? tour.stages : []; }
 function isStageTask(id){ return stagesOf().some(s=>(s.tasks||[]).includes(id)); }
 function curStageIdx(){
@@ -692,9 +736,14 @@ function checkStages(){
       const t0 = stageStarts[st.id];
       const fast = st.timeLimit && t0 && (Date.now()-t0)/1000 <= st.timeLimit;
       if(fast) pts += (st.fastBonus||0);
+      // LoL 式團戰：關卡任務由 ≥need 位不同成員完成 → 團戰獎勵
+      let fightWin = false;
+      if(st.teamfight && team){
+        if(fightersOf(st).size >= (st.teamfight.need||3)){ fightWin = true; pts += (st.teamfight.bonus||15); }
+      }
       if(pts) addScore(pts);
-      toast(`🎉 完成關卡「${st.title}」${fast?"（限時達成！）":""} +${pts} 分`);
-      logEvent("stage_done",{ id:st.id, title:st.title, fast:!!fast });
+      toast(`${fightWin?"⚔️ 團戰勝利！":"🎉"} 完成關卡「${st.title}」${fast?"（限時達成！）":""} +${pts} 分`);
+      logEvent("stage_done",{ id:st.id, title:st.title, fast:!!fast, fight:fightWin });
     }
   });
   const idx = curStageIdx();
@@ -714,9 +763,13 @@ function renderStageBar(){
   const ss = stagesOf(), bar = $("stageBar");
   if(!ss.length){ bar.style.display="none"; return; }
   const idx = curStageIdx();
+  // LoL 式推塔軌道：💥 已破塔 / 🏰 目前推進 / 🗼 未來，最後一關 = 👑 主堡
+  const trackIc = (i)=> i<idx ? "💥" : (i===ss.length-1 ? "👑" : (i===idx ? "🏰" : "🗼"));
+  const track = `<div class="sb-track">${ss.map((s,i)=>
+    `<span class="twr ${i<idx?'done':''} ${i===idx?'cur':''}">${trackIc(i)}</span>`).join("")}</div>`;
   if(idx >= ss.length){
-    bar.style.display="block";
-    bar.innerHTML = "🏁 <b>全部關卡完成！</b>可按「結束情境」看總結";
+    bar.style.display="block"; bar.classList.remove("sb-fight");
+    bar.innerHTML = `${track}🏆 <b>VICTORY！主堡達陣——病人穩定後送</b>　按「結束情境」看戰績`;
     return;
   }
   const st = ss[idx];
@@ -726,8 +779,23 @@ function renderStageBar(){
     const left = Math.round(st.timeLimit - (Date.now()-stageStarts[st.id])/1000);
     timer = ` ─ ⏱ <b class="${left<15?'sb-warn':''}">${left>=0? left+"s" : "逾時"}</b>`;
   }
+  // 團戰關卡：顯示參戰人數（不同成員數），紅光警示
+  let fight = "";
+  const fightOn = !!(st.teamfight && team);
+  if(fightOn){
+    const who = fightersOf(st).size;
+    fight = `<div class="sb-fightline">⚔️ 團戰！需 ${st.teamfight.need||3} 位成員參戰（目前 ${who}）達成＋${st.teamfight.bonus||15} 分</div>`;
+  }
+  bar.classList.toggle("sb-fight", fightOn);
+  // 我的分路：本關卡屬於我角色的任務（發育路線）
+  let lane = "";
+  if(team && team.role && team.role!=="observer"){
+    const mine = (st.tasks||[]).map(id=>findTaskHs(id)).filter(h=>h && h.role===team.role);
+    if(mine.length) lane = `<div class="sb-lane">🛡️ 你的分路：${mine.map(h=>
+      `${done.has(h.id)?"✅":"⭕"} ${esc2(h.label||h.title||String(h.question||"").replace(/<[^>]+>/g,"").slice(0,18)||h.id)}`).join("　")}</div>`;
+  }
   bar.style.display="block";
-  bar.innerHTML = `關卡 ${idx+1}/${ss.length}：<b>${esc2(st.title)}</b> ─ 任務 ${doneN}/${(st.tasks||[]).length}${timer}`;
+  bar.innerHTML = `${track}關卡 ${idx+1}/${ss.length}：<b>${esc2(st.title)}</b> ─ 任務 ${doneN}/${(st.tasks||[]).length}${timer}${fight}${lane}`;
 }
 setInterval(()=>{ if(stagesOf().length && startTime) renderStageBar(); }, 1000);
 // 隊內文字聊天（遠端連線溝通；訊息也會浮在該成員 Avatar 頭上）
@@ -1023,9 +1091,9 @@ function onHotspot(h){
   if(h.type==="nav"){ logEvent("nav",{to:h.targetSceneId}); }
   else if(h.type==="hazard"){ onHazard(h); }
   else if(h.type==="media"){ openMedia(h.media||h); logEvent("media",{id:h.id, label:h.label||h.title||""}); }
-  else if(h.type==="info"){ openInfo(h); if(isStageTask(h.id)) done.add(h.id); logEvent("info",{id:h.id, label:h.label||h.title||""}); }
+  else if(h.type==="info"){ openInfo(h); if(isStageTask(h.id)){ done.add(h.id); creditTask(h); } logEvent("info",{id:h.id, label:h.label||h.title||""}); }
   else if(h.type==="action"){
-    if(h.once || isStageTask(h.id)) done.add(h.id);
+    if(h.once || isStageTask(h.id)){ done.add(h.id); creditTask(h); }
     logEvent("hotspot",{id:h.id, label:h.label||h.title||""});
   }
 
@@ -1419,7 +1487,7 @@ function openMedia(m){
 
 function onHazard(h){
   if(foundHazards.has(h.id)){ toast("這個危害已找到"); return; }
-  foundHazards.add(h.id); addScore(h.points||5);
+  foundHazards.add(h.id); addScore(h.points||5); creditTask(h);
   logEvent("hazard_found",{id:h.id,label:h.label});
   drawMarkers();
   openModal("⚠️ 找到危害", `<b>${h.label||"危害"}</b><div class="feedback ok" style="margin-top:12px">已記錄，繼續找出其他危害。</div>`,
@@ -1453,7 +1521,7 @@ function openQuiz(h){
       logEvent("quiz_answer",{id:h.id,choice:i,correct});
       if(!done.has(h.id)){
         done.add(h.id); quizTotal++;
-        if(correct){ quizCorrect++; addScore(h.points||10); if(Array.isArray(h.onSelect)) runActions(h.onSelect,h); }
+        if(correct){ quizCorrect++; addScore(h.points||10); creditTask(h); if(Array.isArray(h.onSelect)) runActions(h.onSelect,h); }
         else mistakes.push(`測驗答錯：${(h.question||"").replace(/<[^>]+>/g,"").slice(0,40)}`);
       }
       checkStages();
@@ -1522,6 +1590,19 @@ function showDebrief(){
       noted.slice(0,8).forEach(e=> html += `<li>${e.ok?"👍":"⚠️"} ${esc2(e.label)}</li>`);
       html += `</ul>`;
     }
+  }
+  // LoL 式團隊戰績：個人金幣（貢獻度）排行 + MVP
+  if(team && Object.keys(teamCredits).length){
+    const tally = {};
+    Object.values(teamCredits).forEach(c=>{ if(!c||!c.m||isObserverId(c.m)) return;
+      if(!tally[c.m]) tally[c.m]={g:0,n:0}; tally[c.m].g+=c.g||0; tally[c.m].n++; });
+    const nameOf = id => { const m=teamMembers.find(x=>x.id===id); return m? m.name : String(id).split("_")[0]; };
+    const roleOf = id => { const m=teamMembers.find(x=>x.id===id); return (m&&ROLES[m.role])? ROLES[m.role].label : ""; };
+    const rank = Object.entries(tally).sort((a,b)=>b[1].g-a[1].g);
+    html += `<h3 style="margin:14px 0 6px">${pass?"🏆 VICTORY — ":""}團隊戰績（個人貢獻）</h3>`;
+    rank.forEach(([id,v],i)=>{
+      html += `<div class="stat"><span>${i===0?"👑 MVP　":""}${esc2(nameOf(id))}${roleOf(id)?`（${roleOf(id)}）`:""}</span><b>💰 ${v.g}　${v.n} 項任務</b></div>`;
+    });
   }
   html += `<div class="foot">
     <button class="btn ghost" id="dbClose">繼續情境</button>
