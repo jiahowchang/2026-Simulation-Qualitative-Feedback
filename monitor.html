@@ -1833,6 +1833,23 @@ if (JOIN_CODE) setTimeout(()=>{
   // 聽眾模式預設靜音：整個演講廳不會此起彼落嗶嗶叫；教師可從控制台遠端解除靜音
   if (AUDIENCE) setTimeout(()=>{ if (window.setSilence) window.setSilence(true); else state.silencedUntil = 1e15; }, 900);
 }, 250);
+// 聲音解鎖鈕：瀏覽器規定音訊必須由真人點擊啟動——join 模式是程式自動 START（不算手勢），
+// 所以 AudioContext 會卡在 suspended、完全無聲。顯示一顆按鈕讓使用者親手點一下：
+// 解鎖音訊 + 解除靜音。iframe 內嵌（360 情境小面板）不顯示，維持原本安靜行為。
+if (JOIN_CODE && window.self === window.top) setTimeout(()=>{
+  const b = document.createElement("button");
+  b.textContent = "🔊 點一下開啟聲音";
+  b.style.cssText = "position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:60;"+
+    "padding:12px 22px;border-radius:24px;border:1px solid #5ac8fa;background:rgba(0,0,0,.85);"+
+    "color:#5ac8fa;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px #000a";
+  b.onclick = ()=>{
+    try{ if (window.audio) window.audio(); }catch(e){}          // 手勢內 resume AudioContext
+    if (window.setSilence) window.setSilence(false);
+    try{ if (window.beep) window.beep(880,.09,.12); }catch(e){}  // 確認音
+    b.remove();
+  };
+  document.body.appendChild(b);
+}, 1300);
 $("exitBtn").addEventListener("click", ()=>{ if (!state.running) endSession(); });
 window.addEventListener("beforeunload", ()=>{ endSession(); });
 
