@@ -1,0 +1,12 @@
+{
+  "name": "語音行事曆",
+  "short_name": "語音行事曆",
+  "start_url": "voicecal.html",
+  "scope": "./",
+  "display": "browser",
+  "background_color": "#f6f3fc",
+  "theme_color": "#7c5cbf",
+  "icons": [
+    { "src": "logo.png", "sizes": "any", "type": "image/png" }
+  ]
+}

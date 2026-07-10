@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#7c5cbf">
+<link rel="manifest" href="voicecal.webmanifest">
+<link rel="apple-touch-icon" href="logo.png">
+<title>語音行事曆</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", Roboto, sans-serif;
+  background: linear-gradient(160deg, #f6f3fc 0%, #fdf3f7 100%);
+  color: #2d2440; min-height: 100vh;
+}
+.wrap { max-width: 520px; margin: 0 auto; padding: 0 16px 80px; }
+
+/* ── Header ── */
+.header { text-align: center; padding: 30px 10px 8px; }
+.header h1 { font-size: 1.5rem; font-weight: 800; color: #5b3fa8; letter-spacing: .04em; }
+.header p { font-size: .85rem; color: #9182b3; margin-top: 6px; }
+.userbar { display: none; justify-content: center; align-items: center; gap: 8px; margin-top: 10px; font-size: .8rem; color: #6b5e8c; }
+.userbar img { width: 22px; height: 22px; border-radius: 50%; }
+.userbar button { border: none; background: #ece5f8; color: #5b3fa8; border-radius: 12px; padding: 3px 10px; font-size: .75rem; cursor: pointer; }
+
+/* ── Login gate ── */
+.gate { text-align: center; padding: 40px 20px; }
+.gate .big { font-size: 3.4rem; margin-bottom: 14px; }
+.gate p { color: #6b5e8c; margin-bottom: 22px; line-height: 1.7; }
+.gbtn {
+  display: inline-flex; align-items: center; gap: 10px; border: none; cursor: pointer;
+  background: #fff; color: #333; font-size: 1rem; font-weight: 700;
+  padding: 13px 26px; border-radius: 30px; box-shadow: 0 4px 16px rgba(91,63,168,.18);
+}
+.gbtn:active { transform: scale(.97); }
+.denied { display: none; margin-top: 18px; color: #c53030; font-size: .9rem; line-height: 1.7; }
+
+/* ── Mic ── */
+.app { display: none; }
+.miczone { text-align: center; padding: 22px 0 8px; }
+.mic {
+  width: 118px; height: 118px; border-radius: 50%; border: none; cursor: pointer;
+  background: linear-gradient(145deg, #8b6ad4, #6a48b8); color: #fff; font-size: 3rem;
+  box-shadow: 0 8px 26px rgba(106,72,184,.4); position: relative; transition: transform .15s;
+}
+.mic:active { transform: scale(.95); }
+.mic.rec { background: linear-gradient(145deg, #f0648c, #d43a68); animation: pulse 1.2s infinite; }
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(212,58,104,.45); }
+  70% { box-shadow: 0 0 0 26px rgba(212,58,104,0); }
+  100% { box-shadow: 0 0 0 0 rgba(212,58,104,0); }
+}
+.michint { margin-top: 12px; font-size: .9rem; color: #9182b3; min-height: 1.4em; }
+.michint.rec { color: #d43a68; font-weight: 700; }
+
+/* ── transcript ── */
+.tbox { margin-top: 14px; }
+.tbox textarea {
+  width: 100%; min-height: 74px; border: 2px solid #e4dcf5; border-radius: 16px;
+  padding: 12px 14px; font-size: 1.05rem; font-family: inherit; color: #2d2440;
+  background: #fff; resize: vertical; outline: none; line-height: 1.6;
+}
+.tbox textarea:focus { border-color: #8b6ad4; }
+.rowbtns { display: flex; gap: 10px; margin-top: 10px; }
+.btn {
+  flex: 1; border: none; cursor: pointer; border-radius: 14px; padding: 13px 8px;
+  font-size: 1rem; font-weight: 800; font-family: inherit;
+}
+.btn:disabled { opacity: .5; cursor: default; }
+.btn.primary { background: linear-gradient(135deg, #8b6ad4, #6a48b8); color: #fff; box-shadow: 0 4px 14px rgba(106,72,184,.3); }
+.btn.ghost { background: #ece5f8; color: #5b3fa8; flex: 0 0 auto; padding: 13px 16px; }
+.btn:active:not(:disabled) { transform: scale(.98); }
+
+/* ── event cards ── */
+.cards { margin-top: 20px; display: flex; flex-direction: column; gap: 14px; }
+.card {
+  background: #fff; border-radius: 18px; padding: 16px; box-shadow: 0 3px 14px rgba(91,63,168,.1);
+  border: 2px solid transparent;
+}
+.card.ok { border-color: #48bb78; background: #f4fdf8; }
+.card .f { margin-bottom: 9px; }
+.card label { display: block; font-size: .72rem; font-weight: 700; color: #9182b3; margin-bottom: 3px; letter-spacing: .05em; }
+.card input[type=text], .card input[type=date], .card input[type=time] {
+  width: 100%; border: 1.5px solid #e4dcf5; border-radius: 10px; padding: 8px 10px;
+  font-size: 1rem; font-family: inherit; color: #2d2440; background: #fcfbfe; outline: none;
+}
+.card input:focus { border-color: #8b6ad4; }
+.card .title-in { font-weight: 800; font-size: 1.1rem; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.aldy { display: flex; align-items: center; gap: 6px; font-size: .85rem; color: #6b5e8c; margin-bottom: 9px; }
+.aldy input { width: 18px; height: 18px; accent-color: #6a48b8; }
+.rrule-tag { display: inline-block; background: #fff3e0; color: #b7791f; font-size: .75rem; font-weight: 700; border-radius: 8px; padding: 3px 8px; margin-bottom: 9px; }
+.cardbtns { display: flex; gap: 8px; margin-top: 4px; }
+.okmsg { display: none; margin-top: 10px; font-size: .9rem; color: #2f855a; font-weight: 700; }
+.okmsg a { color: #2b6cb0; }
+.status { text-align: center; margin-top: 16px; font-size: .9rem; color: #6b5e8c; min-height: 1.4em; line-height: 1.6; }
+.status.err { color: #c53030; }
+.spinner {
+  display: inline-block; width: 16px; height: 16px; border: 2.5px solid #d9cef0;
+  border-top-color: #6a48b8; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -3px; margin-right: 6px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.examples { margin-top: 26px; background: #fff; border-radius: 16px; padding: 14px 16px; box-shadow: 0 2px 10px rgba(91,63,168,.07); }
+.examples h3 { font-size: .82rem; color: #9182b3; margin-bottom: 8px; letter-spacing: .05em; }
+.examples div { font-size: .88rem; color: #6b5e8c; line-height: 2; }
+.callink { text-align: center; margin-top: 22px; }
+.callink a { color: #5b3fa8; font-size: .85rem; text-decoration: none; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>🎤 語音行事曆</h1>
+    <p>說一句話，行程自動加入 Google 日曆</p>
+    <div class="userbar" id="userbar">
+      <img id="uphoto" alt=""><span id="uname"></span>
+      <button id="logoutBtn">登出</button>
+    </div>
+  </div>
+
+  <!-- 登入頁 -->
+  <div class="gate" id="gate">
+    <div class="big">📅</div>
+    <p>用 Google 帳號登入，<br>並允許存取你的 Google 日曆</p>
+    <button class="gbtn" id="loginBtn">
+      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.1 29.4 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.1 29.4 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C36.9 39.2 44 34 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>
+      使用 Google 登入
+    </button>
+    <div class="denied" id="denied">此帳號沒有使用權限 🙅<br>請改用已授權的 Google 帳號登入</div>
+  </div>
+
+  <!-- 主畫面 -->
+  <div class="app" id="app">
+    <div class="miczone">
+      <button class="mic" id="micBtn">🎤</button>
+      <div class="michint" id="micHint">按一下開始說話</div>
+    </div>
+    <div class="tbox">
+      <textarea id="transcript" placeholder="例：明天下午三點帶妹妹去打疫苗&#10;（也可以直接打字）"></textarea>
+      <div class="rowbtns">
+        <button class="btn primary" id="parseBtn">✨ 解析行程</button>
+        <button class="btn ghost" id="clearBtn">清除</button>
+      </div>
+    </div>
+    <div class="status" id="status"></div>
+    <div class="cards" id="cards"></div>
+    <div class="examples">
+      <h3>💡 可以這樣說</h3>
+      <div>
+        「明天早上十點半回診」<br>
+        「下週五晚上六點和爸媽吃飯，在欣葉」<br>
+        「每週三下午四點鋼琴課」<br>
+        「7月20號整天：小孩學校運動會」
+      </div>
+    </div>
+    <div class="callink"><a href="https://calendar.google.com" target="_blank">📅 開啟我的 Google 日曆</a></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+/* ── 設定 ── */
+const ALLOWED_EMAILS = ["changstella0223@gmail.com", "jiahowchang@gmail.com"];
+const PROXY_URL = "https://patient-mkargc7maa-uc.a.run.app";
+const CAL_SCOPE = "https://www.googleapis.com/auth/calendar.events";
+const TZ = "Asia/Taipei";
+
+const firebaseConfig = {
+  apiKey:"AIzaSyBrs80vpFVe-iEh5ctzRWfYHUBb3KGvILo",
+  authDomain:"speech-to-text-2f776.firebaseapp.com",
+  projectId:"speech-to-text-2f776",
+  storageBucket:"speech-to-text-2f776.firebasestorage.app",
+  messagingSenderId:"283739023798",
+  appId:"1:283739023798:web:3091ec2bcf6262b5ecb917"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const $ = id => document.getElementById(id);
+
+/* ── 登入 / 白名單 ── */
+function makeProvider(){
+  const p = new GoogleAuthProvider();
+  p.addScope(CAL_SCOPE);
+  return p;
+}
+function saveToken(cred){
+  if (cred && cred.accessToken)
+    sessionStorage.setItem("vc_tok", JSON.stringify({ t: cred.accessToken, exp: Date.now() + 55*60*1000 }));
+}
+function storedToken(){
+  try {
+    const o = JSON.parse(sessionStorage.getItem("vc_tok") || "null");
+    if (o && o.exp > Date.now()) return o.t;
+  } catch(e){}
+  return null;
+}
+async function ensureToken(){
+  const t = storedToken();
+  if (t) return t;
+  const result = await signInWithPopup(auth, makeProvider());
+  const cred = GoogleAuthProvider.credentialFromResult(result);
+  saveToken(cred);
+  const t2 = storedToken();
+  if (!t2) throw new Error("無法取得日曆授權");
+  return t2;
+}
+
+$("loginBtn").onclick = async () => {
+  $("denied").style.display = "none";
+  try {
+    const result = await signInWithPopup(auth, makeProvider());
+    saveToken(GoogleAuthProvider.credentialFromResult(result));
+  } catch(e) {
+    if (e.code !== "auth/popup-closed-by-user" && e.code !== "auth/cancelled-popup-request")
+      setStatus("登入失敗：" + (e.code || e.message), true);
+  }
+};
+$("logoutBtn").onclick = () => { sessionStorage.removeItem("vc_tok"); signOut(auth); };
+
+onAuthStateChanged(auth, user => {
+  const okUser = user && ALLOWED_EMAILS.includes((user.email || "").toLowerCase());
+  if (user && !okUser) {
+    $("denied").style.display = "block";
+    sessionStorage.removeItem("vc_tok");
+    signOut(auth);
+    return;
+  }
+  $("gate").style.display = okUser ? "none" : "block";
+  $("app").style.display = okUser ? "block" : "none";
+  $("userbar").style.display = okUser ? "flex" : "none";
+  if (okUser) {
+    $("uname").textContent = user.displayName || user.email;
+    $("uphoto").src = user.photoURL || "";
+    $("uphoto").style.display = user.photoURL ? "inline" : "none";
+  }
+});
+
+/* ── 語音辨識 ── */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, recording = false;
+if (SR) {
+  rec = new SR();
+  rec.lang = "zh-TW";
+  rec.interimResults = true;
+  rec.continuous = false;
+  let finalText = "";
+  rec.onresult = ev => {
+    let interim = "";
+    for (let i = ev.resultIndex; i < ev.results.length; i++) {
+      if (ev.results[i].isFinal) finalText += ev.results[i][0].transcript;
+      else interim += ev.results[i][0].transcript;
+    }
+    $("transcript").value = (finalText + interim).trim();
+  };
+  rec.onstart = () => { finalText = $("transcript").value ? $("transcript").value + "，" : ""; setRec(true); };
+  rec.onend = () => {
+    setRec(false);
+    if ($("transcript").value.trim()) parseTranscript();
+  };
+  rec.onerror = ev => {
+    setRec(false);
+    if (ev.error === "not-allowed") setStatus("麥克風權限被拒絕，請到瀏覽器設定開啟", true);
+    else if (ev.error !== "aborted" && ev.error !== "no-speech") setStatus("語音辨識錯誤：" + ev.error, true);
+  };
+} else {
+  $("micHint").textContent = "此瀏覽器不支援語音辨識，請直接打字";
+  $("micBtn").disabled = true;
+  $("micBtn").style.opacity = .4;
+}
+function setRec(on){
+  recording = on;
+  $("micBtn").classList.toggle("rec", on);
+  $("micHint").classList.toggle("rec", on);
+  $("micBtn").textContent = on ? "⏹" : "🎤";
+  $("micHint").textContent = on ? "聽取中…再按一下結束" : "按一下開始說話";
+}
+$("micBtn").onclick = () => {
+  if (!rec) return;
+  if (recording) rec.stop();
+  else { setStatus(""); rec.start(); }
+};
+$("clearBtn").onclick = () => { $("transcript").value = ""; $("cards").innerHTML = ""; setStatus(""); };
+
+/* ── Claude 解析 ── */
+function nowString(){
+  const d = new Date();
+  const w = ["日","一","二","三","四","五","六"][d.getDay()];
+  const p = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}（星期${w}）${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function setStatus(msg, err, spin){
+  $("status").className = "status" + (err ? " err" : "");
+  $("status").innerHTML = (spin ? '<span class="spinner"></span>' : "") + msg;
+}
+async function parseTranscript(){
+  const text = $("transcript").value.trim();
+  if (!text) { setStatus("請先說話或輸入行程內容", true); return; }
+  $("parseBtn").disabled = true;
+  setStatus("正在解析行程…", false, true);
+  const system =
+`你是行程解析引擎。現在時間：${nowString()}（台灣時間 ${TZ}）。
+把使用者口述解析成行程，只輸出 JSON 陣列，不要任何其他文字或說明：
+[{"title":"","allDay":false,"start":"YYYY-MM-DDTHH:MM","end":"YYYY-MM-DDTHH:MM","location":"","description":"","rrule":""}]
+規則：
+- 「明天、下週三、月底」等相對時間，以現在時間換算成絕對日期；若只說了日期沒說年份，取最近的未來日期
+- 沒說結束時間 → end = start + 1 小時
+- 整天活動或只講日期沒講時間 → "allDay":true，start 與 end 都用 "YYYY-MM-DD"（同一天）
+- 重複行程用 iCal RRULE，例如每週三 → "FREQ=WEEKLY;BYDAY=WE"；非重複行程 rrule 給空字串
+- 一句話可能包含多個行程，每個都要列出
+- title 精簡明確（例：看牙醫、鋼琴課）；其他細節放 description；沒提到的欄位給空字串`;
+  try {
+    const r = await fetch(PROXY_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5",
+        max_tokens: 1000,
+        system,
+        messages: [{ role: "user", content: text }]
+      })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data?.error?.message || ("HTTP " + r.status));
+    let raw = (data.content?.[0]?.text || "").trim()
+      .replace(/^```(json)?/i, "").replace(/```$/, "").trim();
+    const events = JSON.parse(raw);
+    if (!Array.isArray(events) || !events.length) throw new Error("沒有解析到行程");
+    renderCards(events);
+    setStatus(`解析到 ${events.length} 個行程，確認後按「加入日曆」👇`);
+  } catch(e) {
+    setStatus("解析失敗：" + e.message, true);
+  } finally {
+    $("parseBtn").disabled = false;
+  }
+}
+$("parseBtn").onclick = parseTranscript;
+window.__vc = { renderCards, readCard: c => readCard(c) };   // debug 用
+
+/* ── 行程卡片 ── */
+function renderCards(events){
+  const box = $("cards");
+  box.innerHTML = "";
+  events.forEach(ev => box.appendChild(makeCard(ev)));
+  box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+function splitDT(s){
+  if (!s) return ["", ""];
+  const [d, t] = String(s).split("T");
+  return [d || "", (t || "").slice(0, 5)];
+}
+function makeCard(ev){
+  const card = document.createElement("div");
+  card.className = "card";
+  const [sd, st] = splitDT(ev.start);
+  const [ed, et] = splitDT(ev.end);
+  const rr = (ev.rrule || "").replace(/^RRULE:/i, "");
+  card.innerHTML = `
+    <div class="f"><label>行程名稱</label><input type="text" class="title-in" data-k="title"></div>
+    ${rr ? `<span class="rrule-tag">🔁 重複：${rr}</span>` : ""}
+    <div class="aldy"><input type="checkbox" data-k="allDay" ${ev.allDay ? "checked" : ""}><span>整天</span></div>
+    <div class="f grid2">
+      <div><label>開始日期</label><input type="date" data-k="sd"></div>
+      <div class="t-start"><label>開始時間</label><input type="time" data-k="st"></div>
+    </div>
+    <div class="f grid2">
+      <div><label>結束日期</label><input type="date" data-k="ed"></div>
+      <div class="t-end"><label>結束時間</label><input type="time" data-k="et"></div>
+    </div>
+    <div class="f"><label>地點</label><input type="text" data-k="location" placeholder="（選填）"></div>
+    <div class="f"><label>備註</label><input type="text" data-k="description" placeholder="（選填）"></div>
+    <div class="cardbtns">
+      <button class="btn primary addBtn">📅 加入日曆</button>
+      <button class="btn ghost delBtn">✕</button>
+    </div>
+    <div class="okmsg"></div>`;
+  const q = k => card.querySelector(`[data-k="${k}"]`);
+  q("title").value = ev.title || "";
+  q("sd").value = sd; q("st").value = st || "09:00";
+  q("ed").value = ed || sd; q("et").value = et || "";
+  q("location").value = ev.location || "";
+  q("description").value = ev.description || "";
+  card.dataset.rrule = rr;
+  const syncAllDay = () => {
+    const all = q("allDay").checked;
+    card.querySelector(".t-start").style.visibility = all ? "hidden" : "visible";
+    card.querySelector(".t-end").style.visibility = all ? "hidden" : "visible";
+  };
+  q("allDay").onchange = syncAllDay;
+  syncAllDay();
+  card.querySelector(".delBtn").onclick = () => card.remove();
+  card.querySelector(".addBtn").onclick = () => addToCalendar(card);
+  return card;
+}
+
+/* ── 寫入 Google 日曆 ── */
+function addDays(dstr, n){
+  const d = new Date(dstr + "T00:00:00");
+  d.setDate(d.getDate() + n);
+  const p = x => String(x).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+function readCard(card){
+  const q = k => card.querySelector(`[data-k="${k}"]`);
+  const allDay = q("allDay").checked;
+  const sd = q("sd").value, st = q("st").value || "09:00";
+  let ed = q("ed").value || sd, et = q("et").value;
+  const body = {
+    summary: q("title").value.trim() || "（未命名行程）",
+    location: q("location").value.trim() || undefined,
+    description: q("description").value.trim() || undefined,
+  };
+  if (!sd) throw new Error("請選擇開始日期");
+  if (allDay) {
+    body.start = { date: sd };
+    body.end = { date: addDays(ed < sd ? sd : ed, 1) };  // Google 的 end 為「不含」隔天
+  } else {
+    if (!et) {
+      const [h, m] = st.split(":").map(Number);
+      const endD = new Date(`${sd}T${st}:00`);
+      endD.setHours(h + 1, m);
+      const p = x => String(x).padStart(2, "0");
+      ed = `${endD.getFullYear()}-${p(endD.getMonth()+1)}-${p(endD.getDate())}`;
+      et = `${p(endD.getHours())}:${p(endD.getMinutes())}`;
+    }
+    body.start = { dateTime: `${sd}T${st}:00`, timeZone: TZ };
+    body.end = { dateTime: `${ed}T${et}:00`, timeZone: TZ };
+  }
+  const rr = card.dataset.rrule;
+  if (rr) body.recurrence = ["RRULE:" + rr];
+  return body;
+}
+async function insertEvent(body, token){
+  const r = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
+    method: "POST",
+    headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const data = await r.json();
+  if (!r.ok) { const err = new Error(data?.error?.message || ("HTTP " + r.status)); err.status = r.status; throw err; }
+  return data;
+}
+function fallbackUrl(body){
+  const u = new URL("https://calendar.google.com/calendar/render");
+  u.searchParams.set("action", "TEMPLATE");
+  u.searchParams.set("text", body.summary);
+  if (body.location) u.searchParams.set("location", body.location);
+  if (body.description) u.searchParams.set("details", body.description);
+  u.searchParams.set("ctz", TZ);
+  const c = s => s.replace(/[-:]/g, "");
+  if (body.start.date) u.searchParams.set("dates", c(body.start.date) + "/" + c(body.end.date));
+  else u.searchParams.set("dates", c(body.start.dateTime) + "/" + c(body.end.dateTime));
+  if (body.recurrence) u.searchParams.set("recur", body.recurrence[0]);
+  return u.toString();
+}
+async function addToCalendar(card){
+  const btn = card.querySelector(".addBtn");
+  let body;
+  try { body = readCard(card); } catch(e) { setStatus(e.message, true); return; }
+  btn.disabled = true;
+  btn.textContent = "加入中…";
+  try {
+    let token = await ensureToken();
+    let data;
+    try {
+      data = await insertEvent(body, token);
+    } catch(e) {
+      if (e.status === 401 || e.status === 403) {
+        sessionStorage.removeItem("vc_tok");            // token 過期或權限不足 → 重新授權一次
+        token = await ensureToken();
+        data = await insertEvent(body, token);
+      } else throw e;
+    }
+    card.classList.add("ok");
+    const ok = card.querySelector(".okmsg");
+    ok.style.display = "block";
+    ok.innerHTML = `✅ 已加入日曆！ <a href="${data.htmlLink}" target="_blank">查看行程</a>`;
+    btn.textContent = "✅ 完成";
+    setStatus("");
+    if (navigator.vibrate) navigator.vibrate(80);
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = "📅 加入日曆";
+    const ok = card.querySelector(".okmsg");
+    ok.style.display = "block";
+    ok.innerHTML = `⚠️ 自動加入失敗（${e.message}）<br><a href="${fallbackUrl(body)}" target="_blank">👉 改用 Google 日曆開啟確認</a>`;
+  }
+}
+</script>
+</body>
+</html>
