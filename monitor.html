@@ -1788,7 +1788,10 @@ async function fetchAndShowMedia(id, nameOverride){
   }catch(e){ console.warn("media fetch failed", e); }
 }
 // 加入模式：?join=1234 → 用指定場次碼、套用現有 ctrl 狀態（供 360 情境內嵌 / 鏡像顯示用）
+// 聽眾模式：?join=1234&view=1 → 大型演講一對多廣播：唯讀（不回寫 status，避免上百台裝置
+// 互踩同一份文件與暴衝寫入量），並預設靜音（教師可從控制台遠端開/關全場警報聲）
 const JOIN_CODE = (new URLSearchParams(location.search).get("join")||"").replace(/\D/g,"").slice(0,4);
+const AUDIENCE = !!(JOIN_CODE && new URLSearchParams(location.search).get("view"));
 async function createSession(){
   endSession();
   // 先把遙控碼顯示出來，就算 Firebase 慢或失敗也看得到
@@ -1798,12 +1801,18 @@ async function createSession(){
   $("tbCode").style.display = "flex";
   if (!db) return;
   try{
-    await setDoc(doc(db,SESS,remote.code), { created: serverTimestamp(), status: snapshotStatus() }, { merge: !!JOIN_CODE });
+    if (AUDIENCE){
+      // 聽眾唯讀：確保場次文件存在即可（教師控制台連線需要它），完全不寫 status
+      const s = await getDoc(doc(db,SESS,remote.code));
+      if (!s.exists()) await setDoc(doc(db,SESS,remote.code), { created: serverTimestamp() }, { merge:true });
+    } else {
+      await setDoc(doc(db,SESS,remote.code), { created: serverTimestamp(), status: snapshotStatus() }, { merge: !!JOIN_CODE });
+    }
     remote.unsub = onSnapshot(doc(db,SESS,remote.code), s=>{
       const d = s.data();
       if (d && d.ctrl) applyRemoteCtrl(d.ctrl);
     });
-    remote.pubTimer = setInterval(async ()=>{
+    if (!AUDIENCE) remote.pubTimer = setInterval(async ()=>{
       if (!state.running || !remote.code) return;
       try{ await updateDoc(doc(db,SESS,remote.code), { status: snapshotStatus() }); }catch(e){}
     }, 4000);
@@ -1819,7 +1828,11 @@ function endSession(){
 // classic script 的 onclick 先執行（property handler 註冊較早），這裡是附加行為
 $("startBtn").addEventListener("click", ()=>{ if (state.running) createSession(); });
 // join 模式自動按 START（給 360 情境 iframe 內嵌用，免手動操作）
-if (JOIN_CODE) setTimeout(()=>{ if (!state.running) $("startBtn").click(); }, 250);
+if (JOIN_CODE) setTimeout(()=>{
+  if (!state.running) $("startBtn").click();
+  // 聽眾模式預設靜音：整個演講廳不會此起彼落嗶嗶叫；教師可從控制台遠端解除靜音
+  if (AUDIENCE) setTimeout(()=>{ if (window.setSilence) window.setSilence(true); else state.silencedUntil = 1e15; }, 900);
+}, 250);
 $("exitBtn").addEventListener("click", ()=>{ if (!state.running) endSession(); });
 window.addEventListener("beforeunload", ()=>{ endSession(); });
 
