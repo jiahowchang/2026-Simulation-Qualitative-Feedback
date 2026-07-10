@@ -154,7 +154,7 @@ body {
         「7月20號整天：小孩學校運動會」
       </div>
     </div>
-    <div class="callink"><a href="https://calendar.google.com" target="_blank">📅 開啟我的 Google 日曆</a></div>
+    <div class="callink"><a href="https://calendar.google.com/calendar/r?authuser=changstella0223%40gmail.com" target="_blank">📅 開啟 Google 日曆</a></div>
   </div>
 </div>
 
@@ -164,6 +164,7 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChang
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 /* ── 設定 ── */
+const CAL_ID = "changstella0223@gmail.com";   // 行程一律寫入這個帳號的日曆
 const ALLOWED_EMAILS = ["changstella0223@gmail.com", "jiahowchang@gmail.com"];
 const PROXY_URL = "https://patient-mkargc7maa-uc.a.run.app";
 const CAL_SCOPE = "https://www.googleapis.com/auth/calendar.events";
@@ -185,6 +186,7 @@ const $ = id => document.getElementById(id);
 function makeProvider(){
   const p = new GoogleAuthProvider();
   p.addScope(CAL_SCOPE);
+  p.setCustomParameters({ login_hint: CAL_ID });   // iPad 多帳號時預選 Stella 的帳號
   return p;
 }
 function saveToken(cred){
@@ -236,6 +238,9 @@ onAuthStateChanged(auth, user => {
     $("uname").textContent = user.displayName || user.email;
     $("uphoto").src = user.photoURL || "";
     $("uphoto").style.display = user.photoURL ? "inline" : "none";
+    // 不管誰登入，行程都只會寫入 CAL_ID 的日曆
+    if ((user.email || "").toLowerCase() !== CAL_ID)
+      setStatus(`ℹ️ 行程只會加入 ${CAL_ID} 的日曆（她需先把日曆分享給你的帳號並給予「變更活動」權限，寫入才會成功）`);
   }
 });
 
@@ -434,7 +439,7 @@ function readCard(card){
   return body;
 }
 async function insertEvent(body, token){
-  const r = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
+  const r = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CAL_ID)}/events`, {
     method: "POST",
     headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
     body: JSON.stringify(body)
@@ -454,6 +459,7 @@ function fallbackUrl(body){
   if (body.start.date) u.searchParams.set("dates", c(body.start.date) + "/" + c(body.end.date));
   else u.searchParams.set("dates", c(body.start.dateTime) + "/" + c(body.end.dateTime));
   if (body.recurrence) u.searchParams.set("recur", body.recurrence[0]);
+  u.searchParams.set("authuser", CAL_ID);   // 備用連結也固定用 Stella 的帳號開啟
   return u.toString();
 }
 async function addToCalendar(card){
