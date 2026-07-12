@@ -221,12 +221,12 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChang
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey:"AIzaSyBrs80vpFVe-iEh5ctzRWfYHUBb3KGvILo",
-  authDomain:"speech-to-text-2f776.firebaseapp.com",
-  projectId:"speech-to-text-2f776",
-  storageBucket:"speech-to-text-2f776.firebasestorage.app",
-  messagingSenderId:"283739023798",
-  appId:"1:283739023798:web:3091ec2bcf6262b5ecb917"
+  apiKey:"AIzaSyB69FLelljxOJUd73hNXmYLEptXNwHYtGw",
+  authDomain:"insim-research.firebaseapp.com",
+  projectId:"insim-research",
+  storageBucket:"insim-research.firebasestorage.app",
+  messagingSenderId:"440647871490",
+  appId:"1:440647871490:web:3f3b761b96bf1b10a18b1b"
 };
 let db = null, auth = null;
 try{ const app = initializeApp(firebaseConfig); db = getFirestore(app); auth = getAuth(app); }catch(e){ console.warn("Firebase init failed", e); }

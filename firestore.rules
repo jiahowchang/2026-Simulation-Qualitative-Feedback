@@ -2,65 +2,86 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // 你的第一個集合：任何人可讀寫
-    // 之後新增工具時在這裡加更多 match 區塊
+    // ==== 共用判斷 ====
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == "jiahowchang@gmail.com";
+    }
+    // 已核可教師（sim_users 由管理員核可 approved=true）
+    function isApprovedTeacher() {
+      return request.auth != null && (isAdmin() ||
+        get(/databases/$(database)/documents/sim_users/$(request.auth.uid)).data.approved == true);
+    }
+
+    // 課堂文字雲：匿名互動工具（設計上全開放；非研究紀錄）
     match /wordcloud_words/{document} {
       allow read, write: if true;
     }
 
-    // 虛擬呼吸器訓練系統：學員場次與學習軌跡
+    // 虛擬呼吸器訓練系統：學員場次與學習軌跡【研究紀錄】
+    // 學員匿名操作需 create/update；禁止刪除（防整批滅失）
     match /ventilator_sessions/{document} {
-      allow read, write: if true;
+      allow read, create, update: if true;
+      allow delete: if isAdmin();
     }
 
-    // 模擬生理監視器：iPhone 教師控制台 ↔ 監視器雙裝置同步
+    // 模擬生理監視器：即時同步通道（監視器端匿名 START/回寫/關閉場次、
+    // 360 面板匿名 ctrl；屬短暫協調資料，非永久研究紀錄 → 維持開放）
     match /monitor_sessions/{document} {
       allow read, write: if true;
     }
 
-    // 模擬生理監視器：教師後台事件標記（debriefing 用）
+    // 模擬生理監視器：教師後台事件標記（debriefing 用）【研究紀錄】
+    // 只有登入教師（monitor-admin）在用 → 讀寫都需登入
     match /monitor_events/{document} {
-      allow read, write: if true;
+      allow read, write: if request.auth != null;
     }
 
-    // 模擬生理監視器：媒體庫（影像/影音/PDF，base64 存放）
+    // 模擬生理監視器：媒體庫（教材）——匿名唯讀，寫/刪需登入教師
     match /monitor_media/{document} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if request.auth != null;
     }
 
-    // 媒體庫大檔分塊（>900KB 的檔案切塊存放）
+    // 媒體庫大檔分塊——同上（防匿名刪單一分塊造成整檔靜默毀損）
     match /monitor_media_chunks/{document} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if request.auth != null;
     }
 
-    // 3D 模擬病人平台：教案
+    // 3D 模擬病人平台：教案（教材）——學員唯讀，寫/刪需已核可教師
     match /sim_cases/{document} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isApprovedTeacher();
     }
 
-    // 生理監視器：timeline 教案（AI 解析後的生命徵象腳本）
+    // 生理監視器：timeline 教案腳本——監視器端可匿名存新檔（現場教學流程），
+    // 但覆寫/刪除需登入（防匿名清空腳本庫）
     match /monitor_scenarios/{document} {
-      allow read, write: if true;
+      allow read, create: if true;
+      allow update, delete: if request.auth != null;
     }
 
-    // 3D 模擬病人平台：學生與 AI 病人的對話逐字稿（debriefing/評分用）
+    // 3D 模擬病人平台：學生與 AI 病人對話逐字稿【研究紀錄＋隱私】
+    // 學生匿名問診 → 匿名 create/update 必須保留；
+    // 讀取/刪除僅限已核可教師（防公開下載逐字稿與匿名滅證）
     match /sim_transcripts/{document} {
-      allow read, write: if true;
+      allow create, update: if true;
+      allow read, delete: if isApprovedTeacher();
     }
 
     // 模擬生理監視器/病人平台：老師帳號（Google 登入，需管理員審核）
-    // - 已登入者皆可讀（管理員後台列出名單、自己查自己狀態）
+    // - 本人可讀自己；管理員可讀全部（修掉「任何登入者可枚舉全部教師」）
     // - 使用者可建立/更新自己的資料，但不能自行改 approved/role
     // - 管理員 (jiahowchang@gmail.com) 可管理所有人
     match /sim_users/{userId} {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
       allow create: if request.auth != null && request.auth.uid == userId;
       allow update: if request.auth != null &&
-        (request.auth.token.email == "jiahowchang@gmail.com" ||
+        (isAdmin() ||
          (request.auth.uid == userId &&
           !("approved" in request.resource.data.diff(resource.data).affectedKeys()) &&
           !("role" in request.resource.data.diff(resource.data).affectedKeys())));
-      allow delete: if request.auth != null && request.auth.token.email == "jiahowchang@gmail.com";
+      allow delete: if isAdmin();
     }
 
     // 麻醉專師學習平台：使用者資料
@@ -89,26 +110,54 @@ service cloud.firestore {
       allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
     }
 
-    // 360 情境導覽：教案定義（場景/熱點/題目）
+    // 專科護理師學習平台（六科 np-learning）：使用者資料
+    // - 已登入使用者只能讀寫「自己」的資料
+    // - 管理員 (jiahowchang@gmail.com) 可讀寫所有人
+    match /np_learning_users/{userId} {
+      allow read: if request.auth != null &&
+        (request.auth.uid == userId || request.auth.token.email == "jiahowchang@gmail.com");
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null &&
+        (request.auth.token.email == "jiahowchang@gmail.com" ||
+         (request.auth.uid == userId &&
+          // 一般使用者更新自己時，禁止改 status 欄位
+          !("status" in request.resource.data.diff(resource.data).affectedKeys())));
+      allow delete: if request.auth != null && request.auth.token.email == "jiahowchang@gmail.com";
+    }
+
+    // 360 情境導覽：教案定義（教材）——學員唯讀，寫/刪需已核可教師（tour-editor 有登入門）
     match /tour_defs/{document} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isApprovedTeacher();
     }
 
-    // 360 情境導覽：學員進度與作答（進度儲存）
+    // 360 情境導覽：學員進度與作答【研究紀錄】
+    // 學員匿名寫入/續讀進度 → create/update/read 開放；禁止刪除
     match /tour_progress/{document} {
-      allow read, write: if true;
+      allow read, create, update: if true;
+      allow delete: if isAdmin();
     }
 
-    // 360 情境導覽：操作事件記錄（後台分析用）
+    // 360 情境導覽：操作事件記錄【研究紀錄】
+    // 只進不出：匿名 create（學員上報）；不可改、不可刪；讀取限已核可教師（後台分析）
     match /tour_events/{document} {
-      allow read, write: if true;
+      allow create: if true;
+      allow update, delete: if false;
+      allow read: if isApprovedTeacher();
     }
 
-    // InSim擬境 團隊模式：多人同場房間（共享狀態 + 成員出席 + 動作/TRM 事件）
+    // InSim擬境 團隊模式：多人同場房間
+    // 房間文件（共享狀態）與 members（出席心跳；匿名學員需能刪逾時成員）→ 開放
+    // events（動作/TRM 行為事件）【研究紀錄】→ 只進不出：匿名 create + 現場 onSnapshot 讀，
+    // 不可改不可刪
     match /tour_rooms/{room} {
       allow read, write: if true;
-      match /{sub=**} {
+      match /members/{member} {
         allow read, write: if true;
+      }
+      match /events/{event} {
+        allow read, create: if true;
+        allow update, delete: if false;
       }
     }
 
@@ -138,6 +187,21 @@ service cloud.firestore {
       allow create: if true;
       allow read, update, delete: if request.auth != null &&
         request.auth.token.email == "jiahowchang@gmail.com";
+    }
+
+    // 每日英語學習：每日文章（Cloud Function 以 Admin SDK 產生，前端唯讀）
+    match /eng_daily/{document} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // 每日英語學習：個人練習進度（doc id 為 {uid}__{date}，資料內 uid 須等於登入者）
+    match /eng_progress/{docId} {
+      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow update: if request.auth != null && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
     }
 
     // 其他集合預設禁止存取
