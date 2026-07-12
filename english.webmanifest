@@ -1,0 +1,14 @@
+{
+  "name": "每日英語 Daily English",
+  "short_name": "每日英語",
+  "start_url": "english.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1b2d",
+  "theme_color": "#0f1b2d",
+  "icons": [
+    { "src": "icons/english-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icons/english-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

@@ -218,3 +218,194 @@ exports.stt = onRequest(
     }
   }
 );
+
+/* ================================================================
+   每日英語學習（english.html）後端
+   - 每天從 BBC（世界/科技/醫療/運動）與 Taipei Times（社會/台灣）RSS
+     各取 1 篇 → 擷取內文 → Claude 產生逐句中英對照（台灣慣用語繁中）
+     + 難字/慣用語解說與例句 → 存 Firestore eng_daily/{YYYY-MM-DD}
+   - engdaily：HTTP 觸發（前端「生成今日內容」按鈕 / 補生成過去日期）
+   - engdailyCron：每天 05:10（台北時間）自動生成，打開網頁即有內容
+   - 每天輪流跳過 5 個分類中的 1 個 → 每天 4 篇
+   ================================================================ */
+const { onSchedule } = require("firebase-functions/v2/scheduler");
+const admin = require("firebase-admin");
+admin.initializeApp();
+
+const ENG_SOURCES = [
+  { cat: "world",   catZh: "世界時事", source: "BBC News",     rss: "https://feeds.bbci.co.uk/news/world/rss.xml" },
+  { cat: "tech",    catZh: "科技",     source: "BBC News",     rss: "https://feeds.bbci.co.uk/news/technology/rss.xml" },
+  { cat: "health",  catZh: "醫療",     source: "BBC News",     rss: "https://feeds.bbci.co.uk/news/health/rss.xml" },
+  { cat: "sport",   catZh: "運動",     source: "BBC Sport",    rss: "https://feeds.bbci.co.uk/sport/rss.xml" },
+  { cat: "society", catZh: "社會",     source: "Taipei Times", rss: "https://www.taipeitimes.com/xml/index.rss" },
+];
+
+// 台北時間的今天（UTC+8）
+function engTodayTW() {
+  return new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+}
+
+function engDecodeEnt(s) {
+  return s
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(+d))
+    .replace(/&nbsp;/g, " ").replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+}
+
+async function engFetchText(url) {
+  const r = await fetch(url, {
+    headers: { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/126 Safari/537.36" },
+    signal: AbortSignal.timeout(20000),
+    redirect: "follow",
+  });
+  if (!r.ok) throw new Error("fetch " + r.status + " " + url);
+  return await r.text();
+}
+
+// RSS 2.0 與 RSS 1.0（RDF，Taipei Times）都支援
+function engParseRss(xml) {
+  return [...xml.matchAll(/<item[^>]*>([\s\S]*?)<\/item>/g)].map(m => {
+    const t = (m[1].match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/) || [])[1] || "";
+    const l = (m[1].match(/<link>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/link>/) || [])[1] || "";
+    return { title: engDecodeEnt(t.trim()), link: engDecodeEnt(l.trim()) };
+  }).filter(it => it.title && /^https?:\/\//.test(it.link));
+}
+
+// 只取 <article> 內的 <p>，避開導覽列/頁尾；殘餘雜訊由 Claude 再過濾一次
+function engExtractParas(html) {
+  const artM = html.match(/<article[\s\S]*?<\/article>/i);
+  if (artM) html = artM[0];
+  html = html.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, "");
+  const ps = [...html.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)].map(m =>
+    engDecodeEnt(m[1].replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim());
+  return ps.filter(t =>
+    t.length > 60 &&
+    !/cookie|copyright|all rights reserved|follow bbc|subscribe|newsletter|to play this video/i.test(t)
+  ).slice(0, 14);
+}
+
+async function engAskClaude(apiKey, title, paras) {
+  const sys =
+    "你是為台灣成人學習者設計教材的英語教師。使用者母語是台灣慣用的繁體中文。" +
+    "你只回傳一個嚴格合法的 JSON 物件，不加 markdown 圍欄、不加任何說明文字。";
+  const prompt =
+    "以下是一篇新聞的標題與段落（可能夾雜「Image source」「Published…」等網頁雜訊，請忽略雜訊）。\n\n" +
+    "標題：" + title + "\n\n段落：\n" + paras.join("\n") + "\n\n" +
+    "請完成：\n" +
+    "1. 從內文挑出 10~14 個「完整且連貫」的句子（保留原文用字，太長的句子可在不改變意思下輕微裁剪；依原文順序）。\n" +
+    "2. 每句翻成台灣人日常慣用的繁體中文（口語自然、不要中國大陸用語，例如用「影片」不用「视频」、用「網路」不用「网络」）。\n" +
+    "3. 標題也翻成繁體中文。\n" +
+    "4. 從這些句子挑 5~8 個對台灣學習者困難的單字或片語，【優先挑由簡單單字組成的慣用語、片語動詞、搭配詞】（例如 pull off、come down to、on the fence）。每個提供：詞性、台灣慣用中文意思、白話解說（為什麼是這個意思／什麼情境用、易混淆處）、一個全新的例句（英文）與其繁中翻譯。\n" +
+    "5. 估計文章 CEFR 難度（如 B1、B2、C1）。\n" +
+    "6. 用一句繁中摘要全文。\n\n" +
+    "回傳 JSON 格式：\n" +
+    '{"title_en":"...","title_zh":"...","summary_zh":"...","level":"B2",' +
+    '"sentences":[{"en":"...","zh":"..."}],' +
+    '"vocab":[{"term":"...","pos":"...","zh":"...","note":"...","example_en":"...","example_zh":"..."}]}';
+  const r = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 4500,
+      system: sys,
+      messages: [{ role: "user", content: prompt }],
+    }),
+    signal: AbortSignal.timeout(180000),
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error("claude " + r.status + ": " + JSON.stringify(d).slice(0, 200));
+  const text = (d.content || []).map(b => b.text || "").join("");
+  const m = text.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error("claude 回應無 JSON");
+  const out = JSON.parse(m[0]);
+  if (!Array.isArray(out.sentences) || !out.sentences.length) throw new Error("claude 回應缺 sentences");
+  return out;
+}
+
+async function engGenerateDaily(dateStr) {
+  const db = admin.firestore();
+  const ref = db.collection("eng_daily").doc(dateStr);
+
+  // 用 create() 當鎖，避免排程與手動觸發同時生成
+  try {
+    await ref.create({ date: dateStr, status: "generating",
+      createdAt: admin.firestore.FieldValue.serverTimestamp() });
+  } catch (e) {
+    const snap = await ref.get();
+    const d = snap.exists ? snap.data() : null;
+    if (d && d.status === "ready") return d;
+    const age = Date.now() - (d && d.createdAt && d.createdAt.toMillis ? d.createdAt.toMillis() : 0);
+    if (d && d.status === "generating" && age < 10 * 60e3) return { date: dateStr, status: "generating" };
+    // 上次生成卡住（>10 分鐘）→ 接手重生成
+    await ref.set({ date: dateStr, status: "generating",
+      createdAt: admin.firestore.FieldValue.serverTimestamp() });
+  }
+
+  // 昨天用過的文章網址 → 避免重複
+  const prevUrls = new Set();
+  try {
+    const y = new Date(new Date(dateStr + "T00:00:00Z").getTime() - 86400e3).toISOString().slice(0, 10);
+    const prev = await db.collection("eng_daily").doc(y).get();
+    if (prev.exists) (prev.data().articles || []).forEach(a => prevUrls.add(a.url));
+  } catch (e) { /* 忽略 */ }
+
+  // 每天輪流跳過一個分類 → 每天 4 篇
+  const dayNum = Math.floor(new Date(dateStr + "T00:00:00Z").getTime() / 86400e3);
+  const skip = dayNum % ENG_SOURCES.length;
+  const picked = ENG_SOURCES.filter((_, i) => i !== skip);
+
+  const apiKey = ANTHROPIC_KEY.value();
+  const results = await Promise.allSettled(picked.map(async src => {
+    const items = engParseRss(await engFetchText(src.rss));
+    const item = items.find(it => !prevUrls.has(it.link));
+    if (!item) throw new Error(src.cat + ": RSS 無可用項目");
+    const paras = engExtractParas(await engFetchText(item.link));
+    if (paras.length < 3) throw new Error(src.cat + ": 內文擷取過少 " + item.link);
+    const out = await engAskClaude(apiKey, item.title, paras);
+    return { cat: src.cat, catZh: src.catZh, source: src.source, url: item.link, ...out };
+  }));
+
+  const articles = results.filter(r => r.status === "fulfilled").map(r => r.value);
+  const errors = results.filter(r => r.status === "rejected").map(r => String(r.reason && r.reason.message || r.reason).slice(0, 300));
+  if (!articles.length) {
+    await ref.delete();
+    throw new Error("全部文章生成失敗: " + errors.join(" | "));
+  }
+  const doc = { date: dateStr, status: "ready",
+    createdAt: admin.firestore.FieldValue.serverTimestamp(), articles, errors };
+  await ref.set(doc);
+  return doc;
+}
+
+exports.engdaily = onRequest(
+  { region: "us-central1", secrets: [ANTHROPIC_KEY], maxInstances: 2,
+    timeoutSeconds: 540, memory: "512MiB", invoker: "public" },
+  async (req, res) => {
+    const origin = req.headers.origin || "";
+    const originOk = ALLOWED_ORIGINS.includes(origin);
+    if (originOk) res.set("Access-Control-Allow-Origin", origin);
+    res.set("Vary", "Origin");
+    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (!originOk) { res.status(403).json({ error: { message: "Origin not allowed" } }); return; }
+
+    const q = (req.method === "POST" ? (req.body || {}) : req.query) || {};
+    let dateStr = typeof q.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(q.date) ? q.date : engTodayTW();
+    if (dateStr > engTodayTW()) dateStr = engTodayTW();   // 不接受未來日期
+    try {
+      const doc = await engGenerateDaily(dateStr);
+      res.json(doc);
+    } catch (e) {
+      res.status(500).json({ error: { message: String(e && e.message || e) } });
+    }
+  }
+);
+
+exports.engdailyCron = onSchedule(
+  { region: "us-central1", schedule: "10 5 * * *", timeZone: "Asia/Taipei",
+    secrets: [ANTHROPIC_KEY], timeoutSeconds: 540, memory: "512MiB", retryCount: 2 },
+  async () => { await engGenerateDaily(engTodayTW()); }
+);

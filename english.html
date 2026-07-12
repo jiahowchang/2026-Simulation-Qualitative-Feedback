@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>每日英語 Daily English</title>
+<link rel="manifest" href="english.webmanifest">
+<link rel="apple-touch-icon" href="icons/english-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f1b2d">
+<style>
+:root{
+  --bg:#0f1b2d; --card:#16283f; --card2:#1c3150; --line:#27436b;
+  --txt:#e9eef6; --sub:#93a7c4; --gold:#e8b64c; --green:#4ecf87; --red:#ff7a7a; --amber:#ffc75e;
+  --blue:#5aa2ff;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html,body{margin:0; padding:0; background:var(--bg); color:var(--txt);
+  font-family:"PingFang TC","Noto Sans TC",system-ui,sans-serif}
+body{padding-bottom:60px}
+.wrap{max-width:760px; margin:0 auto; padding:0 14px}
+
+/* ── header ── */
+header{position:sticky; top:0; z-index:20; background:rgba(15,27,45,.94);
+  backdrop-filter:blur(8px); border-bottom:1px solid var(--line);
+  padding-top:env(safe-area-inset-top)}
+.hbar{display:flex; align-items:center; gap:8px; padding:10px 14px; max-width:760px; margin:0 auto}
+.hbar h1{font-size:17px; margin:0; font-weight:700; white-space:nowrap}
+.hbar h1 em{color:var(--gold); font-style:normal}
+.spacer{flex:1}
+.chip{background:var(--card); border:1px solid var(--line); color:var(--txt);
+  border-radius:20px; padding:5px 11px; font-size:13px; cursor:pointer}
+.chip:active{transform:scale(.96)}
+#loginBtn img{width:22px; height:22px; border-radius:50%; vertical-align:-6px}
+
+/* ── date nav ── */
+.datenav{display:flex; align-items:center; justify-content:center; gap:14px; padding:8px 0 2px}
+.datenav button{background:none; border:none; color:var(--blue); font-size:22px; cursor:pointer; padding:2px 10px}
+.datenav .d{font-size:15px; font-weight:600; letter-spacing:.5px}
+.datenav .d small{color:var(--sub); font-weight:400; margin-left:6px}
+
+/* ── controls ── */
+.ctrls{display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:10px 0}
+.ctrls label{font-size:12px; color:var(--sub)}
+select{background:var(--card); color:var(--txt); border:1px solid var(--line);
+  border-radius:8px; padding:6px 8px; font-size:13px; max-width:170px}
+.tgl{background:var(--card); border:1px solid var(--line); color:var(--sub);
+  border-radius:8px; padding:6px 10px; font-size:13px; cursor:pointer}
+.tgl.on{color:var(--gold); border-color:var(--gold)}
+
+/* ── article tabs ── */
+.tabs{display:flex; gap:8px; overflow-x:auto; padding:6px 0 10px; scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto; background:var(--card); border:1px solid var(--line); color:var(--sub);
+  border-radius:12px; padding:8px 13px; font-size:13.5px; cursor:pointer; white-space:nowrap}
+.tab.on{background:var(--card2); color:var(--txt); border-color:var(--gold)}
+
+/* ── article ── */
+.arthead{padding:6px 0 4px}
+.arthead .ten{font-family:Georgia,"Times New Roman",serif; font-size:21px; line-height:1.35;
+  font-weight:700; cursor:pointer}
+.arthead .ten.speaking{color:var(--gold)}
+.arthead .tzh{color:var(--sub); font-size:15px; margin-top:5px; line-height:1.5}
+.meta{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:10px 0 4px; font-size:12px; color:var(--sub)}
+.meta .lv{background:#2b3f22; color:#a5e07a; border-radius:6px; padding:2px 8px; font-weight:600}
+.meta a{color:var(--blue); text-decoration:none}
+.summary{background:var(--card); border-left:3px solid var(--gold); border-radius:0 10px 10px 0;
+  padding:9px 12px; font-size:13.5px; color:#c9d6ea; margin:10px 0; line-height:1.6}
+
+/* ── sentences ── */
+.sent{background:var(--card); border:1px solid var(--line); border-radius:14px;
+  padding:12px 14px; margin:10px 0}
+.sent .en{font-family:Georgia,"Times New Roman",serif; font-size:17.5px; line-height:1.55; cursor:pointer}
+.sent .en.speaking{color:var(--gold)}
+.sent .zh{color:var(--sub); font-size:14px; line-height:1.65; margin-top:7px}
+.sent.hidezh .zh{filter:blur(5px); transition:filter .15s}
+.sent.hidezh .zh:active,.sent.hidezh .zh:hover{filter:none}
+.stools{display:flex; align-items:center; gap:8px; margin-top:9px}
+.ico{background:var(--card2); border:1px solid var(--line); border-radius:9px;
+  font-size:15px; padding:5px 11px; cursor:pointer; color:var(--txt)}
+.ico:active{transform:scale(.94)}
+.ico.recing{background:#5a1f1f; border-color:var(--red); animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.55}}
+.score{margin-left:auto; font-weight:700; font-size:15px; border-radius:9px; padding:4px 10px}
+.score.g{background:#173d29; color:var(--green)} .score.a{background:#453313; color:var(--amber)}
+.score.r{background:#461f1f; color:var(--red)}
+.diff{margin-top:9px; border-top:1px dashed var(--line); padding-top:9px; font-size:14px; line-height:1.7}
+.diff .w-ok{color:var(--green)} .diff .w-miss{color:var(--red); text-decoration:underline}
+.diff .said{color:var(--sub); font-size:12.5px; margin-top:4px}
+
+/* ── vocab ── */
+h2.sec{font-size:16px; margin:22px 0 8px; color:var(--gold)}
+.voc{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin:10px 0}
+.voc .term{font-family:Georgia,serif; font-size:18px; font-weight:700; cursor:pointer}
+.voc .term.speaking{color:var(--gold)}
+.voc .pos{font-size:11px; color:var(--bg); background:var(--gold); border-radius:6px;
+  padding:2px 7px; margin-left:8px; vertical-align:2px; font-weight:700}
+.voc .vzh{font-size:14.5px; margin-top:5px}
+.voc .note{font-size:13px; color:var(--sub); line-height:1.7; margin-top:6px}
+.voc .ex{margin-top:8px; background:var(--card2); border-radius:9px; padding:8px 11px}
+.voc .ex .een{font-family:Georgia,serif; font-size:14.5px; cursor:pointer; line-height:1.5}
+.voc .ex .een.speaking{color:var(--gold)}
+.voc .ex .ezh{color:var(--sub); font-size:13px; margin-top:4px}
+
+/* ── empty / loading ── */
+.empty{text-align:center; padding:50px 20px; color:var(--sub); font-size:14.5px; line-height:2}
+.bigbtn{display:inline-block; background:var(--gold); color:#20242b; font-weight:700; font-size:16px;
+  border:none; border-radius:14px; padding:13px 26px; cursor:pointer; margin-top:14px}
+.bigbtn:disabled{opacity:.5}
+.spin{display:inline-block; width:20px; height:20px; border:3px solid var(--line);
+  border-top-color:var(--gold); border-radius:50%; animation:sp 1s linear infinite; vertical-align:-5px; margin-right:8px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ── stats modal ── */
+.modal{position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:50; display:none;
+  align-items:flex-end; justify-content:center}
+.modal.on{display:flex}
+.mcard{background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:760px;
+  max-height:82vh; overflow-y:auto; padding:20px 18px calc(20px + env(safe-area-inset-bottom))}
+.mcard h3{margin:0 0 14px; font-size:17px}
+.statrow{display:grid; grid-template-columns:repeat(4,1fr); gap:9px}
+.stat{background:var(--card2); border-radius:12px; padding:11px 6px; text-align:center}
+.stat b{display:block; font-size:21px; color:var(--gold)}
+.stat span{font-size:11px; color:var(--sub)}
+.bars{display:flex; align-items:flex-end; gap:5px; height:90px; margin:18px 2px 4px}
+.bars .b{flex:1; background:var(--blue); border-radius:4px 4px 0 0; min-height:3px; opacity:.9}
+.bars .b.t{background:var(--gold)}
+.barlbl{display:flex; gap:5px; font-size:9px; color:var(--sub)}
+.barlbl span{flex:1; text-align:center}
+.closebtn{width:100%; margin-top:16px; background:var(--card2); color:var(--txt);
+  border:1px solid var(--line); border-radius:12px; padding:12px; font-size:15px; cursor:pointer}
+.hint{font-size:12px; color:var(--sub); text-align:center; margin-top:10px; line-height:1.7}
+.toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#000c;
+  color:#fff; border-radius:10px; padding:9px 16px; font-size:13.5px; z-index:99; display:none; max-width:86vw}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hbar">
+    <h1>📰 每日<em>英語</em></h1>
+    <div class="spacer"></div>
+    <button class="chip" id="statBtn">🔥 <span id="streakN">0</span> 天</button>
+    <button class="chip" id="loginBtn">登入</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="datenav">
+    <button id="prevD">‹</button>
+    <div class="d"><span id="dateTxt"></span><small id="dowTxt"></small></div>
+    <button id="nextD">›</button>
+  </div>
+
+  <div class="ctrls">
+    <label>語速</label>
+    <select id="rateSel">
+      <option value="0.5">0.5 很慢</option>
+      <option value="0.7">0.7 慢</option>
+      <option value="0.85">0.85 稍慢</option>
+      <option value="1" selected>1.0 正常</option>
+      <option value="1.15">1.15 快</option>
+    </select>
+    <label>聲音</label>
+    <select id="voiceSel"></select>
+    <button class="tgl" id="zhTgl" title="遮住中文，練習先聽懂再看翻譯">遮中文</button>
+    <button class="tgl" id="playAllBtn">▶ 全文朗讀</button>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+  <div id="content"></div>
+</div>
+
+<div class="modal" id="statModal">
+  <div class="mcard">
+    <h3>📈 學習進度</h3>
+    <div class="statrow">
+      <div class="stat"><b id="stStreak">0</b><span>連續天數</span></div>
+      <div class="stat"><b id="stDays">0</b><span>累計天數</span></div>
+      <div class="stat"><b id="stLines">0</b><span>練習句數</span></div>
+      <div class="stat"><b id="stScore">–</b><span>平均發音分</span></div>
+    </div>
+    <div class="bars" id="bars"></div>
+    <div class="barlbl" id="barlbl"></div>
+    <div class="hint" id="statHint"></div>
+    <button class="closebtn" id="statClose">關閉</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, where, getDocs }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey:"AIzaSyBrs80vpFVe-iEh5ctzRWfYHUBb3KGvILo",
+  authDomain:"speech-to-text-2f776.firebaseapp.com",
+  projectId:"speech-to-text-2f776",
+  storageBucket:"speech-to-text-2f776.firebasestorage.app",
+  messagingSenderId:"283739023798",
+  appId:"1:283739023798:web:3091ec2bcf6262b5ecb917"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const GEN_URL = "https://engdaily-mkargc7maa-uc.a.run.app";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+/* ═══════════ 狀態 ═══════════ */
+function todayTW(){ return new Date(Date.now() + 8*3600e3).toISOString().slice(0,10); }
+let curDate = todayTW();
+let dayDoc = null;          // eng_daily 文件
+let curArt = 0;             // 目前文章 index
+let unsubDay = null;
+let user = null;
+let hideZh = false;
+let prog = { lines:{} };    // 今日進度 { "art_line": {plays, best, recs} }
+let progDirty = null;
+const recordings = {};      // lineKey -> blob URL（僅本次瀏覽，不上傳）
+const CATEMOJI = { world:"🌍", tech:"🤖", health:"🏥", sport:"⚽", society:"🏛️" };
+
+/* ═══════════ 登入 ═══════════ */
+$("loginBtn").onclick = async () => {
+  if (user) { if (confirm("要登出嗎？")) await signOut(auth); return; }
+  try { await signInWithPopup(auth, new GoogleAuthProvider()); }
+  catch(e){ toast("登入失敗：" + e.message); }
+};
+onAuthStateChanged(auth, async u => {
+  user = u;
+  $("loginBtn").innerHTML = u
+    ? (u.photoURL ? `<img src="${esc(u.photoURL)}" alt="">` : "👤")
+    : "登入";
+  $("loginBtn").title = u ? (u.email || "") : "使用 Google 登入以跨裝置保存進度";
+  await loadProgress();
+  refreshStreakChip();
+  renderArticle();
+});
+
+/* ═══════════ 日期切換 ═══════════ */
+function shiftDate(days){
+  const d = new Date(curDate + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
+  const n = d.toISOString().slice(0,10);
+  if (n > todayTW()) return;
+  curDate = n;
+  loadDay();
+}
+$("prevD").onclick = () => shiftDate(-1);
+$("nextD").onclick = () => shiftDate(1);
+
+function renderDate(){
+  $("dateTxt").textContent = curDate;
+  const dow = "日一二三四五六"[new Date(curDate + "T00:00:00Z").getUTCDay()];
+  $("dowTxt").textContent = "週" + dow;
+  $("nextD").style.visibility = curDate >= todayTW() ? "hidden" : "visible";
+}
+
+/* ═══════════ 讀取每日內容 ═══════════ */
+function loadDay(){
+  renderDate();
+  curArt = 0;
+  stopAll();
+  if (unsubDay) unsubDay();
+  $("content").innerHTML = `<div class="empty"><span class="spin"></span>載入中…</div>`;
+  $("tabs").innerHTML = "";
+  unsubDay = onSnapshot(doc(db, "eng_daily", curDate), snap => {
+    dayDoc = snap.exists() ? snap.data() : null;
+    loadProgress().then(() => { renderTabs(); renderArticle(); });
+  }, err => {
+    $("content").innerHTML = `<div class="empty">讀取失敗：${esc(err.message)}</div>`;
+  });
+}
+
+async function triggerGenerate(){
+  const btn = $("genBtn");
+  if (btn){ btn.disabled = true; btn.innerHTML = `<span class="spin"></span>生成中…約需 1~2 分鐘`; }
+  try {
+    const r = await fetch(GEN_URL, {
+      method:"POST", headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ date: curDate })
+    });
+    if (!r.ok) {
+      const d = await r.json().catch(()=>({}));
+      throw new Error(d?.error?.message || ("HTTP " + r.status));
+    }
+    // onSnapshot 會自動更新畫面
+  } catch(e){
+    toast("生成失敗：" + e.message);
+    if (btn){ btn.disabled = false; btn.textContent = "✨ 重試生成"; }
+  }
+}
+
+/* ═══════════ 畫面渲染 ═══════════ */
+function renderTabs(){
+  const t = $("tabs");
+  if (!dayDoc || dayDoc.status !== "ready") { t.innerHTML = ""; return; }
+  t.innerHTML = dayDoc.articles.map((a,i) =>
+    `<div class="tab ${i===curArt?"on":""}" data-i="${i}">${CATEMOJI[a.cat]||"📄"} ${esc(a.catZh)}</div>`).join("");
+  t.querySelectorAll(".tab").forEach(el => el.onclick = () => {
+    curArt = +el.dataset.i; stopAll(); renderTabs(); renderArticle();
+    window.scrollTo({top:0, behavior:"smooth"});
+  });
+}
+
+function renderArticle(){
+  const c = $("content");
+  if (!dayDoc) {
+    c.innerHTML = curDate === todayTW()
+      ? `<div class="empty">今天的內容還沒生成<br>
+          <button class="bigbtn" id="genBtn">✨ 生成今日內容</button><br>
+          <small>從 BBC 與 Taipei Times 選 4 篇（世界、科技、醫療、運動、社會輪替）</small></div>`
+      : `<div class="empty">這一天沒有內容 📭</div>`;
+    const g = $("genBtn"); if (g) g.onclick = triggerGenerate;
+    return;
+  }
+  if (dayDoc.status === "generating") {
+    c.innerHTML = `<div class="empty"><span class="spin"></span>內容生成中，約 1~2 分鐘…<br><small>完成後會自動顯示</small></div>`;
+    return;
+  }
+  const a = dayDoc.articles[curArt];
+  if (!a){ c.innerHTML = `<div class="empty">沒有文章</div>`; return; }
+
+  let html = `
+    <div class="arthead">
+      <div class="ten" data-say="${esc(a.title_en)}">${esc(a.title_en)}</div>
+      <div class="tzh">${esc(a.title_zh)}</div>
+      <div class="meta">
+        <span class="lv">${esc(a.level || "—")}</span>
+        <span>${esc(a.source)}</span>
+        <a href="${esc(a.url)}" target="_blank" rel="noopener">原文 ↗</a>
+      </div>
+      <div class="summary">${esc(a.summary_zh || "")}</div>
+    </div>`;
+
+  html += a.sentences.map((s,i) => {
+    const key = curArt + "_" + i;
+    const p = prog.lines[key] || {};
+    const rec = recordings[key];
+    return `
+    <div class="sent ${hideZh?"hidezh":""}" id="sent-${key}">
+      <div class="en" data-say="${esc(s.en)}" data-key="${key}">${esc(s.en)}</div>
+      <div class="zh">${esc(s.zh)}</div>
+      <div class="stools">
+        <button class="ico say" data-key="${key}" title="朗讀">🔊</button>
+        <button class="ico rec" data-key="${key}" title="錄音跟讀，再按一次結束">🎙️ 跟讀</button>
+        <button class="ico playrec" data-key="${key}" title="播放我的錄音" ${rec?"":"hidden"}>▶️</button>
+        ${p.best != null ? `<span class="score ${scoreCls(p.best)}">${p.best}</span>` : `<span class="score" hidden></span>`}
+      </div>
+      <div class="diff" hidden></div>
+    </div>`;
+  }).join("");
+
+  if (a.vocab && a.vocab.length){
+    html += `<h2 class="sec">📚 單字與慣用語</h2>`;
+    html += a.vocab.map(v => `
+      <div class="voc">
+        <span class="term" data-say="${esc(v.term)}">${esc(v.term)}</span><span class="pos">${esc(v.pos)}</span>
+        <div class="vzh">${esc(v.zh)}</div>
+        <div class="note">${esc(v.note)}</div>
+        <div class="ex">
+          <div class="een" data-say="${esc(v.example_en)}">${esc(v.example_en)}</div>
+          <div class="ezh">${esc(v.example_zh)}</div>
+        </div>
+      </div>`).join("");
+  }
+  if (dayDoc.errors && dayDoc.errors.length && curArt === 0){
+    html += `<div class="hint">（今日有 ${dayDoc.errors.length} 個分類抓取失敗，已略過）</div>`;
+  }
+  c.innerHTML = html;
+
+  // 事件
+  c.querySelectorAll("[data-say]").forEach(el => {
+    el.addEventListener("click", () => {
+      speak(el.dataset.say, el);
+      const k = el.dataset.key;
+      if (k){ bump(k, "plays"); }
+    });
+  });
+  c.querySelectorAll(".ico.say").forEach(el => el.onclick = () => {
+    const k = el.dataset.key;
+    const enEl = document.querySelector(`#sent-${CSS.escape(k)} .en`);
+    speak(enEl.dataset.say, enEl); bump(k, "plays");
+  });
+  c.querySelectorAll(".ico.rec").forEach(el => el.onclick = () => toggleRec(el.dataset.key, el));
+  c.querySelectorAll(".ico.playrec").forEach(el => el.onclick = () => {
+    const u = recordings[el.dataset.key];
+    if (u) new Audio(u).play();
+  });
+}
+
+function scoreCls(n){ return n >= 85 ? "g" : n >= 60 ? "a" : "r"; }
+
+/* ═══════════ TTS 朗讀 ═══════════ */
+let voices = [];
+function loadVoices(){
+  voices = speechSynthesis.getVoices().filter(v => /^en[-_]/i.test(v.lang));
+  const sel = $("voiceSel");
+  const cur = sel.value;
+  sel.innerHTML = `<option value="">自動（英文）</option>` +
+    voices.map(v => `<option value="${esc(v.name)}">${esc(v.name.replace(/^Microsoft |^Google /,""))} (${esc(v.lang)})</option>`).join("");
+  if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
+}
+speechSynthesis.onvoiceschanged = loadVoices;
+loadVoices();
+
+let speakingEl = null;
+function speak(text, el, onend){
+  speechSynthesis.cancel();
+  if (speakingEl) speakingEl.classList.remove("speaking");
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "en-US";
+  u.rate = parseFloat($("rateSel").value) || 1;
+  const name = $("voiceSel").value;
+  const v = voices.find(x => x.name === name)
+    || voices.find(x => /google us english/i.test(x.name))
+    || voices.find(x => x.lang.replace("_","-").toLowerCase() === "en-us")
+    || voices[0];
+  if (v) u.voice = v;
+  if (el){ speakingEl = el; el.classList.add("speaking"); }
+  u.onend = u.onerror = () => {
+    if (el) el.classList.remove("speaking");
+    if (speakingEl === el) speakingEl = null;
+    if (onend) onend();
+  };
+  speechSynthesis.speak(u);
+}
+
+/* 全文連續朗讀 */
+let playingAll = false;
+$("playAllBtn").onclick = () => {
+  if (playingAll){ stopAll(); return; }
+  const a = dayDoc && dayDoc.status === "ready" && dayDoc.articles[curArt];
+  if (!a) return;
+  playingAll = true;
+  $("playAllBtn").textContent = "⏹ 停止";
+  $("playAllBtn").classList.add("on");
+  let i = 0;
+  const next = () => {
+    if (!playingAll || i >= a.sentences.length){ stopAll(); return; }
+    const key = curArt + "_" + i;
+    const el = document.querySelector(`#sent-${CSS.escape(key)} .en`);
+    if (el) el.scrollIntoView({block:"center", behavior:"smooth"});
+    speak(a.sentences[i].en, el, () => { i++; setTimeout(next, 350); });
+  };
+  next();
+};
+function stopAll(){
+  playingAll = false;
+  speechSynthesis.cancel();
+  if (speakingEl){ speakingEl.classList.remove("speaking"); speakingEl = null; }
+  $("playAllBtn").textContent = "▶ 全文朗讀";
+  $("playAllBtn").classList.remove("on");
+}
+
+$("zhTgl").onclick = () => {
+  hideZh = !hideZh;
+  $("zhTgl").classList.toggle("on", hideZh);
+  document.querySelectorAll(".sent").forEach(el => el.classList.toggle("hidezh", hideZh));
+};
+
+/* ═══════════ 錄音跟讀 + 發音評分 ═══════════ */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recState = null;   // { key, btn, mr, chunks, rec, transcript, stopped }
+
+async function toggleRec(key, btn){
+  if (recState){ finishRec(); return; }
+  stopAll();
+  const a = dayDoc.articles[curArt];
+  const idx = +key.split("_")[1];
+  const target = a.sentences[idx].en;
+
+  const st = { key, btn, target, chunks:[], transcript:"", stopped:false, mr:null, rec:null };
+  recState = st;
+
+  // 麥克風錄音（保留自己的聲音可回放）
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+    st.mr = new MediaRecorder(stream);
+    st.mr.ondataavailable = e => { if (e.data.size) st.chunks.push(e.data); };
+    st.mr.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      if (st.chunks.length){
+        if (recordings[key]) URL.revokeObjectURL(recordings[key]);
+        recordings[key] = URL.createObjectURL(new Blob(st.chunks, { type: st.chunks[0].type || "audio/webm" }));
+        const pb = document.querySelector(`#sent-${CSS.escape(key)} .playrec`);
+        if (pb) pb.hidden = false;
+        bump(key, "recs");
+      }
+    };
+    st.mr.start();
+  } catch(e){ /* 拿不到錄音權限就只做辨識評分 */ }
+
+  // 語音辨識（評分用）
+  if (SR){
+    const rec = new SR();
+    st.rec = rec;
+    rec.lang = "en-US";
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.onresult = ev => {
+      let fin = "";
+      for (const r of ev.results) if (r.isFinal) fin += r[0].transcript + " ";
+      st.transcript = fin || (ev.results.length ? [...ev.results].map(r=>r[0].transcript).join(" ") : "");
+    };
+    rec.onend = () => { if (recState === st && !st.stopped) finishRec(); };
+    try { rec.start(); } catch(e){}
+  } else if (!st.mr) {
+    recState = null;
+    toast("此瀏覽器不支援錄音與語音辨識，建議使用 Chrome / Edge");
+    return;
+  } else {
+    toast("此瀏覽器不支援語音辨識評分（仍可錄音回放），建議用 Chrome");
+  }
+
+  btn.classList.add("recing");
+  btn.textContent = "⏹ 結束";
+}
+
+function finishRec(){
+  const st = recState;
+  if (!st) return;
+  st.stopped = true;
+  recState = null;
+  try { if (st.rec) st.rec.stop(); } catch(e){}
+  try { if (st.mr && st.mr.state !== "inactive") st.mr.stop(); } catch(e){}
+  st.btn.classList.remove("recing");
+  st.btn.textContent = "🎙️ 跟讀";
+  // 辨識結果可能晚一點才到 → 等 700ms 再評分
+  setTimeout(() => scoreRec(st), 700);
+}
+
+function normWords(s){
+  return s.toLowerCase()
+    .replace(/[’‘]/g,"'")
+    .replace(/[^a-z0-9' ]+/g," ")
+    .split(/\s+/).filter(Boolean);
+}
+
+// LCS 對齊：回傳 target 每個字是否有唸到
+function alignWords(target, said){
+  const n = target.length, m = said.length;
+  const dp = Array.from({length:n+1}, () => new Array(m+1).fill(0));
+  for (let i=1;i<=n;i++) for (let j=1;j<=m;j++)
+    dp[i][j] = target[i-1] === said[j-1] ? dp[i-1][j-1]+1 : Math.max(dp[i-1][j], dp[i][j-1]);
+  const hit = new Array(n).fill(false);
+  let i=n, j=m;
+  while (i>0 && j>0){
+    if (target[i-1] === said[j-1]){ hit[i-1]=true; i--; j--; }
+    else if (dp[i-1][j] >= dp[i][j-1]) i--; else j--;
+  }
+  return hit;
+}
+
+function scoreRec(st){
+  if (!SR) return;   // 無辨識就不評分
+  const tw = normWords(st.target);
+  const sw = normWords(st.transcript);
+  const diffEl = document.querySelector(`#sent-${CSS.escape(st.key)} .diff`);
+  const scEl = document.querySelector(`#sent-${CSS.escape(st.key)} .score`);
+  if (!sw.length){
+    if (diffEl){ diffEl.hidden = false; diffEl.innerHTML = `<span class="said">沒有聽到聲音，再試一次 🎙️（請大聲一點、離麥克風近一點）</span>`; }
+    return;
+  }
+  const hit = alignWords(tw, sw);
+  const matched = hit.filter(Boolean).length;
+  const score = Math.round(100 * matched / tw.length);
+
+  if (diffEl){
+    diffEl.hidden = false;
+    const origWords = st.target.split(/\s+/);
+    // 將原句逐字上色（比對用正規化後的序列，長度可能略異 → 用正規化索引對回去）
+    let k = 0;
+    const colored = origWords.map(w => {
+      const wn = normWords(w);
+      if (!wn.length) return esc(w);
+      const ok = hit[k] === true;
+      k += wn.length;
+      return `<span class="${ok?"w-ok":"w-miss"}">${esc(w)}</span>`;
+    }).join(" ");
+    diffEl.innerHTML = colored + `<div class="said">你唸的：${esc(st.transcript.trim() || "—")}</div>`;
+  }
+  if (scEl){
+    scEl.hidden = false;
+    scEl.textContent = score;
+    scEl.className = "score " + scoreCls(score);
+  }
+  const p = prog.lines[st.key] = prog.lines[st.key] || {};
+  if (p.best == null || score > p.best) p.best = score;
+  saveProgress();
+  if (score >= 85) toast("🎉 唸得很好！" + score + " 分");
+}
+
+/* ═══════════ 進度（localStorage + Firestore） ═══════════ */
+function lsKey(d){ return "engprog_" + d; }
+
+async function loadProgress(){
+  prog = { lines:{} };
+  try { const l = localStorage.getItem(lsKey(curDate)); if (l) prog = JSON.parse(l); } catch(e){}
+  if (user){
+    try {
+      const snap = await getDoc(doc(db, "eng_progress", user.uid + "__" + curDate));
+      if (snap.exists()){
+        const remote = snap.data().lines || {};
+        for (const k in remote){
+          const a = prog.lines[k] || {}, b = remote[k];
+          prog.lines[k] = {
+            plays: Math.max(a.plays||0, b.plays||0),
+            recs:  Math.max(a.recs||0,  b.recs||0),
+            best:  a.best == null ? b.best : (b.best == null ? a.best : Math.max(a.best, b.best)),
+          };
+        }
+      }
+    } catch(e){}
+  }
+}
+
+function bump(key, field){
+  const p = prog.lines[key] = prog.lines[key] || {};
+  p[field] = (p[field] || 0) + 1;
+  saveProgress();
+}
+
+function saveProgress(){
+  try { localStorage.setItem(lsKey(curDate), JSON.stringify(prog)); } catch(e){}
+  refreshStreakChip();
+  if (!user) return;
+  clearTimeout(progDirty);
+  progDirty = setTimeout(async () => {
+    try {
+      await setDoc(doc(db, "eng_progress", user.uid + "__" + curDate),
+        { uid:user.uid, date:curDate, lines:prog.lines, updatedAt:new Date() }, { merge:true });
+    } catch(e){ console.warn("進度上傳失敗", e); }
+  }, 1200);
+}
+
+/* 連續天數（本機快速版：streak chip 用 localStorage；統計面板登入後用 Firestore） */
+function localDays(){
+  const days = [];
+  for (let i=0;i<localStorage.length;i++){
+    const k = localStorage.key(i);
+    if (k && k.startsWith("engprog_")){
+      try { const v = JSON.parse(localStorage.getItem(k));
+        if (v && v.lines && Object.keys(v.lines).length) days.push(k.slice(8)); } catch(e){}
+    }
+  }
+  return days;
+}
+function calcStreak(daySet){
+  let s = 0;
+  let d = todayTW();
+  if (!daySet.has(d)){   // 今天還沒練 → 從昨天起算
+    const y = new Date(new Date(d+"T00:00:00Z").getTime() - 86400e3).toISOString().slice(0,10);
+    d = y;
+  }
+  while (daySet.has(d)){
+    s++;
+    d = new Date(new Date(d+"T00:00:00Z").getTime() - 86400e3).toISOString().slice(0,10);
+  }
+  return s;
+}
+function refreshStreakChip(){
+  $("streakN").textContent = calcStreak(new Set(localDays()));
+}
+
+/* ═══════════ 統計面板 ═══════════ */
+$("statBtn").onclick = openStats;
+$("statClose").onclick = () => $("statModal").classList.remove("on");
+$("statModal").onclick = e => { if (e.target === $("statModal")) $("statModal").classList.remove("on"); };
+
+async function openStats(){
+  $("statModal").classList.add("on");
+  // 彙整：登入 → Firestore 全歷史；未登入 → localStorage
+  let byDay = {};   // date -> {lines, recs, scoreSum, scoreN}
+  if (user){
+    try {
+      const qs = await getDocs(query(collection(db,"eng_progress"), where("uid","==",user.uid)));
+      qs.forEach(d => {
+        const v = d.data();
+        byDay[v.date] = summarize(v.lines || {});
+      });
+      $("statHint").textContent = "已同步雲端（" + (user.email||"") + "）";
+    } catch(e){ $("statHint").textContent = "雲端讀取失敗：" + e.message; }
+  } else {
+    for (const d of localDays()){
+      try { byDay[d] = summarize(JSON.parse(localStorage.getItem(lsKey(d))).lines || {}); } catch(e){}
+    }
+    $("statHint").textContent = "尚未登入：進度只存在此裝置。登入 Google 可跨裝置同步。";
+  }
+  const dates = Object.keys(byDay).sort();
+  const daySet = new Set(dates.filter(d => byDay[d].lines > 0));
+  $("stStreak").textContent = calcStreak(daySet);
+  $("stDays").textContent = daySet.size;
+  let lines = 0, sSum = 0, sN = 0;
+  dates.forEach(d => { lines += byDay[d].lines; sSum += byDay[d].scoreSum; sN += byDay[d].scoreN; });
+  $("stLines").textContent = lines;
+  $("stScore").textContent = sN ? Math.round(sSum/sN) : "–";
+
+  // 近 14 天長條
+  const bars = [], lbls = [];
+  let mx = 1;
+  const arr = [];
+  for (let i=13;i>=0;i--){
+    const d = new Date(new Date(todayTW()+"T00:00:00Z").getTime() - i*86400e3).toISOString().slice(0,10);
+    const n = byDay[d] ? byDay[d].lines : 0;
+    mx = Math.max(mx, n);
+    arr.push({ d, n });
+  }
+  arr.forEach(({d,n}) => {
+    bars.push(`<div class="b ${d===todayTW()?"t":""}" style="height:${Math.max(3, Math.round(86*n/mx))}px" title="${d}：${n} 句"></div>`);
+    lbls.push(`<span>${+d.slice(8)}</span>`);
+  });
+  $("bars").innerHTML = bars.join("");
+  $("barlbl").innerHTML = lbls.join("");
+}
+function summarize(lines){
+  let n = 0, recs = 0, sSum = 0, sN = 0;
+  for (const k in lines){
+    const p = lines[k];
+    if ((p.plays||0) + (p.recs||0) > 0 || p.best != null) n++;
+    recs += p.recs || 0;
+    if (p.best != null){ sSum += p.best; sN++; }
+  }
+  return { lines:n, recs, scoreSum:sSum, scoreN:sN };
+}
+
+/* ═══════════ 其他 ═══════════ */
+let toastT = null;
+function toast(msg){
+  const t = $("toast");
+  t.textContent = msg;
+  t.style.display = "block";
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.style.display = "none", 3500);
+}
+
+document.addEventListener("visibilitychange", () => { if (document.hidden) stopAll(); });
+
+/* 啟動 */
+refreshStreakChip();
+loadDay();
+</script>
+</body>
+</html>
