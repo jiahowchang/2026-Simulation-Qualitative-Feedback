@@ -398,38 +398,116 @@ function renderArticle(){
 function scoreCls(n){ return n >= 85 ? "g" : n >= 60 ? "a" : "r"; }
 
 /* ═══════════ TTS 朗讀 ═══════════ */
+const TTS_URL = "https://tts-mkargc7maa-uc.a.run.app";
+// 雲端真人感神經語音（Google Chirp 3 HD / Neural2；經 tts 函式代理，免金鑰）
+const CLOUD_VOICES = [
+  { v: "en-US-Chirp3-HD-Aoede",  label: "🎧 Aoede 女聲 · 溫暖自然（美）" },
+  { v: "en-US-Chirp3-HD-Leda",   label: "🎧 Leda 女聲 · 清亮（美）" },
+  { v: "en-US-Chirp3-HD-Charon", label: "🎧 Charon 男聲 · 沉穩（美）" },
+  { v: "en-US-Chirp3-HD-Orus",   label: "🎧 Orus 男聲 · 明亮（美）" },
+  { v: "en-US-Neural2-F",        label: "Neural2 女聲 · 標準（美）" },
+  { v: "en-US-Neural2-J",        label: "Neural2 男聲 · 標準（美）" },
+  { v: "en-GB-Neural2-B",        label: "Neural2 男聲 · 英式（英）" },
+];
 let voices = [];
+let voiceInit = false;
+function savedVoice(){ try { return localStorage.getItem("eng_voice") || ""; } catch(e){ return ""; } }
 function loadVoices(){
   voices = speechSynthesis.getVoices().filter(v => /^en[-_]/i.test(v.lang));
   const sel = $("voiceSel");
   const cur = sel.value;
-  sel.innerHTML = `<option value="">自動（英文）</option>` +
+  const cloudOpts = CLOUD_VOICES.map(c => `<option value="cloud:${c.v}">${esc(c.label)}</option>`).join("");
+  const browserOpts = `<option value="">裝置自動（英文）</option>` +
     voices.map(v => `<option value="${esc(v.name)}">${esc(v.name.replace(/^Microsoft |^Google /,""))} (${esc(v.lang)})</option>`).join("");
-  if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
+  sel.innerHTML =
+    `<optgroup label="真人感神經語音（雲端）">${cloudOpts}</optgroup>` +
+    `<optgroup label="裝置內建（離線）">${browserOpts}</optgroup>`;
+  const has = val => val && [...sel.querySelectorAll("option")].some(o => o.value === val);
+  if (has(cur)) sel.value = cur;
+  else if (!voiceInit && has(savedVoice())) { sel.value = savedVoice(); voiceInit = true; }
+  else if (!voiceInit) { sel.value = "cloud:" + CLOUD_VOICES[0].v; voiceInit = true; }
 }
 speechSynthesis.onvoiceschanged = loadVoices;
 loadVoices();
+$("voiceSel").addEventListener("change", () => {
+  try { localStorage.setItem("eng_voice", $("voiceSel").value); } catch(e){}
+});
+
+/* 雲端語音：base64 → Blob，含記憶體快取（同句同聲同速不重打） */
+const audioCache = new Map();   // `${voice}|${rate}|${text}` -> objectURL
+function b64ToBlob(b64, mime){
+  const bin = atob(b64), arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], { type: mime || "audio/mpeg" });
+}
+async function fetchTTS(cloudVoice, rate, text){
+  const key = cloudVoice + "|" + rate + "|" + text;
+  if (audioCache.has(key)) return audioCache.get(key);
+  const r = await fetch(TTS_URL, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, voice: cloudVoice, rate })
+  });
+  if (!r.ok) throw new Error("tts http " + r.status);
+  const d = await r.json();
+  if (!d.audio) throw new Error("no audio");
+  const url = URL.createObjectURL(b64ToBlob(d.audio, d.mime));
+  audioCache.set(key, url);
+  return url;
+}
+// 重複使用同一個 <audio>（iOS 首次手勢後即解鎖，後續程式化播放才不被擋）
+let sharedAudio = null;
+function getAudio(){ if (!sharedAudio) sharedAudio = new Audio(); return sharedAudio; }
 
 let speakingEl = null;
-function speak(text, el, onend){
+let curAudio = null;
+let speakSeq = 0;   // 每次朗讀遞增；非同步回來若過期就放棄
+function clearSpeaking(){ if (speakingEl){ speakingEl.classList.remove("speaking"); speakingEl = null; } }
+
+function browserSpeak(text, rate, done){
   speechSynthesis.cancel();
-  if (speakingEl) speakingEl.classList.remove("speaking");
   const u = new SpeechSynthesisUtterance(text);
   u.lang = "en-US";
-  u.rate = parseFloat($("rateSel").value) || 1;
+  u.rate = rate;
   const name = $("voiceSel").value;
   const v = voices.find(x => x.name === name)
     || voices.find(x => /google us english/i.test(x.name))
     || voices.find(x => x.lang.replace("_","-").toLowerCase() === "en-us")
     || voices[0];
   if (v) u.voice = v;
+  u.onend = u.onerror = done;
+  speechSynthesis.speak(u);
+}
+
+function speak(text, el, onend){
+  const seq = ++speakSeq;
+  speechSynthesis.cancel();
+  if (curAudio){ curAudio.pause(); curAudio = null; }
+  clearSpeaking();
   if (el){ speakingEl = el; el.classList.add("speaking"); }
-  u.onend = u.onerror = () => {
+
+  const rate = parseFloat($("rateSel").value) || 1;
+  const sel = $("voiceSel").value;
+  const done = () => {
+    if (seq !== speakSeq) return;                 // 已被新的朗讀/停止取代
     if (el) el.classList.remove("speaking");
     if (speakingEl === el) speakingEl = null;
     if (onend) onend();
   };
-  speechSynthesis.speak(u);
+
+  if (sel.startsWith("cloud:")){
+    fetchTTS(sel.slice(6), rate, text).then(url => {
+      if (seq !== speakSeq) return;               // 使用者已切換/停止
+      const a = getAudio();
+      a.pause(); a.src = url; a.playbackRate = 1;  // 語速已在雲端算好
+      a.onended = a.onerror = () => { if (curAudio === a) curAudio = null; done(); };
+      curAudio = a;
+      a.play().catch(() => { if (seq === speakSeq) browserSpeak(text, rate, done); });
+    }).catch(() => {                              // 雲端失敗 → 退回瀏覽器語音
+      if (seq === speakSeq) browserSpeak(text, rate, done);
+    });
+  } else {
+    browserSpeak(text, rate, done);
+  }
 }
 
 /* 全文連續朗讀 */
@@ -447,13 +525,20 @@ $("playAllBtn").onclick = () => {
     const key = curArt + "_" + i;
     const el = document.querySelector(`#sent-${CSS.escape(key)} .en`);
     if (el) el.scrollIntoView({block:"center", behavior:"smooth"});
-    speak(a.sentences[i].en, el, () => { i++; setTimeout(next, 350); });
+    // 雲端語音：先預抓下一句，播放才不會卡頓
+    const sel = $("voiceSel").value;
+    if (sel.startsWith("cloud:") && i + 1 < a.sentences.length){
+      fetchTTS(sel.slice(6), parseFloat($("rateSel").value) || 1, a.sentences[i + 1].en).catch(() => {});
+    }
+    speak(a.sentences[i].en, el, () => { i++; setTimeout(next, 300); });
   };
   next();
 };
 function stopAll(){
   playingAll = false;
+  speakSeq++;                       // 讓進行中的非同步朗讀失效
   speechSynthesis.cancel();
+  if (curAudio){ curAudio.pause(); curAudio = null; }
   if (speakingEl){ speakingEl.classList.remove("speaking"); speakingEl = null; }
   $("playAllBtn").textContent = "▶ 全文朗讀";
   $("playAllBtn").classList.remove("on");

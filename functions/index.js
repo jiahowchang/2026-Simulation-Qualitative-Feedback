@@ -95,7 +95,7 @@ exports.tts = onRequest(
     const body = req.body || {};
     const text = String(body.text || "").slice(0, 600);
     if (!text.trim()) { res.status(400).json({ error: { message: "text required" } }); return; }
-    const rate = Math.min(1.3, Math.max(0.7, parseFloat(body.rate) || 1.0));
+    const rate = Math.min(2.0, Math.max(0.25, parseFloat(body.rate) || 1.0));
 
     // ===== ElevenLabs 真人克隆聲：voice 形如 "eleven:<voiceId>"，且已設定 ELEVEN_KEY =====
     const evMatch = /^eleven:([A-Za-z0-9]{8,40})$/.exec(body.voice || "");
@@ -148,8 +148,11 @@ exports.tts = onRequest(
       } catch (e) { /* 走 Google 備援 */ }
     }
 
-    // ===== Google Cloud TTS（cmn-TW 台灣國語）=====
-    const voice = /^cmn-TW-[A-Za-z0-9-]+$/.test(body.voice || "") ? body.voice : "cmn-TW-Wavenet-A";
+    // ===== Google Cloud TTS：台灣國語 cmn-TW 與英文 en-US/en-GB/en-AU 神經語音 =====
+    // voice 例：cmn-TW-Wavenet-A、en-US-Chirp3-HD-Aoede、en-US-Neural2-J、en-US-Studio-O
+    const voice = /^(cmn-TW|en-US|en-GB|en-AU)-[A-Za-z0-9-]+$/.test(body.voice || "")
+      ? body.voice : "cmn-TW-Wavenet-A";
+    const languageCode = voice.split("-").slice(0, 2).join("-");
 
     try {
       const tokRes = await fetch(
@@ -162,7 +165,7 @@ exports.tts = onRequest(
         headers: { authorization: "Bearer " + access_token, "content-type": "application/json" },
         body: JSON.stringify({
           input: { text },
-          voice: { languageCode: "cmn-TW", name: voice },
+          voice: { languageCode, name: voice },
           audioConfig: { audioEncoding: "MP3", speakingRate: rate },
         }),
       });
