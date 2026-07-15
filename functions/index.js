@@ -354,10 +354,12 @@ async function engGenerateDaily(dateStr) {
     if (prev.exists) (prev.data().articles || []).forEach(a => prevUrls.add(a.url));
   } catch (e) { /* 忽略 */ }
 
-  // 每天輪流跳過一個分類 → 每天 4 篇
+  // Taipei Times（社會/台灣）每天必有；BBC 四類每天輪流跳過一類 → 每天 4 篇
   const dayNum = Math.floor(new Date(dateStr + "T00:00:00Z").getTime() / 86400e3);
-  const skip = dayNum % ENG_SOURCES.length;
-  const picked = ENG_SOURCES.filter((_, i) => i !== skip);
+  const bbc = ENG_SOURCES.filter(s => s.source !== "Taipei Times");
+  const tt = ENG_SOURCES.filter(s => s.source === "Taipei Times");
+  const skip = dayNum % bbc.length;
+  const picked = bbc.filter((_, i) => i !== skip).concat(tt);
 
   const apiKey = ANTHROPIC_KEY.value();
   const results = await Promise.allSettled(picked.map(async src => {

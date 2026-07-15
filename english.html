@@ -90,6 +90,16 @@ select{background:var(--card); color:var(--txt); border:1px solid var(--line);
 .diff .w-ok{color:var(--green)} .diff .w-miss{color:var(--red); text-decoration:underline}
 .diff .said{color:var(--sub); font-size:12.5px; margin-top:4px}
 
+/* ── 每句筆記（可貼上查到的資料，跟進度一起雲端同步）── */
+.notewrap{margin-top:9px}
+.noteta{width:100%; min-height:72px; background:var(--bg); color:var(--txt);
+  border:1px solid var(--line); border-radius:10px; padding:9px 11px;
+  font-size:14px; line-height:1.75; font-family:inherit; resize:vertical; display:block}
+.noteta::placeholder{color:#6b7f9c}
+.noteta:focus{outline:none; border-color:var(--gold)}
+.ico.note.has{color:var(--gold); border-color:var(--gold)}
+.notehint{font-size:11px; color:var(--sub); margin-top:4px; text-align:right}
+
 /* ── vocab ── */
 h2.sec{font-size:16px; margin:22px 0 8px; color:var(--gold)}
 .voc{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin:10px 0}
@@ -343,6 +353,7 @@ function renderArticle(){
     const key = curArt + "_" + i;
     const p = prog.lines[key] || {};
     const rec = recordings[key];
+    const note = p.note || "";
     return `
     <div class="sent ${hideZh?"hidezh":""}" id="sent-${key}">
       <div class="en" data-say="${esc(s.en)}" data-key="${key}">${esc(s.en)}</div>
@@ -351,9 +362,14 @@ function renderArticle(){
         <button class="ico say" data-key="${key}" title="朗讀">🔊</button>
         <button class="ico rec" data-key="${key}" title="錄音跟讀，再按一次結束">🎙️ 跟讀</button>
         <button class="ico playrec" data-key="${key}" title="播放我的錄音" ${rec?"":"hidden"}>▶️</button>
+        <button class="ico note ${note?"has":""}" data-key="${key}" title="做筆記／貼上查到的資料">📝</button>
         ${p.best != null ? `<span class="score ${scoreCls(p.best)}">${p.best}</span>` : `<span class="score" hidden></span>`}
       </div>
       <div class="diff" hidden></div>
+      <div class="notewrap" ${note?"":"hidden"}>
+        <textarea class="noteta" data-key="${key}"
+          placeholder="寫下筆記，或貼上你查到的資料…（自動儲存）">${esc(note)}</textarea>
+      </div>
     </div>`;
   }).join("");
 
@@ -393,6 +409,30 @@ function renderArticle(){
     const u = recordings[el.dataset.key];
     if (u) new Audio(u).play();
   });
+  // 筆記：📝 開合；輸入即自動存（本機＋登入後雲端同步）
+  c.querySelectorAll(".ico.note").forEach(el => el.onclick = () => {
+    const w = document.querySelector(`#sent-${CSS.escape(el.dataset.key)} .notewrap`);
+    w.hidden = !w.hidden;
+    if (!w.hidden){ const ta = w.querySelector("textarea"); autoGrow(ta); ta.focus(); }
+  });
+  c.querySelectorAll(".noteta").forEach(ta => {
+    setTimeout(() => autoGrow(ta), 60);          // 等排版完成再量，否則初次載入寬度未定會量到爆高
+    ta.addEventListener("input", () => {
+      autoGrow(ta);
+      const k = ta.dataset.key;
+      const p = prog.lines[k] = prog.lines[k] || {};
+      p.note = ta.value;
+      const btn = document.querySelector(`#sent-${CSS.escape(k)} .ico.note`);
+      if (btn) btn.classList.toggle("has", !!ta.value.trim());
+      saveProgress();
+    });
+  });
+}
+// 依內容自動長高；隱藏中或寬度尚未定案時不量（scrollHeight 會失真），並設上限避免長文吃掉整頁
+function autoGrow(ta){
+  if (!ta || ta.offsetParent === null || ta.clientWidth < 60) return;
+  ta.style.height = "auto";
+  ta.style.height = Math.min(420, Math.max(72, ta.scrollHeight + 2)) + "px";
 }
 
 function scoreCls(n){ return n >= 85 ? "g" : n >= 60 ? "a" : "r"; }
@@ -699,6 +739,8 @@ async function loadProgress(){
             plays: Math.max(a.plays||0, b.plays||0),
             recs:  Math.max(a.recs||0,  b.recs||0),
             best:  a.best == null ? b.best : (b.best == null ? a.best : Math.max(a.best, b.best)),
+            // 筆記：本機有內容就以本機為準（剛打的），否則取雲端；避免同步時被清掉
+            note:  (a.note && a.note.trim()) ? a.note : (b.note || ""),
           };
         }
       }
@@ -808,7 +850,7 @@ function summarize(lines){
   let n = 0, recs = 0, sSum = 0, sN = 0;
   for (const k in lines){
     const p = lines[k];
-    if ((p.plays||0) + (p.recs||0) > 0 || p.best != null) n++;
+    if ((p.plays||0) + (p.recs||0) > 0 || p.best != null || (p.note||"").trim()) n++;
     recs += p.recs || 0;
     if (p.best != null){ sSum += p.best; sN++; }
   }
