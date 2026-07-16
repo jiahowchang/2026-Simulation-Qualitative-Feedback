@@ -378,6 +378,7 @@
             <option value="pea">PEA</option>
             <option value="asystole">Asystole</option>
             <option value="avb3">三度房室傳導阻滯</option>
+            <option value="paced">⚡ 節律器 Paced（學員貼上 TCP）</option>
           </select>
         </div>
         <div class="inst-field">
@@ -786,7 +787,8 @@ function effHR(){
   return state.cur.hr;
 }
 function scheduleBeats(t){
-  if (CONTINUOUS(state.rhythm)) { eng.beats.length=0; eng.lastSched=t; return; }
+  // 連續型波形（VF/Asystole）沒有心搏——除非節律器捕獲（TCP 打 asystole 是真實情境）
+  if (CONTINUOUS(state.rhythm) && !pacerCapturing()) { eng.beats.length=0; eng.lastSched=t; return; }
   if (eng.lastSched < t-1) eng.lastSched = t;
   while (eng.lastSched < t+1.5){
     const hr = Math.max(10, effHR());
@@ -834,11 +836,11 @@ function vfWave(t, amp){
 const LEAD_FACTOR = [0.55, 1.0, 0.38]; // I II III（加大導程間振幅差異，切換更明顯）
 function ecgGen(t){
   if (!state.sensors.ecg) return null;
-  const r = state.rhythm;
+  const r = state.rhythm, cap = pacerCapturing();
   let v = 0;
-  if (r==='vfc') v = vfWave(t,0.55);
-  else if (r==='vff') v = vfWave(t,0.13);
-  else if (r==='asystole') v = 0.02*Math.sin(6.28*0.35*t);
+  if (r==='vfc' && !cap) v = vfWave(t,0.55);
+  else if (r==='vff' && !cap) v = vfWave(t,0.13);
+  else if (r==='asystole' && !cap) v = 0.02*Math.sin(6.28*0.35*t);
   else {
     // STEMI：依目前顯示導程加上 ST 段抬高/壓低（主螢幕也看得到）
     let st = 0;
@@ -1068,7 +1070,7 @@ function fmt(v,d=0){ return v===null||v===undefined||isNaN(v) ? '--' : v.toFixed
 function dispHR(){
   const r = state.rhythm;
   if (!state.sensors.ecg) return null;
-  if (r==='vfc'||r==='vff'||r==='asystole') return null;
+  if ((r==='vfc'||r==='vff'||r==='asystole') && !pacerCapturing()) return null;
   return Math.round(effHR());
 }
 function updateNumerics(){
@@ -1704,7 +1706,7 @@ const remote = { code:null, unsub:null, lastSeq:0, lastNibp:0, lastSilence:0, la
 function snapshotStatus(){
   const hr = dispHR();
   return {
-    age: state.age, rhythm: state.rhythm,
+    age: state.age, rhythm: state.rhythm, paced: !!pacerCapturing(),
     hr: hr===null ? "--" : String(hr),
     bp: $("bpVal").textContent+" "+$("bpMap").textContent,
     spo2: $("spo2Val").textContent, etco2: $("etco2Val").textContent,
@@ -1717,10 +1719,29 @@ function snapshotStatus(){
     ts: Date.now(),
   };
 }
+function syncPacerUI(){
+  const on = document.getElementById('pacerOn'); if (on) on.checked = state.pacer.on;
+  const r = document.getElementById('pRate'), o = document.getElementById('pOut');
+  if (r){ r.value = state.pacer.rate; document.getElementById('pRateV').textContent = state.pacer.rate+' ppm'; }
+  if (o){ o.value = state.pacer.out;  document.getElementById('pOutV').textContent  = state.pacer.out+' mA'; }
+}
 function applyRemoteCtrl(c){
   if (c.seq && c.seq > remote.lastSeq){
     remote.lastSeq = c.seq;
-    setRhythm(c.rhythm);
+    if (c.rhythm === 'paced'){
+      // 教師控制台選「⚡節律器」＝學員貼上 TCP：底層心律不變，啟動節律器並保證捕獲；
+      // 控制台 HR 滑桿＝起搏速率（起搏中 HR 顯示即為此值）
+      state.pacer.on = true;
+      if (state.pacer.out < 60) state.pacer.out = 70;
+      if (c.t && +c.t.hr > 0) state.pacer.rate = Math.round(+c.t.hr);
+      remote.pacedByCtrl = true;
+      eng.lastSched = simT + 0.1;
+      syncPacerUI();
+    } else {
+      setRhythm(c.rhythm);
+      // 換回其他心律時，只關掉「由控制台開啟」的起搏，不動學員在機器上自己開的
+      if (remote.pacedByCtrl){ state.pacer.on = false; remote.pacedByCtrl = false; syncPacerUI(); }
+    }
     state.ecg12 = c.ecg12 || "normal";
     if (c.co2morph !== undefined) state.co2morph = c.co2morph || "normal";
     if (c.sensors) Object.assign(state.sensors, c.sensors);
@@ -1856,7 +1877,7 @@ window.addEventListener("beforeunload", ()=>{ endSession(); });
 // ========== 控制台端 ==========
 const ctrl = { code:null, unsub:null, inited:false };
 const RHYTHM_NAMES = { sinus:"竇性", afib:"AFib", aflutter:"AFlutter", svt:"SVT", vtp:"VT(有脈)",
-  vt:"VT(無脈)", vfc:"VF(粗)", vff:"VF(細)", pea:"PEA", asystole:"Asystole", avb3:"3度AVB" };
+  vt:"VT(無脈)", vfc:"VF(粗)", vff:"VF(細)", pea:"PEA", asystole:"Asystole", avb3:"3度AVB", paced:"⚡節律器" };
 
 function showCtrlScreen(){
   $("startScreen").classList.remove("active");
@@ -1893,7 +1914,7 @@ function renderStatus(st){
   $("stHr").textContent=st.hr; $("stBp").textContent=st.bp; $("stSp").textContent=st.spo2;
   $("stEt").textContent=st.etco2; $("stRr").textContent=st.rr; $("stTp").textContent=st.temp;
   $("stNibp").textContent=st.nibp;
-  $("stRhythm").textContent = RHYTHM_NAMES[st.rhythm]||st.rhythm;
+  $("stRhythm").textContent = (RHYTHM_NAMES[st.rhythm]||st.rhythm) + (st.paced ? "＋⚡起搏" : "");
   $("stAlarm").textContent = st.alarm ? "⚠ "+st.alarm : "";
   if (!ctrl.inited && st.cur){
     ctrl.inited = true;
