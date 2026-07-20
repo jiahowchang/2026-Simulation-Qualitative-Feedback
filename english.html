@@ -69,6 +69,13 @@ select{background:var(--card); color:var(--txt); border:1px solid var(--line);
 .summary{background:var(--card); border-left:3px solid var(--gold); border-radius:0 10px 10px 0;
   padding:9px 12px; font-size:13.5px; color:#c9d6ea; margin:10px 0; line-height:1.6}
 
+/* ── TED 影片（16:9 自適應）── */
+.video{position:relative; width:100%; padding-top:56.25%; margin:12px 0 4px;
+  background:#000; border-radius:14px; overflow:hidden; border:1px solid var(--line)}
+.video iframe{position:absolute; inset:0; width:100%; height:100%; border:0}
+.speaker{font-size:13px; color:var(--sub); margin-top:6px}
+.speaker b{color:var(--txt); font-weight:600}
+
 /* ── sentences ── */
 .sent{background:var(--card); border:1px solid var(--line); border-radius:14px;
   padding:12px 14px; margin:10px 0}
@@ -234,7 +241,7 @@ let hideZh = false;
 let prog = { lines:{} };    // 今日進度 { "art_line": {plays, best, recs} }
 let progDirty = null;
 const recordings = {};      // lineKey -> blob URL（僅本次瀏覽，不上傳）
-const CATEMOJI = { world:"🌍", tech:"🤖", health:"🏥", sport:"⚽", society:"🏛️" };
+const CATEMOJI = { world:"🌍", tech:"🤖", health:"🏥", sport:"⚽", society:"🏛️", ted:"🎬" };
 
 /* ═══════════ 登入 ═══════════ */
 $("loginBtn").onclick = async () => {
@@ -337,6 +344,8 @@ function renderArticle(){
   const a = dayDoc.articles[curArt];
   if (!a){ c.innerHTML = `<div class="empty">沒有文章</div>`; return; }
 
+  const isTed = !!a.video;
+  const mins = a.duration ? Math.round(a.duration / 60) + " 分鐘" : "";
   let html = `
     <div class="arthead">
       <div class="ten" data-say="${esc(a.title_en)}">${esc(a.title_en)}</div>
@@ -344,8 +353,12 @@ function renderArticle(){
       <div class="meta">
         <span class="lv">${esc(a.level || "—")}</span>
         <span>${esc(a.source)}</span>
-        <a href="${esc(a.url)}" target="_blank" rel="noopener">原文 ↗</a>
+        ${mins ? `<span>⏱ ${esc(mins)}</span>` : ""}
+        <a href="${esc(a.url)}" target="_blank" rel="noopener">${isTed ? "TED 原片 ↗" : "原文 ↗"}</a>
       </div>
+      ${isTed ? `<div class="video"><iframe src="${esc(a.video)}" allow="autoplay; fullscreen; encrypted-media"
+          allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
+        ${a.presenter ? `<div class="speaker">🎤 講者：<b>${esc(a.presenter)}</b></div>` : ""}` : ""}
       <div class="summary">${esc(a.summary_zh || "")}</div>
     </div>`;
 

@@ -288,13 +288,66 @@ function engExtractParas(html) {
   ).slice(0, 14);
 }
 
-async function engAskClaude(apiKey, title, paras) {
+/* ── TED 演講：最新片單 → 逐句字幕 → 影片嵌入 ── */
+function engNextData(html) {
+  const m = html.match(/id="__NEXT_DATA__"[^>]*>(\{[\s\S]*?\})<\/script>/);
+  if (!m) return null;
+  try { return JSON.parse(m[1]); } catch (e) { return null; }
+}
+
+// 最新演講的 slug 清單（TED 沒有可用的新片 RSS，改解析片單頁）
+async function engTedSlugs() {
+  const html = await engFetchText("https://www.ted.com/talks?sort=newest");
+  return [...new Set([...html.matchAll(/\/talks\/([a-z0-9_]{12,90})/g)].map(m => m[1]))];
+}
+
+// 取單支演講的字幕與影片資訊；沒有字幕（新片未上字幕、純音樂表演）回 null
+async function engTedTalk(slug) {
+  const d = engNextData(await engFetchText("https://www.ted.com/talks/" + slug + "/transcript"));
+  const pp = d && d.props && d.props.pageProps;
+  if (!pp) return null;
+  const paras = ((pp.transcriptData || {}).translation || {}).paragraphs || [];
+  const cues = [];
+  for (const p of paras) for (const c of (p.cues || [])) {
+    const t = String(c.text || "").replace(/\s+/g, " ").trim();
+    if (t) cues.push(t);
+  }
+  if (cues.length < 40) return null;                 // 字幕太少不拿來當教材
+  const v = pp.videoData || {};
+  return {
+    slug, cues,
+    title: v.title || "",
+    presenter: v.presenterDisplayName || "",
+    duration: v.duration || 0,
+    url: v.canonicalUrl || ("https://www.ted.com/talks/" + slug),
+    video: "https://embed.ted.com/talks/" + slug,     // 可直接 iframe 嵌入
+  };
+}
+
+// 依序試候選片，回傳第一支「有字幕且沒用過」的
+async function engPickTed(prevUrls) {
+  const slugs = await engTedSlugs();
+  let tried = 0;
+  for (const slug of slugs) {
+    if (prevUrls.has("https://www.ted.com/talks/" + slug)) continue;
+    if (++tried > 8) break;                          // 最多試 8 支，避免拖太久
+    try {
+      const t = await engTedTalk(slug);
+      if (t && !prevUrls.has(t.url)) return t;
+    } catch (e) { /* 換下一支 */ }
+  }
+  throw new Error("ted: 找不到有字幕的新演講");
+}
+
+async function engAskClaude(apiKey, title, paras, isTalk) {
   const sys =
     "你是為台灣成人學習者設計教材的英語教師。使用者母語是台灣慣用的繁體中文。" +
     "你只回傳一個嚴格合法的 JSON 物件，不加 markdown 圍欄、不加任何說明文字。";
   const prompt =
-    "以下是一篇新聞的標題與段落（可能夾雜「Image source」「Published…」等網頁雜訊，請忽略雜訊）。\n\n" +
-    "標題：" + title + "\n\n段落：\n" + paras.join("\n") + "\n\n" +
+    (isTalk
+      ? "以下是一場 TED 演講的標題與逐字稿片段（字幕斷行可能把句子切碎，請自行合併成完整句子）。\n\n"
+      : "以下是一篇新聞的標題與段落（可能夾雜「Image source」「Published…」等網頁雜訊，請忽略雜訊）。\n\n") +
+    "標題：" + title + "\n\n" + (isTalk ? "逐字稿：\n" : "段落：\n") + paras.join("\n") + "\n\n" +
     "請完成：\n" +
     "1. 從內文挑出 10~14 個「完整且連貫」的句子（保留原文用字，太長的句子可在不改變意思下輕微裁剪；依原文順序）。\n" +
     "2. 每句翻成台灣人日常慣用的繁體中文（口語自然、不要中國大陸用語，例如用「影片」不用「视频」、用「網路」不用「网络」）。\n" +
@@ -354,7 +407,7 @@ async function engGenerateDaily(dateStr) {
     if (prev.exists) (prev.data().articles || []).forEach(a => prevUrls.add(a.url));
   } catch (e) { /* 忽略 */ }
 
-  // Taipei Times（社會/台灣）每天必有；BBC 四類每天輪流跳過一類 → 每天 4 篇
+  // Taipei Times（社會/台灣）每天必有；BBC 四類每天輪流跳過一類；再加 1 支 TED 演講 → 每天 5 篇
   const dayNum = Math.floor(new Date(dateStr + "T00:00:00Z").getTime() / 86400e3);
   const bbc = ENG_SOURCES.filter(s => s.source !== "Taipei Times");
   const tt = ENG_SOURCES.filter(s => s.source === "Taipei Times");
@@ -362,7 +415,7 @@ async function engGenerateDaily(dateStr) {
   const picked = bbc.filter((_, i) => i !== skip).concat(tt);
 
   const apiKey = ANTHROPIC_KEY.value();
-  const results = await Promise.allSettled(picked.map(async src => {
+  const newsJobs = picked.map(async src => {
     const items = engParseRss(await engFetchText(src.rss));
     const item = items.find(it => !prevUrls.has(it.link));
     if (!item) throw new Error(src.cat + ": RSS 無可用項目");
@@ -370,7 +423,22 @@ async function engGenerateDaily(dateStr) {
     if (paras.length < 3) throw new Error(src.cat + ": 內文擷取過少 " + item.link);
     const out = await engAskClaude(apiKey, item.title, paras);
     return { cat: src.cat, catZh: src.catZh, source: src.source, url: item.link, ...out };
-  }));
+  });
+
+  // TED 演講（有影片可看＋逐字稿做逐句對照）
+  const tedJob = (async () => {
+    const t = await engPickTed(prevUrls);
+    // 逐字稿取前段（開場最適合當教材），交給 Claude 合併成完整句子
+    let txt = "", i = 0;
+    while (i < t.cues.length && txt.length < 7000) txt += t.cues[i++] + " ";
+    const out = await engAskClaude(apiKey, t.title, [txt.trim()], true);
+    return {
+      cat: "ted", catZh: "TED 演講", source: "TED", url: t.url,
+      video: t.video, presenter: t.presenter, duration: t.duration, ...out,
+    };
+  })();
+
+  const results = await Promise.allSettled(newsJobs.concat([tedJob]));
 
   const articles = results.filter(r => r.status === "fulfilled").map(r => r.value);
   const errors = results.filter(r => r.status === "rejected").map(r => String(r.reason && r.reason.message || r.reason).slice(0, 300));
