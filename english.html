@@ -69,12 +69,29 @@ select{background:var(--card); color:var(--txt); border:1px solid var(--line);
 .summary{background:var(--card); border-left:3px solid var(--gold); border-radius:0 10px 10px 0;
   padding:9px 12px; font-size:13.5px; color:#c9d6ea; margin:10px 0; line-height:1.6}
 
-/* ── TED 影片（16:9 自適應）── */
+/* ── TED 影片（16:9 自適應；播放時吸附在頂端，捲逐字稿也看得到畫面）── */
 .video{position:relative; width:100%; padding-top:56.25%; margin:12px 0 4px;
   background:#000; border-radius:14px; overflow:hidden; border:1px solid var(--line)}
-.video iframe{position:absolute; inset:0; width:100%; height:100%; border:0}
+.video iframe, .video > div{position:absolute; inset:0; width:100%; height:100%; border:0}
+.vidwrap.stick{position:sticky; top:calc(env(safe-area-inset-top) + 46px); z-index:15;
+  background:var(--bg); padding-bottom:6px}
 .speaker{font-size:13px; color:var(--sub); margin-top:6px}
 .speaker b{color:var(--txt); font-weight:600}
+
+/* ── 跟播控制列 ── */
+.syncbar{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:8px 0 2px;
+  font-size:12.5px; color:var(--sub)}
+.syncbar .tgl{padding:5px 10px; font-size:12.5px}
+.syncbar .now{margin-left:auto; font-variant-numeric:tabular-nums}
+
+/* ── 逐字稿跟播高亮 ── */
+.sent.cur{border-color:var(--gold); background:var(--card2); box-shadow:0 0 0 1px var(--gold) inset}
+.sent .en .w{border-radius:3px; padding:0 1px; transition:background .12s, color .12s}
+.sent .en .w.on{background:var(--gold); color:#1a2333; font-weight:600}
+.sent .ts{font-size:11px; color:var(--sub); font-variant-numeric:tabular-nums;
+  cursor:pointer; border:1px solid var(--line); border-radius:6px; padding:1px 6px; margin-right:7px}
+.sent .ts:hover{color:var(--gold); border-color:var(--gold)}
+.sent.cur .ts{color:var(--gold); border-color:var(--gold)}
 
 /* ── sentences ── */
 .sent{background:var(--card); border:1px solid var(--line); border-radius:14px;
@@ -356,9 +373,17 @@ function renderArticle(){
         ${mins ? `<span>⏱ ${esc(mins)}</span>` : ""}
         <a href="${esc(a.url)}" target="_blank" rel="noopener">${isTed ? "TED 原片 ↗" : "原文 ↗"}</a>
       </div>
-      ${isTed ? `<div class="video"><iframe src="${esc(a.video)}" allow="autoplay; fullscreen; encrypted-media"
-          allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
-        ${a.presenter ? `<div class="speaker">🎤 講者：<b>${esc(a.presenter)}</b></div>` : ""}` : ""}
+      ${isTed ? `<div class="vidwrap"><div class="video">${
+          a.youtube ? `<div id="ytplayer"></div>`
+                    : `<iframe src="${esc(a.video)}" allow="autoplay; fullscreen; encrypted-media"
+                         allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`
+        }</div></div>
+        ${a.presenter ? `<div class="speaker">🎤 講者：<b>${esc(a.presenter)}</b></div>` : ""}
+        ${a.youtube ? `<div class="syncbar">
+            <button class="tgl on" id="followTgl" title="影片播到哪，逐字稿就亮到哪並自動捲動">🎯 跟播</button>
+            <span>點時間碼或句子可跳到該處</span>
+            <span class="now" id="nowTime">0:00</span>
+          </div>` : ""}` : ""}
       <div class="summary">${esc(a.summary_zh || "")}</div>
     </div>`;
 
@@ -367,11 +392,13 @@ function renderArticle(){
     const p = prog.lines[key] || {};
     const rec = recordings[key];
     const note = p.note || "";
+    const timed = typeof s.t === "number";
     return `
-    <div class="sent ${hideZh?"hidezh":""}" id="sent-${key}">
-      <div class="en" data-say="${esc(s.en)}" data-key="${key}">${esc(s.en)}</div>
+    <div class="sent ${hideZh?"hidezh":""}" id="sent-${key}" ${timed?`data-t="${s.t}"`:""}>
+      <div class="en" data-say="${esc(s.en)}" data-key="${key}">${timed ? wordSpans(s.en) : esc(s.en)}</div>
       <div class="zh">${esc(s.zh)}</div>
       <div class="stools">
+        ${timed ? `<span class="ts" data-seek="${s.t}" title="跳到影片這一段">${fmtTime(s.t)}</span>` : ""}
         <button class="ico say" data-key="${key}" title="朗讀">🔊</button>
         <button class="ico rec" data-key="${key}" title="錄音跟讀，再按一次結束">🎙️ 跟讀</button>
         <button class="ico playrec" data-key="${key}" title="播放我的錄音" ${rec?"":"hidden"}>▶️</button>
@@ -422,6 +449,21 @@ function renderArticle(){
     const u = recordings[el.dataset.key];
     if (u) new Audio(u).play();
   });
+  // TED：初始化 YouTube 播放器與跟播控制
+  if (a.youtube){
+    initYt(a.youtube, a.sentences);
+    const ft = $("followTgl");
+    if (ft) ft.onclick = () => { followOn = !followOn; ft.classList.toggle("on", followOn); };
+    const timed = [...c.querySelectorAll(".sent[data-t]")];
+    c.querySelectorAll(".ts").forEach(el => el.onclick = ev => {
+      ev.stopPropagation();
+      const sent = el.closest(".sent");
+      // seek 必須在點擊當下同步呼叫（iOS 手勢一旦被非同步吃掉就會被擋）
+      if (!seekTo(+el.dataset.seek, timed.indexOf(sent))) toast("影片還在載入中，請稍候再試");
+    });
+  } else {
+    destroyYt();
+  }
   // 筆記：📝 開合；輸入即自動存（本機＋登入後雲端同步）
   c.querySelectorAll(".ico.note").forEach(el => el.onclick = () => {
     const w = document.querySelector(`#sent-${CSS.escape(el.dataset.key)} .notewrap`);
@@ -449,6 +491,186 @@ function autoGrow(ta){
 }
 
 function scoreCls(n){ return n >= 85 ? "g" : n >= 60 ? "a" : "r"; }
+function fmtTime(ms){
+  const s = Math.max(0, Math.round(ms / 1000));
+  return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+}
+// 把句子拆成單字 span，並記下每個字在句中的字元位移（給逐字高亮內插用）
+function wordSpans(en){
+  let out = "", i = 0;
+  const re = /\S+/g; let m;
+  while ((m = re.exec(en))){
+    if (m.index > i) out += esc(en.slice(i, m.index));
+    out += `<span class="w" data-c="${m.index}" data-e="${m.index + m[0].length}">${esc(m[0])}</span>`;
+    i = m.index + m[0].length;
+  }
+  if (i < en.length) out += esc(en.slice(i));
+  return out;
+}
+
+/* ═══════════ TED 影片跟播（YouTube IFrame API） ═══════════ */
+let ytPlayer = null, ytRaf = null, ytGen = 0;
+let followOn = true, curIdx = -1, userScrolledAt = 0;
+let syncEls = [], syncTimes = [], syncData = [];        // 快取，避免每幀查 DOM
+let seekGuardUntil = 0;                                 // seek 後短暫忽略播放器回報的時間
+let ytLastVideo = "", ytLastTime = 0;                   // 切分頁回來時接續播放位置
+
+// API 只會觸發一次全域回呼 → 包成可重複 await 的單例 Promise（另加輪詢保險）
+const ytApi = (() => {
+  let p = null;
+  return () => p || (p = new Promise((resolve, reject) => {
+    if (window.YT && window.YT.Player) return resolve(window.YT);
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      if (typeof prev === "function") { try { prev(); } catch(e){} }
+      resolve(window.YT);
+    };
+    const iv = setInterval(() => {                      // 回呼可能在掛上前就燒掉
+      if (window.YT && window.YT.Player){ clearInterval(iv); resolve(window.YT); }
+    }, 50);
+    setTimeout(() => { clearInterval(iv); reject(new Error("YT API timeout")); }, 12000);
+    if (!document.getElementById("yt-iframe-api")){
+      const s = document.createElement("script");
+      s.id = "yt-iframe-api"; s.src = "https://www.youtube.com/iframe_api"; s.async = true;
+      document.head.appendChild(s);
+    }
+  }));
+})();
+
+function destroyYt(){
+  ytGen++;                                              // 讓遲到的回呼失效
+  if (ytRaf){ cancelAnimationFrame(ytRaf); ytRaf = null; }
+  if (ytPlayer){
+    try { if (ytPlayer.getCurrentTime) ytLastTime = ytPlayer.getCurrentTime(); } catch(e){}
+    try { ytPlayer.destroy(); } catch(e){}               // iframe 已被移除時會丟例外
+    ytPlayer = null;
+  }
+  curIdx = -1; syncEls = []; syncTimes = []; syncData = [];
+}
+
+function initYt(videoId, sentences){
+  destroyYt();
+  const gen = ytGen;
+  // 快取句子時間，之後每幀只做二分搜尋
+  syncEls = [...document.querySelectorAll(".sent[data-t]")];
+  syncTimes = syncEls.map(el => +el.dataset.t);
+  syncData = sentences || [];
+  const resume = (videoId === ytLastVideo && ytLastTime > 1) ? ytLastTime : 0;
+  ytLastVideo = videoId;
+
+  ytApi().then(() => {
+    if (gen !== ytGen) return;                          // 已切走分頁
+    const host = document.getElementById("ytplayer");
+    if (!host || !document.body.contains(host)) return;
+    new YT.Player(host, {
+      videoId,
+      playerVars: { playsinline: 1, rel: 0, modestbranding: 1, origin: location.origin },
+      events: {
+        onReady: e => {
+          if (gen !== ytGen){ try { e.target.destroy(); } catch(x){} return; }
+          ytPlayer = e.target;                          // 用 event.target，避免賦值時序問題
+          if (resume) { try { e.target.seekTo(resume, true); } catch(x){} }
+          tick(true);
+        },
+        onStateChange: e => {
+          if (gen !== ytGen) return;
+          if (e.data === YT.PlayerState.PLAYING) startLoop();
+          else { if (ytRaf){ cancelAnimationFrame(ytRaf); ytRaf = null; } tick(true); }
+        },
+      },
+    });
+  }).catch(() => toast("YouTube 播放器載入失敗，請檢查網路"));
+}
+
+function startLoop(){
+  if (ytRaf) return;
+  let last = 0;
+  const loop = () => {
+    ytRaf = requestAnimationFrame(loop);
+    const now = performance.now();
+    if (now - last < 100) return;                       // 節流：每秒約 10 次就夠
+    last = now;
+    tick(false);
+  };
+  ytRaf = requestAnimationFrame(loop);
+}
+
+function tick(force){
+  if (!ytPlayer || !ytPlayer.getCurrentTime) return;
+  let sec = 0;
+  try { sec = ytPlayer.getCurrentTime() || 0; } catch(e){ return; }
+  const state = (() => { try { return ytPlayer.getPlayerState(); } catch(e){ return -1; } })();
+  // metadata 未載入前會回 0，別誤判成第一句
+  if (!sec && (state === -1 || state === 5) && !force) return;
+  const ms = sec * 1000;
+  const nowEl = $("nowTime");
+  if (nowEl) nowEl.textContent = fmtTime(ms);
+  if (performance.now() < seekGuardUntil) return;       // 剛 seek，先信任樂觀高亮
+
+  if (!syncEls.length) return;
+  let lo = 0, hi = syncTimes.length - 1, idx = 0;       // 二分搜尋：最後一個 t <= ms
+  while (lo <= hi){ const mid = (lo + hi) >> 1;
+    if (syncTimes[mid] <= ms){ idx = mid; lo = mid + 1; } else hi = mid - 1; }
+  setActive(idx, ms);
+}
+
+function setActive(idx, ms){
+  if (idx !== curIdx){
+    // 用查詢清除，才不會因為 curIdx 被重設（例如 seek）而留下殘影
+    document.querySelectorAll(".sent.cur").forEach(old => {
+      old.classList.remove("cur");
+      old.querySelectorAll(".w.on").forEach(w => w.classList.remove("on"));
+    });
+    const el = syncEls[idx];
+    if (!el) return;
+    el.classList.add("cur");
+    curIdx = idx;
+    if (followOn && Date.now() - userScrolledAt > 3000){
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  }
+  // 逐字高亮：用句內時間斷點線性內插，推算現在唸到第幾個字元
+  const el = syncEls[idx], s = syncData[idx];
+  if (!el || !s || !s.marks || !s.marks.length) return;
+  const marks = s.marks;
+  const endMs = idx + 1 < syncTimes.length ? syncTimes[idx + 1] : ms + 3000;
+  let seg = 0;
+  for (let i = 0; i < marks.length; i++){ if (marks[i].t <= ms) seg = i; else break; }
+  const c0 = marks[seg].c, t0 = marks[seg].t;
+  const c1 = seg + 1 < marks.length ? marks[seg + 1].c : s.en.length;
+  const t1 = seg + 1 < marks.length ? marks[seg + 1].t : endMs;
+  const charPos = t1 > t0 ? c0 + (c1 - c0) * Math.min(1, Math.max(0, (ms - t0) / (t1 - t0))) : c0;
+  // 取「開頭在游標之前的最後一個字」：位置落在字間空白時也不會整句沒亮（避免閃爍）
+  const ws = el.querySelectorAll(".w");
+  let hit = -1;
+  for (let i = 0; i < ws.length; i++){ if (+ws[i].dataset.c <= charPos) hit = i; else break; }
+  for (let i = 0; i < ws.length; i++){
+    const on = i === hit;
+    if (on !== ws[i].classList.contains("on")) ws[i].classList.toggle("on", on);
+  }
+}
+
+// 使用者手動捲動時，暫停自動跟播捲動
+addEventListener("scroll", () => { userScrolledAt = Date.now(); }, { passive: true });
+// 分頁隱藏時停止跟播迴圈（省電；iOS 背景會凍結 rAF）
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && ytRaf){ cancelAnimationFrame(ytRaf); ytRaf = null; }
+  else if (!document.hidden && ytPlayer){
+    try { if (ytPlayer.getPlayerState() === 1) startLoop(); } catch(e){}
+  }
+});
+
+function seekTo(ms, idx){
+  if (!ytPlayer || !ytPlayer.seekTo) return false;
+  ytPlayer.seekTo(ms / 1000 + 0.05, true);              // seek 會落到前一個關鍵影格，補一點點
+  try { ytPlayer.playVideo(); } catch(e){}
+  if (typeof idx === "number"){                          // 樂觀高亮，避免先閃回上一句
+    curIdx = -1;
+    setActive(idx, ms);
+    seekGuardUntil = performance.now() + 800;
+  }
+  return true;
+}
 
 /* ═══════════ TTS 朗讀 ═══════════ */
 const TTS_URL = "https://tts-mkargc7maa-uc.a.run.app";
