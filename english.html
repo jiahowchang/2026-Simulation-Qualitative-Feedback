@@ -381,7 +381,11 @@ function renderArticle(){
         ${a.presenter ? `<div class="speaker">🎤 講者：<b>${esc(a.presenter)}</b></div>` : ""}
         ${a.youtube ? `<div class="syncbar">
             <button class="tgl on" id="followTgl" title="影片播到哪，逐字稿就亮到哪並自動捲動">🎯 跟播</button>
-            <span>點時間碼或句子可跳到該處</span>
+            <span title="字幕時間與影片可能差幾秒，可在這裡對準（會記住）">⏱ 對齊
+              <button class="tgl" id="offMinus">−</button>
+              <b id="offVal">0.0s</b>
+              <button class="tgl" id="offPlus">＋</button>
+            </span>
             <span class="now" id="nowTime">0:00</span>
           </div>` : ""}` : ""}
       <div class="summary">${esc(a.summary_zh || "")}</div>
@@ -454,6 +458,17 @@ function renderArticle(){
     initYt(a.youtube, a.sentences);
     const ft = $("followTgl");
     if (ft) ft.onclick = () => { followOn = !followOn; ft.classList.toggle("on", followOn); };
+    // 對齊微調：字幕早於聲音就按＋，晚了就按−
+    const showOff = () => { const el = $("offVal");
+      if (el) el.textContent = (syncOffset >= 0 ? "+" : "") + (syncOffset / 1000).toFixed(1) + "s"; };
+    const nudge = d => {
+      syncOffset = Math.max(-10000, Math.min(15000, syncOffset + d));
+      try { localStorage.setItem("eng_ted_offset", String(syncOffset)); } catch(e){}
+      showOff(); curIdx = -1; tick(true);               // 立刻看到效果
+    };
+    showOff();
+    if ($("offMinus")) $("offMinus").onclick = () => nudge(-500);
+    if ($("offPlus")) $("offPlus").onclick = () => nudge(500);
     const timed = [...c.querySelectorAll(".sent[data-t]")];
     c.querySelectorAll(".ts").forEach(el => el.onclick = ev => {
       ev.stopPropagation();
@@ -511,6 +526,11 @@ function wordSpans(en){
 /* ═══════════ TED 影片跟播（YouTube IFrame API） ═══════════ */
 let ytPlayer = null, ytRaf = null, ytGen = 0;
 let followOn = true, curIdx = -1, userScrolledAt = 0;
+// TED 字幕時間軸比 YouTube 版的聲音早（實測中位數約 2.2 秒）→ 預設補正，並可微調
+let syncOffset = (() => {
+  try { const v = parseFloat(localStorage.getItem("eng_ted_offset")); return isNaN(v) ? 2200 : v; }
+  catch(e){ return 2200; }
+})();
 let syncEls = [], syncTimes = [], syncData = [];        // 快取，避免每幀查 DOM
 let seekGuardUntil = 0;                                 // seek 後短暫忽略播放器回報的時間
 let ytLastVideo = "", ytLastTime = 0;                   // 切分頁回來時接續播放位置
@@ -602,9 +622,10 @@ function tick(force){
   const state = (() => { try { return ytPlayer.getPlayerState(); } catch(e){ return -1; } })();
   // metadata 未載入前會回 0，別誤判成第一句
   if (!sec && (state === -1 || state === 5) && !force) return;
-  const ms = sec * 1000;
+  const playMs = sec * 1000;
+  const ms = Math.max(0, playMs - syncOffset);          // 換算成逐字稿的時間軸
   const nowEl = $("nowTime");
-  if (nowEl) nowEl.textContent = fmtTime(ms);
+  if (nowEl) nowEl.textContent = fmtTime(playMs);
   if (performance.now() < seekGuardUntil) return;       // 剛 seek，先信任樂觀高亮
 
   if (!syncEls.length) return;
@@ -662,7 +683,8 @@ document.addEventListener("visibilitychange", () => {
 
 function seekTo(ms, idx){
   if (!ytPlayer || !ytPlayer.seekTo) return false;
-  ytPlayer.seekTo(ms / 1000 + 0.05, true);              // seek 會落到前一個關鍵影格，補一點點
+  // ms 是逐字稿時間 → 換回影片時間；seek 會落到前一個關鍵影格，再補一點點
+  ytPlayer.seekTo((ms + syncOffset) / 1000 + 0.05, true);
   try { ytPlayer.playVideo(); } catch(e){}
   if (typeof idx === "number"){                          // 樂觀高亮，避免先閃回上一句
     curIdx = -1;
