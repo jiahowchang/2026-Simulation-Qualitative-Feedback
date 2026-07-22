@@ -54,6 +54,10 @@
   @keyframes pulse{ 0%{ box-shadow:0 0 0 0 #ffffff88; } 70%{ box-shadow:0 0 0 12px #ffffff00; } 100%{ box-shadow:0 0 0 0 #ffffff00; } }
   /* 熱點下方常駐文字標籤（iPad 無 hover 也看得到） */
   .hswrap{ position:relative; width:38px; height:38px; }
+  /* PSV 的 CSS3D 圖層預設 pointer-events:none，導致地面導航箭頭與學員 Avatar 收不到真實
+     滑鼠/觸控事件（只有程式派送的事件會動）。容器維持 none 讓拖曳全景照常穿透，
+     個別 3D 標記改為 auto；事件仍會往上冒泡給 PSV，所以在箭頭上拖曳一樣可以轉視角。 */
+  .psv-markers-css3d-container .psv-marker--css3d{ pointer-events:auto; }
   .hslabel{ position:absolute; top:42px; left:50%; transform:translateX(-50%); white-space:nowrap;
     background:#000b; color:#fff; font-size:12px; font-weight:600; padding:3px 9px; border-radius:9px;
     text-shadow:0 1px 2px #000; pointer-events:none; }
@@ -990,10 +994,15 @@ function navArrowEl(h){
         <text x="130" y="245" text-anchor="middle" font-family="-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif"
           font-size="30" font-weight="800" fill="#ffffff" stroke="#00000088" stroke-width="5" paint-order="stroke">${esc2(h.label||"前往")}</text>
       </svg>`;
-    el.addEventListener("click", ()=>{
-      if(Date.now()-lastHsFire<600) return; lastHsFire = Date.now();
-      onHotspot(h);
+    // 輕點才跳場景：在箭頭上拖曳（>12px 或 >600ms）視為轉視角，不觸發移動
+    let px=0, py=0, pt=0;
+    const fire = ()=>{ if(Date.now()-lastHsFire<600) return; lastHsFire=Date.now(); onHotspot(h); };
+    el.addEventListener("pointerdown", e=>{ px=e.clientX; py=e.clientY; pt=Date.now(); });
+    el.addEventListener("pointerup", e=>{
+      if(Math.hypot(e.clientX-px, e.clientY-py)>12 || Date.now()-pt>600) return;
+      fire();
     });
+    el.addEventListener("click", fire);   // 舊版瀏覽器/合成事件備援（lastHsFire 已防重複）
     NAV_EL[h.id] = el;
   }
   return el;
