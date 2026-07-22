@@ -727,7 +727,6 @@ function curStageIdx(){
 }
 function checkStages(){
   const ss = stagesOf(); if(!ss.length) return;
-  const sc = curSceneObj();
   ss.forEach((st,i)=>{
     const doneAll = (st.tasks||[]).every(id=>done.has(id));
     if(doneAll && !done.has("stg_"+st.id)){
@@ -751,8 +750,9 @@ function checkStages(){
     const st = ss[idx];
     if(!stageStarts[st.id]) stageStarts[st.id] = Date.now();
     // 自動揭示目前關卡任務（gated:true 者除外——它們由前置動作鏈解鎖）
+    // 跨場景搜尋：任務可能在別的場景（例如 Support 要走到藥物區），revealed 是全域集合
     (st.tasks||[]).forEach(id=>{
-      const h = sc && (sc.hotspots||[]).find(x=>x.id===id);
+      const h = findTaskHs(id);
       if(h && h.startHidden && !h.gated) revealed.add(id);
     });
   }
