@@ -28,13 +28,17 @@
   #score b{ color:#ffd76a; }
 
   /* 場景清單（左下） */
-  #scenes{ position:fixed; left:12px; bottom:12px; z-index:30; display:flex; gap:8px; flex-wrap:wrap; max-width:60vw; }
+  /* 場景切換：抬高到 PSV 底部工具列（縮放/方向/全螢幕，約 40px 高）之上，
+     否則多場景教案換行後第二排會被工具列蓋住、點不到 */
+  #scenes{ position:fixed; left:12px; bottom:56px; z-index:45; display:flex; gap:8px; flex-wrap:wrap;
+    max-width:min(72vw, 900px); max-height:34vh; overflow-y:auto; }
   #scenes button{ background:#000a; color:#fff; border:1px solid #fff4; border-radius:8px;
     padding:6px 12px; font-size:13px; cursor:pointer; backdrop-filter:blur(4px); }
   #scenes button.active{ background:var(--accent); border-color:var(--accent); }
+  @media (max-height:560px){ #scenes{ max-height:44vh; } }
 
   /* 找危害進度（右下） */
-  #hazardbar{ position:fixed; right:12px; bottom:12px; z-index:30; background:#000a; color:#fff;
+  #hazardbar{ position:fixed; right:12px; bottom:56px; z-index:45; background:#000a; color:#fff;
     border:1px solid #fff3; border-radius:10px; padding:8px 14px; font-size:13px; display:none; }
   #hazardbar b{ color:var(--ok); }
 
