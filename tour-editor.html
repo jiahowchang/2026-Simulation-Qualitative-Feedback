@@ -40,6 +40,28 @@
   #hint{ position:fixed; top:10px; left:350px; z-index:50; background:#111d; color:#fff; padding:6px 12px; border-radius:8px; font-size:12px; display:none; }
   .muted{ color:#6b7885; font-size:12px; }
   .choices .row{ margin-bottom:6px; }
+  /* 背景環景挑選器 */
+  #bgPicker{ position:fixed; inset:0; background:#0f172acc; z-index:200; display:none;
+    align-items:center; justify-content:center; padding:24px; }
+  #bgPicker.show{ display:flex; }
+  #bgPicker .bp-box{ background:#fff; border-radius:14px; width:min(980px,96vw); max-height:88vh;
+    display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 60px #0006; }
+  #bgPicker .bp-head{ display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid var(--line); }
+  #bgPicker .bp-head b{ font-size:16px; }
+  #bgPicker .bp-head .muted{ flex:1; }
+  #bgPicker .bp-body{ overflow:auto; padding:14px 16px; }
+  #bgPicker h3{ font-size:13px; color:#6b7885; margin:14px 0 8px; }
+  #bgPicker h3:first-child{ margin-top:0; }
+  #bgPicker .bp-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:10px; }
+  #bgPicker .bp-item{ border:2px solid var(--line); border-radius:10px; overflow:hidden; cursor:pointer;
+    background:#f7f9fc; transition:border-color .15s, transform .1s; }
+  #bgPicker .bp-item:hover{ border-color:var(--accent); transform:translateY(-2px); }
+  #bgPicker .bp-item.cur{ border-color:#14b8a6; box-shadow:0 0 0 2px #14b8a655; }
+  #bgPicker .bp-item img{ width:100%; aspect-ratio:2/1; object-fit:cover; display:block; background:#dde3ea; }
+  #bgPicker .bp-item .cap{ padding:6px 8px; font-size:12.5px; line-height:1.3; }
+  #bgPicker .bp-item .cap b{ display:block; }
+  #bgPicker .bp-item .cap span{ color:#6b7885; font-size:11px; }
+  #bgPicker .bp-foot{ padding:10px 16px; border-top:1px solid var(--line); }
 </style>
 </head>
 <body>
@@ -91,7 +113,10 @@
       <div class="sect">
         <h2>場景</h2>
         <div id="sceneList"></div>
-        <button class="btn ghost sm" id="addScene">＋ 新增場景</button>
+        <div class="row">
+          <button class="btn ghost sm" id="addScene">＋ 新增場景</button>
+          <button class="btn primary sm" id="bgPickBtn">🖼 更換背景環景</button>
+        </div>
       </div>
 
       <div class="sect" id="sceneEdit" style="display:none">
@@ -138,6 +163,19 @@
   <div id="viewer"></div>
 </div>
 <div id="hint">點擊畫面即可在該位置新增熱點；選取熱點後按「📍 移動位置」再點新位置即可搬移</div>
+
+<!-- 背景環景挑選器：縮圖一次看完所有可用環景，點一下即套用到目前場景 -->
+<div id="bgPicker">
+  <div class="bp-box">
+    <div class="bp-head">
+      <b>🖼 選擇背景環景</b>
+      <span class="muted" id="bpFor"></span>
+      <button class="btn ghost sm" id="bpClose">關閉</button>
+    </div>
+    <div class="bp-body" id="bpBody"></div>
+    <div class="bp-foot muted">找不到要的畫面？把環景照片放進 <code>tours/</code> 資料夾後，於「場景設定 → 環景圖網址」直接填路徑。</div>
+  </div>
+</div>
 
 <!-- 教師登入審核閘（與 SimMonitor 後台同一套 sim_users） -->
 <div id="authGate" style="position:fixed;inset:0;background:#0f172a;z-index:300;display:flex;align-items:center;justify-content:center;padding:24px">
@@ -277,7 +315,7 @@ function renderSceneList(){
 }
 $("addScene").onclick=addSceneObj;
 $("scName").oninput=e=>{ if(curScene){ curScene.name=e.target.value; renderSceneList(); } };
-$("applyPano").onclick=()=>{ if(!curScene) return; curScene.panorama=$("scPano").value.trim(); viewer.setPanorama(curScene.panorama||DEMO_PANO).then(drawMarkers); };
+$("applyPano").onclick=()=>{ if(!curScene) return; setScenePano($("scPano").value.trim() || DEMO_PANO); };
 $("delScene").onclick=()=>{
   if(!curScene) return; if(!confirm("刪除此場景？")) return;
   tour.scenes=tour.scenes.filter(s=>s!==curScene);
@@ -626,11 +664,49 @@ const PANO_LIB=[
     sel.appendChild(og);
   });
 })();
+/* 套用環景到目前場景（沒有場景就先建一個），並更新網址欄與快選 */
+function setScenePano(url){
+  if(!curScene){ addSceneObj(); }
+  if(!curScene) return;
+  curScene.panorama = url;
+  $("scPano").value = url;
+  const pick=$("scPanoPick"); pick.value=url; if(pick.value!==url) pick.value="";
+  $("hint").textContent = "⏳ 載入環景中…（大圖約需數秒）";
+  viewer.setPanorama(url).then(()=>{ drawMarkers(); $("hint").textContent = HINT_DEFAULT; })
+        .catch(()=>{ $("hint").textContent = "⚠️ 環景載入失敗，請確認路徑：" + url; });
+}
 $("scPanoPick").onchange=()=>{
-  const v=$("scPanoPick").value; if(!v||!curScene) return;
-  $("scPano").value=v; curScene.panorama=v;
-  viewer.setPanorama(v).then(drawMarkers);
+  const v=$("scPanoPick").value; if(!v) return;
+  setScenePano(v);
 };
+
+/* 🖼 背景環景挑選器：縮圖一次看完所有環景（不受目前分站限制，可自由選） */
+const thumbOf = url => "tours/thumbs/" + url.split("?")[0].replace(/^tours\//,"").replace(/\//g,"-");
+function openBgPicker(){
+  const box=$("bpBody"); box.innerHTML="";
+  const cur = curScene ? (curScene.panorama||"") : "";
+  $("bpFor").textContent = curScene ? `套用到：${curScene.name||curScene.id}` : "（尚未有場景，選擇後會自動建立）";
+  PANO_LIB.forEach(g=>{
+    const h=document.createElement("h3"); h.textContent=g.name+"（"+g.panos.length+" 景）"; box.appendChild(h);
+    const grid=document.createElement("div"); grid.className="bp-grid";
+    g.panos.forEach(([url,label])=>{
+      const d=document.createElement("div");
+      d.className="bp-item"+(url===cur?" cur":"");
+      d.innerHTML=`<img loading="lazy" src="${thumbOf(url)}" alt="${label}"
+          onerror="this.style.background='#dde3ea';this.removeAttribute('src')">
+        <div class="cap"><b>${label}</b><span>${g.name}${url===cur?" ・使用中":""}</span></div>`;
+      d.onclick=()=>{ setScenePano(url); closeBgPicker(); };
+      grid.appendChild(d);
+    });
+    box.appendChild(grid);
+  });
+  $("bgPicker").classList.add("show");
+}
+function closeBgPicker(){ $("bgPicker").classList.remove("show"); }
+$("bgPickBtn").onclick=openBgPicker;
+$("bpClose").onclick=closeBgPicker;
+$("bgPicker").addEventListener("click", e=>{ if(e.target.id==="bgPicker") closeBgPicker(); });
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeBgPicker(); });
 
 /* 所屬場景（分站）切換 → 用內建環景的場景立即換成新分站的環景並刷新預覽；
    自訂網址的環景不動（避免蓋掉老師自己的照片） */
