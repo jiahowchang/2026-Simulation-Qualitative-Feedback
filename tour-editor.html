@@ -402,8 +402,9 @@ function renderTypeFields(){
   if(h.type==="branch") $("addChoice").onclick=()=>{ const d=document.createElement("div"); d.className="row"; d.innerHTML=`<input class="b_label" placeholder="新選項"><select class="b_target">${tour.scenes.map(s=>`<option value="${s.id}">${s.name||s.id}</option>`).join("")}</select>`; $("b_choices").appendChild(d); };
 }
 $("saveHs").onclick=()=>{
-  const h=curHs, g=id=>$(id)?.value;
-  if(h.type==="nav"){ h.target=undefined; h.targetSceneId=g("f_target"); h.label=g("f_label"); }
+  // g() 讀不到欄位時回空字串：Firestore 不接受 undefined，寫進去整份教案會存檔失敗
+  const h=curHs, g=id=>($(id)?.value ?? "");
+  if(h.type==="nav"){ delete h.target; h.targetSceneId=g("f_target"); h.label=g("f_label"); }
   else if(h.type==="info"){ h.title=g("f_title"); h.html=g("f_html"); h.image=g("f_image"); h.video=g("f_video"); }
   else if(h.type==="quiz"){ h.question=g("f_question"); h.options=[...document.querySelectorAll(".q_opt")].map(i=>i.value).filter(v=>v!==""); h.answerIndex=Math.max(0,(+g("f_answer")||1)-1); h.feedback=g("f_feedback"); h.points=+g("f_points")||10; }
   else if(h.type==="branch"){ h.question=g("f_question"); const labels=[...document.querySelectorAll(".b_label")], targets=[...document.querySelectorAll(".b_target")]; h.choices=labels.map((l,i)=>({label:l.value,targetSceneId:targets[i].value})).filter(c=>c.label!==""); }
@@ -556,11 +557,21 @@ $("saveBtn").onclick=async()=>{
       tour.stages=arr; }
     catch(e){ alert("挑戰關卡 JSON 格式錯誤："+e.message); return; } }
   else { delete tour.stages; }
-  try{ await setDoc(doc(db,C_DEFS,id),{ ...tour, updatedAt:serverTimestamp() });
+  try{ await setDoc(doc(db,C_DEFS,id),{ ...clean(tour), updatedAt:serverTimestamp() });
     loadCloudList();
     alert(`已存到雲端！\n學員連結： tour.html?tour=${id}`); }
   catch(e){ alert("存檔失敗："+e.message); }
 };
+/* Firestore 不接受 undefined（整份文件會被拒絕），存檔前遞迴清掉 */
+function clean(v){
+  if(Array.isArray(v)) return v.map(clean);
+  if(v && typeof v==="object"){
+    const o={};
+    for(const k in v){ if(v[k]!==undefined) o[k]=clean(v[k]); }
+    return o;
+  }
+  return v;
+}
 $("loadBtn").onclick=async()=>{
   const id=prompt("輸入要讀取的教案 ID："); if(!id||!db) return;
   try{ const s=await getDoc(doc(db,C_DEFS,id.trim()));
