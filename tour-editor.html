@@ -301,7 +301,8 @@ function selectScene(s){
   $("sceneEdit").style.display="block"; $("hsSect").style.display="block"; $("hsEdit").style.display="none"; $("hint").style.display="block";
   $("scName").value=s.name||""; $("scPano").value=s.panorama||"";
   const pick=$("scPanoPick"); pick.value=s.panorama||""; if(pick.value!==(s.panorama||"")) pick.value="";
-  if(!viewer) initViewer(s.panorama); else viewer.setPanorama(s.panorama||DEMO_PANO).then(drawMarkers);
+  if(!viewer) initViewer(s.panorama);
+  else viewer.setPanorama(s.panorama||DEMO_PANO, { transition:false, showLoader:true }).then(drawMarkers).catch(()=>{});
   if(viewer && viewer.state?.ready) drawMarkers();
   renderSceneList(); renderHsList();
 }
@@ -671,9 +672,15 @@ function setScenePano(url){
   curScene.panorama = url;
   $("scPano").value = url;
   const pick=$("scPanoPick"); pick.value=url; if(pick.value!==url) pick.value="";
+  $("hint").style.display="block";
   $("hint").textContent = "⏳ 載入環景中…（大圖約需數秒）";
-  viewer.setPanorama(url).then(()=>{ drawMarkers(); $("hint").textContent = HINT_DEFAULT; })
-        .catch(()=>{ $("hint").textContent = "⚠️ 環景載入失敗，請確認路徑：" + url; });
+  // transition:false＝直接換圖不做淡入：淡入靠 requestAnimationFrame，分頁切到背景時會停擺
+  // 導致 promise 永遠不 resolve、提示卡住；編輯器要的是即時預覽，不需要轉場
+  const done = ()=>{ drawMarkers(); $("hint").textContent = HINT_DEFAULT; };
+  const guard = setTimeout(()=>{ $("hint").textContent = HINT_DEFAULT; }, 15000);   // 保險：不讓提示卡死
+  viewer.setPanorama(url, { transition:false, showLoader:true })
+    .then(()=>{ clearTimeout(guard); done(); })
+    .catch(e=>{ clearTimeout(guard); $("hint").textContent = "⚠️ 環景載入失敗，請確認路徑：" + url; });
 }
 $("scPanoPick").onchange=()=>{
   const v=$("scPanoPick").value; if(!v) return;
@@ -721,7 +728,7 @@ $("tSite").addEventListener("change", ()=>{
   if(changed && curScene){
     $("scPano").value=curScene.panorama||"";
     const pick=$("scPanoPick"); pick.value=curScene.panorama||""; if(pick.value!==(curScene.panorama||"")) pick.value="";
-    if(viewer) viewer.setPanorama(curScene.panorama||DEMO_PANO).then(drawMarkers);
+    if(viewer) viewer.setPanorama(curScene.panorama||DEMO_PANO, { transition:false, showLoader:true }).then(drawMarkers).catch(()=>{});
   }
 });
 
