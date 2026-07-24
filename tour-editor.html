@@ -348,11 +348,14 @@ $("fType").onchange=()=>{ curHs.type=$("fType").value; renderTypeFields(); drawM
 function field(label,html){ return `<div class="field"><label>${label}</label>${html}</div>`; }
 function parseVal(v){ v=(v==null?"":String(v)).trim(); if(v==="true")return true; if(v==="false")return false; if(v!==""&&!isNaN(+v))return +v; return v; }
 function renderTypeFields(){
-  const h=curHs, sceneOpts=tour.scenes.map(s=>`<option value="${s.id}">${s.name||s.id}</option>`).join("");
+  const h=curHs;
   let html="";
   if(h.type==="nav"){
-    html+=field("跳轉到場景",`<select id="f_target">${sceneOpts}</select>`);
-    html+=field("標籤（滑過顯示）",`<input id="f_label" value="${h.label||""}">`);
+    // 必須標記目前目標為 selected，否則下拉會停在第一個場景，按「更新」就把目標靜默改掉
+    const navOpts = tour.scenes.map(s=>
+      `<option value="${s.id}" ${s.id===h.targetSceneId?"selected":""}>${s.name||s.id}</option>`).join("");
+    html+=field("跳轉到場景",`<select id="f_target">${navOpts}</select>`);
+    html+=field("標籤（滑過顯示）",`<input id="f_label" value="${(h.label||"").replace(/"/g,'&quot;')}">`);
   } else if(h.type==="info"){
     html+=field("標題",`<input id="f_title" value="${h.title||""}">`);
     html+=field("內容 (可含 HTML)",`<textarea id="f_html">${h.html||""}</textarea>`);
