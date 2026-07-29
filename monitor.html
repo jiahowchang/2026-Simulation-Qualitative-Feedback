@@ -781,9 +781,9 @@ let simT = 0, lastFrame = null;
 // ---------- 心搏排程 ----------
 const eng = { beats:[], lastSched:0, beeped:0, spikes:[], lastSpike:0, breathT0:0 };
 function effHR(){
-  const r = state.rhythm;
   if (pacerCapturing()) return state.pacer.rate;
-  if (r==='avb3') return 38;
+  // CAVB(三度房室阻滯) 的心室逸搏率由教師自訂（如新生兒先天性 CAVB 常為 50 上下），
+  // 不再寫死 38；心房 P 波仍獨立以 75/min 呈現（房室分離）。
   return state.cur.hr;
 }
 function scheduleBeats(t){
@@ -1376,6 +1376,12 @@ function updateICo2Hint(){
   if (box) box.textContent = (window.CO2_HINTS || {})[el.iCo2.value] || "";
 }
 document.getElementById('iCo2').addEventListener('change', updateICo2Hint);
+// 換心律下拉時，capnography 波型下拉跟著回到合理預設（無脈→flat、其餘→normal），
+// 否則 applyInstructor 會把上一輪殘留的 flat 又套回去、波形依舊出不來。
+document.getElementById('iRhythm').addEventListener('change', ()=>{
+  el.iCo2.value = PULSELESS(el.iRhythm.value) ? 'flat' : 'normal';
+  updateICo2Hint();
+});
 function instSliderLabels(){
   el.iHrV.textContent = el.iHr.value+' bpm'; el.iSpV.textContent = el.iSp.value+' %';
   el.iSysV.textContent = el.iSys.value+' mmHg'; el.iDiaV.textContent = el.iDia.value+' mmHg';
@@ -1386,6 +1392,10 @@ function setRhythm(r){
   if (state.rhythm===r) return;
   state.rhythm = r;
   eng.lastSched = simT+0.2; // 重新排程
+  // capnography 跟隨心律：無脈心律(VF/VT/PEA/Asystole)無肺血流→平線；其餘(含竇性/CAVB)→正常波形。
+  // 修正「跑完 VF/急救後 co2morph 卡在 flat，換到其他心律 EtCO2 波形出不來、只剩數值」的問題。
+  // 教師若要特殊波型(鯊魚鰭/箭毒等)可在換心律後再從波型下拉選；控制台/情境會另外覆寫此值。
+  state.co2morph = PULSELESS(r) ? 'flat' : 'normal';
 }
 function applyInstructor(){
   setRhythm(el.iRhythm.value);
@@ -2189,6 +2199,12 @@ $("cCo2").onchange = async ()=>{
   updateCo2Hint();
   if (!db || !ctrl.code) return;
   try{ await updateDoc(doc(db,SESS,ctrl.code), { "ctrl.capnoSeq": Date.now(), "ctrl.capnoData": { morph:cCo2morph } }); }catch(e){}
+};
+// 換心律下拉時，capnography 波型回到合理預設（無脈→flat、其餘→normal），
+// 否則按 Apply 會一直把上一輪的 flat 推給監視器、波形出不來。
+$("cRhythm").onchange = ()=>{
+  cCo2morph = PULSELESS($("cRhythm").value) ? 'flat' : 'normal';
+  $("cCo2").value = cCo2morph; updateCo2Hint();
 };
 updateCo2Hint();   // 初始顯示
 
