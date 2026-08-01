@@ -1349,6 +1349,7 @@ async function scanCalendar() {
 [{"eventIndex":0,"role":"講師","title":"","date":"YYYY-MM-DD","timeStart":"HH:MM","timeEnd":"HH:MM","location":"","category":"","audiences":[],"audienceCount":0,"content":""}]
 規則：
 - category 從 ${JSON.stringify(CATS)} 選一個；audiences 從 ${JSON.stringify(AUDS)} 挑（role="學生" 給空陣列）
+- 行事曆是他本人維護的，上面的課程/教學活動事件代表他確實參加
 - 一定要排除：門診、值班、支援班、行政會議、甄選面試、私人行程（家庭、聚餐、運動、旅遊、繳費等）
 - 事件標題精簡也要盡力判讀（如「生醫原位模擬」＝他帶的原位模擬教學）；判斷不了是否課程就略過
 - 全天事件 timeStart/timeEnd 給空字串；跨日活動以第一天為 date
@@ -1421,7 +1422,8 @@ $("impScan").onclick = async () => {
 - category 必須從這些選一個：${JSON.stringify(CATS)}
 - audiences 只能從這些挑（可複選）；role="學生" 時 audiences 給空陣列
 - audiences 選項：${JSON.stringify(AUDS)}
-- 系統通知、廣告、純會議（非課程）、他只是被 CC 知會的例行公告一律略過
+- 重要規則：教學部承辦人（hch.gov.tw／ntuh.gov.tw 的教學部）寄出的課程或活動通知，只要他在收件人或副本中，預設他有參加該活動，請列出（含參訪、審題、競賽等教學相關活動）
+- 系統通知、廣告、與教學無關的行政會議、他只是被 CC 知會的例行公告一律略過
 - 同一封信有多個場次就每場各列一筆；時間不明給空字串；人數不明給 0
 - content 用一兩句話摘要課程內容
 - 一筆都沒有就輸出 []`;
