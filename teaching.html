@@ -414,6 +414,15 @@ button { font-family: inherit; }
       </div>
 
       <div class="sect">
+        <h4>📸 活動照片</h4>
+        <div id="ePhotos"></div>
+        <button class="mini-add" id="addPhotoBtn" type="button">＋ 上傳活動照片</button>
+        <input type="file" id="photoInput" multiple style="display:none"
+          accept=".png,.jpg,.jpeg,.heic,.pdf">
+        <div class="imp-status" id="photoStatus"></div>
+      </div>
+
+      <div class="sect">
         <h4>💬 學員回饋</h4>
         <div id="eFbs"></div>
         <button class="mini-add" id="addFb">＋ 新增回饋</button>
@@ -734,7 +743,7 @@ function renderList() {
         </div>
       </div>
       <div class="marks" title="教材／回饋／反思">
-        <span class="${(r.materials?.length || r.files?.length) ? "on" : ""}" title="教材 ${r.materials?.length||0} 份、附件 ${r.files?.length||0} 個">📎</span>
+        <span class="${(r.materials?.length || r.files?.length || r.certs?.length || r.photos?.length) ? "on" : ""}" title="教材 ${r.materials?.length||0}、附件 ${r.files?.length||0}、證明 ${r.certs?.length||0}、照片 ${r.photos?.length||0}">📎</span>
         <span class="${r.feedbacks?.length ? "on" : ""}" title="回饋 ${r.feedbacks?.length||0} 則">💬</span>
         <span class="${r.reflection ? "on" : ""}" title="教學反思">🪞</span>
       </div>`;
@@ -813,6 +822,7 @@ function renderDetail(id) {
   const mats = (r.materials||[]).filter(m => m.name || m.url);
   const files = r.files || [];
   const certs = r.certs || [];
+  const photos = r.photos || [];
   const fbs = r.feedbacks || [];
   page.innerHTML = `
     <div class="detail-head">
@@ -831,6 +841,10 @@ function renderDetail(id) {
     <div class="detail-sec"><h3>🏆 感謝狀與上課證明</h3>
       ${certs.length ? `<div class="thumb-grid">${certs.map(thumbCard).join("")}</div>`
                      : '<div class="none">（尚無感謝狀或證明——按右上「✏️ 編輯」即可上傳）</div>'}
+    </div>
+    <div class="detail-sec"><h3>📸 活動照片</h3>
+      ${photos.length ? `<div class="thumb-grid">${photos.map(thumbCard).join("")}</div>`
+                      : '<div class="none">（尚無活動照片——按右上「✏️ 編輯」即可上傳 PNG／JPG／PDF）</div>'}
     </div>
     <div class="detail-sec"><h3>📎 教材與投影片</h3>
       ${mats.length ? mats.map(m =>
@@ -883,6 +897,7 @@ $("addFb").onclick = () => $("eFbs").appendChild(fbRow());
 /* ── 檔案附件與感謝狀（Firebase Storage，共用上傳邏輯）── */
 let editFiles = [];      // 課程表/學員名單附件 [{name,path,url,size}]
 let editCerts = [];      // 感謝狀/上課證明
+let editPhotos = [];     // 活動照片
 let newUploads = [];     // 本次編輯新上傳的 storage path（取消時要清掉）
 let removedFiles = [];   // 按了移除的 storage path（存檔成功後才真的刪）
 
@@ -938,6 +953,8 @@ $("addFileBtn").onclick = () => $("fileInput").click();
 $("fileInput").onchange = () => handleFileUpload(editFiles, "eFiles", "fileStatus", $("fileInput"));
 $("addCertBtn").onclick = () => $("certInput").click();
 $("certInput").onchange = () => handleFileUpload(editCerts, "eCerts", "certStatus", $("certInput"));
+$("addPhotoBtn").onclick = () => $("photoInput").click();
+$("photoInput").onchange = () => handleFileUpload(editPhotos, "ePhotos", "photoStatus", $("photoInput"));
 
 /* 取消／關閉編輯時，清掉這次新上傳但沒存檔的檔案 */
 function discardNewUploads() {
@@ -968,11 +985,14 @@ function openEdit(id) {
   (r?.feedbacks || []).forEach(f => $("eFbs").appendChild(fbRow(f)));
   editFiles = (r?.files || []).map(f => ({ ...f }));
   editCerts = (r?.certs || []).map(f => ({ ...f }));
+  editPhotos = (r?.photos || []).map(f => ({ ...f }));
   newUploads = []; removedFiles = [];
   renderFileArea(editFiles, "eFiles");
   renderFileArea(editCerts, "eCerts");
+  renderFileArea(editPhotos, "ePhotos");
   $("fileStatus").textContent = "";
   $("certStatus").textContent = "";
+  $("photoStatus").textContent = "";
   $("editOverlay").classList.add("show");
   $("eTitle").focus();
 }
@@ -1003,6 +1023,7 @@ $("saveBtn").onclick = async () => {
     })).filter(f => f.text),
     files: editFiles,
     certs: editCerts,
+    photos: editPhotos,
     reflection: $("eRefl").value.trim(),
     updatedAt: serverTimestamp()
   };
@@ -1036,7 +1057,7 @@ $("delBtn").onclick = async () => {
     else {
       const rec = records.find(r => r.id === editingId);
       await deleteDoc(doc(db, "teaching_records", editingId));
-      [...(rec?.files || []), ...(rec?.certs || [])].forEach(f => { if (f.path) deleteObject(sRef(storage, f.path)).catch(() => {}); });
+      [...(rec?.files || []), ...(rec?.certs || []), ...(rec?.photos || [])].forEach(f => { if (f.path) deleteObject(sRef(storage, f.path)).catch(() => {}); });
     }
     $("editOverlay").classList.remove("show");
     if (currentDetailId() === editingId) location.hash = "";   // 刪掉正在看的那筆 → 回列表
@@ -1102,7 +1123,8 @@ function buildReport(list) {
     const mats = (r.materials||[]).filter(m => m.name || m.url);
     const files = r.files || [];
     const certs = r.certs || [];
-    const imgs = [...files, ...certs].filter(f => f.url && /\.(png|jpe?g|gif|webp)$/i.test(f.name));
+    const photos = r.photos || [];
+    const imgs = [...files, ...certs, ...photos].filter(f => f.url && /\.(png|jpe?g|gif|webp)$/i.test(f.name));
     const fbs = r.feedbacks || [];
     const meta = [
       `${esc(r.timeStart || "")}${r.timeEnd ? "–" + esc(r.timeEnd) : ""}`,
@@ -1120,6 +1142,8 @@ function buildReport(list) {
       ${files.length ? `<h4>附件（課程表／學員名單）</h4><ul>${files.map(f =>
         `<li>${esc(f.name)}${f.size ? `（${fmtSize(f.size)}）` : ""}</li>`).join("")}</ul>` : ""}
       ${certs.length ? `<h4>感謝狀／證明</h4><ul>${certs.map(f =>
+        `<li>${esc(f.name)}${f.size ? `（${fmtSize(f.size)}）` : ""}</li>`).join("")}</ul>` : ""}
+      ${photos.length ? `<h4>活動照片</h4><ul>${photos.map(f =>
         `<li>${esc(f.name)}${f.size ? `（${fmtSize(f.size)}）` : ""}</li>`).join("")}</ul>` : ""}
       ${imgs.length ? `<div class="pr-imgs">${imgs.map(f =>
         `<figure><img src="${esc(f.url)}" alt=""><figcaption>${esc(f.name)}</figcaption></figure>`).join("")}</div>` : ""}
@@ -1541,7 +1565,7 @@ $("impSave").onclick = async () => {
         audienceCount: Number(c.audienceCount) || 0,
         location: c.location || "",
         content: c.content || "",
-        materials: [], files: [], certs: [], feedbacks: [], reflection: "",
+        materials: [], files: [], certs: [], photos: [], feedbacks: [], reflection: "",
         source: c.src === "gcal" ? "gcal" : "gmail", gmailMsgId: c.gmailMsgId, gmailSubject: c.gmailSubject,
         updatedAt: serverTimestamp(), createdAt: serverTimestamp()
       };
@@ -1569,6 +1593,7 @@ if (DEMO) {
       content:"高品質 CPR 實作、AED 使用、急救團隊分工演練。",
       materials:[{name:"投影片", url:"https://example.com"}],
       files:[{name:"ALS課程表.pdf", path:"", url:"", size:245760}, {name:"學員名單.xlsx", path:"", url:"", size:18432}, {name:"課程海報.png", path:"", url:"logo.png", size:52000}],
+      photos:[{name:"分組演練照片.png", path:"", url:"logo.png", size:48000}],
       feedbacks:[{source:"書面問卷", text:"實作時間充足，講師回饋具體。"}],
       reflection:"分組人數 6 人稍多，下次改 4 人一組增加操作次數。" },
     { id:"d2", title:"跨團隊 TRM 情境模擬：急診大量傷患", date:"2026-08-15", timeStart:"09:00", timeEnd:"12:00",
