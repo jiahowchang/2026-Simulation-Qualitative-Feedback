@@ -118,6 +118,28 @@ button { font-family: inherit; }
 .file-row .fsize { color: var(--gray); font-size: .76rem; flex-shrink: 0; }
 .file-row .rm { border: none; background: var(--rose-l); color: var(--rose); border-radius: 8px; padding: 4px 10px; cursor: pointer; font-weight: 800; flex-shrink: 0; }
 .v-src { margin-top: 18px; padding-top: 12px; border-top: 1.5px dashed var(--line); font-size: .78rem; color: var(--gray); line-height: 1.6; }
+
+/* ── 課程詳情頁 ── */
+.detail-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.detail-head h2 { flex: 1; font-size: 1.3rem; color: var(--navy); line-height: 1.4; min-width: 200px; }
+.backbtn { border: none; background: #fff; color: var(--navy); border-radius: 10px; padding: 9px 16px; font-size: .88rem; font-weight: 800; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.12); white-space: nowrap; }
+.backbtn:hover { background: var(--blue-l); }
+.editbtn { border: none; background: var(--navy); color: #fff; border-radius: 10px; padding: 9px 18px; font-size: .88rem; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.editbtn:hover { background: var(--navy-d); }
+.detail-sec { background: var(--card); border-radius: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.08); padding: 16px 18px; margin-bottom: 14px; }
+.detail-sec > h3 { font-size: .88rem; color: var(--navy); margin-bottom: 12px; font-weight: 800; letter-spacing: .04em; }
+.detail-sec .txt { font-size: .97rem; line-height: 1.85; white-space: pre-wrap; }
+.detail-sec .none { color: #b9c2c6; font-size: .88rem; }
+.thumb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.thumb-card { display: block; border: 1.5px solid var(--line); border-radius: 12px; overflow: hidden; text-decoration: none; color: var(--ink); background: #fafbfc; transition: box-shadow .15s, transform .15s; }
+.thumb-card:hover { box-shadow: 0 5px 16px rgba(26,82,118,.18); transform: translateY(-2px); }
+.tc-preview { height: 160px; background: #eef2f4; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+.tc-preview img { width: 100%; height: 100%; object-fit: cover; }
+.tc-preview iframe { width: 100%; height: 100%; border: none; pointer-events: none; background: #fff; }
+.tc-preview .bigico { font-size: 3rem; opacity: .55; }
+.tc-preview .open-hint { position: absolute; right: 8px; bottom: 8px; background: rgba(26,82,118,.85); color: #fff; font-size: .68rem; font-weight: 700; border-radius: 8px; padding: 3px 8px; }
+.tc-name { padding: 9px 12px; font-size: .8rem; font-weight: 700; line-height: 1.45; word-break: break-all; }
+.tc-name small { display: block; color: var(--gray); font-weight: 400; font-size: .72rem; margin-top: 2px; }
 .filter-note { display: none; background: var(--amber-l); color: var(--amber); font-size: .82rem; border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; font-weight: 700; }
 .filter-note button { border: none; background: none; color: var(--amber); text-decoration: underline; cursor: pointer; font-size: .82rem; font-weight: 700; margin-left: 6px; }
 
@@ -257,6 +279,8 @@ button { font-family: inherit; }
 
     <!-- 主區 -->
     <div class="main">
+      <div id="detailPage" style="display:none"></div>
+      <div id="listView">
       <div class="toolbar">
         <input type="search" id="q" placeholder="搜尋課程名稱、內容、反思…">
         <select id="fCat"><option value="">全部類別</option></select>
@@ -267,6 +291,7 @@ button { font-family: inherit; }
       </div>
       <div class="filter-note" id="filterNote"></div>
       <div id="recList"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -351,14 +376,6 @@ button { font-family: inherit; }
   </div>
 </div>
 
-<!-- 檢視 Modal -->
-<div class="overlay" id="viewOverlay">
-  <div class="modal">
-    <div class="modal-head"><h2 id="vTitle"></h2><button id="vEdit">✏️ 編輯</button><button id="vClose">✕</button></div>
-    <div class="modal-body" id="vBody"></div>
-  </div>
-</div>
-
 <div class="toast" id="toast"></div>
 
 <script type="module">
@@ -394,7 +411,6 @@ const WD = ["日","一","二","三","四","五","六"];
 let records = [];       // 全部紀錄（含 id）
 let unsub = null;
 let editingId = null;   // 編輯中的 doc id
-let viewingId = null;
 let calCursor = new Date(); calCursor.setDate(1);
 let selDate = "";       // 月曆點選的日期 yyyy-mm-dd，空字串 = 不過濾
 
@@ -471,7 +487,7 @@ function renderAll() {
   renderCalendar();
   renderUpcoming();
   renderStats();
-  renderList();
+  renderMain();
 }
 
 function renderYearOptions() {
@@ -514,6 +530,7 @@ function renderCalendar() {
     btn.onclick = () => {
       selDate = (selDate === ds) ? "" : ds;
       if (d.getMonth() !== m) { calCursor = new Date(d.getFullYear(), d.getMonth(), 1); }
+      if (currentDetailId()) location.hash = "";   // 在詳情頁點月曆 → 回列表看篩選結果
       renderCalendar(); renderList();
     };
     grid.appendChild(btn);
@@ -627,12 +644,49 @@ function renderList() {
   renderStats();
 }
 
-/* ── 檢視 ── */
-function openView(id) {
+/* ── 課程詳情頁（#rec=<id> 路由）── */
+function openView(id) { location.hash = "rec=" + encodeURIComponent(id); }
+function currentDetailId() {
+  const m = location.hash.match(/^#rec=(.+)$/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+function renderMain() {
+  const id = currentDetailId();
+  if (id) {
+    $("listView").style.display = "none";
+    $("detailPage").style.display = "block";
+    renderDetail(id);
+  } else {
+    $("detailPage").style.display = "none";
+    $("listView").style.display = "block";
+    renderList();
+  }
+}
+window.addEventListener("hashchange", () => { renderMain(); window.scrollTo(0, 0); });
+
+function thumbCard(f) {
+  const isImg = /\.(png|jpe?g|heic|gif|webp)$/i.test(f.name);
+  const isPdf = /\.pdf$/i.test(f.name);
+  let preview;
+  if (f.url && isImg) preview = `<img src="${esc(f.url)}" alt="${esc(f.name)}" loading="lazy">`;
+  else if (f.url && isPdf) preview = `<iframe src="${esc(f.url)}#toolbar=0&navpanes=0&scrollbar=0&view=FitH" loading="lazy" title="${esc(f.name)}"></iframe>`;
+  else preview = `<span class="bigico">${fileIcon(f.name)}</span>`;
+  const inner = `
+    <div class="tc-preview">${preview}${f.url ? '<span class="open-hint">點擊開啟</span>' : ""}</div>
+    <div class="tc-name">${fileIcon(f.name)} ${esc(f.name)}${f.size ? `<small>${fmtSize(f.size)}</small>` : ""}</div>`;
+  return f.url
+    ? `<a class="thumb-card" href="${esc(f.url)}" target="_blank" rel="noopener">${inner}</a>`
+    : `<div class="thumb-card">${inner}</div>`;
+}
+
+function renderDetail(id) {
+  const page = $("detailPage");
   const r = records.find(x => x.id === id);
-  if (!r) return;
-  viewingId = id;
-  $("vTitle").textContent = r.title;
+  if (!r) {
+    page.innerHTML = `<div class="detail-head"><button class="backbtn" onclick="location.hash=''">← 返回列表</button></div>
+      <div class="detail-sec"><div class="none">${records.length ? "找不到這筆紀錄（可能已被刪除）" : "載入中…"}</div></div>`;
+    return;
+  }
   const d = new Date(r.date + "T00:00:00");
   const meta = [];
   meta.push(`<span class="tag method">${r.date}（週${WD[d.getDay()]}）${r.timeStart ? " " + esc(r.timeStart) + (r.timeEnd ? "–" + esc(r.timeEnd) : "") : ""}</span>`);
@@ -646,29 +700,41 @@ function openView(id) {
   const mats = (r.materials||[]).filter(m => m.name || m.url);
   const files = r.files || [];
   const fbs = r.feedbacks || [];
-  $("vBody").innerHTML = `
-    <div class="v-meta">${meta.join("")}</div>
-    <div class="v-block"><h4>📖 教學內容</h4>${r.content ? `<div class="txt">${esc(r.content)}</div>` : '<div class="none">（未填寫）</div>'}</div>
-    <div class="v-block"><h4>📎 教材與投影片</h4>${mats.length ? mats.map(m =>
-      m.url ? `<a class="mat-link" href="${esc(m.url)}" target="_blank" rel="noopener">🔗 ${esc(m.name || m.url)}</a>`
-            : `<span class="mat-link">📄 ${esc(m.name)}</span>`).join("") : '<div class="none">（尚無教材連結）</div>'}</div>
-    <div class="v-block"><h4>📂 檔案附件（課程表、學員名單）</h4>${files.length ? files.map(f =>
-      f.url ? `<a class="mat-link" href="${esc(f.url)}" target="_blank" rel="noopener">${fileIcon(f.name)} ${esc(f.name)}${f.size ? `（${fmtSize(f.size)}）` : ""}</a>`
-            : `<span class="mat-link">${fileIcon(f.name)} ${esc(f.name)}</span>`).join("") : '<div class="none">（尚無附件，可在編輯中上傳課程表與學員名單）</div>'}</div>
-    <div class="v-block"><h4>💬 學員回饋（${fbs.length}）</h4>${fbs.length ? fbs.map(f =>
-      `<div class="fb-card"><small>${esc(f.source || "回饋")}</small>${esc(f.text)}</div>`).join("") : '<div class="none">（尚無回饋紀錄）</div>'}</div>
-    <div class="v-block"><h4>🪞 教學反思</h4>${r.reflection ? `<div class="refl-card">${esc(r.reflection)}</div>` : '<div class="none">（尚未撰寫反思）</div>'}</div>
-    ${r.source === "gmail" ? `<div class="v-src">📧 由 Gmail 匯入 · 來源信件：${esc(r.gmailSubject || "")}</div>` : ""}`;
-  $("viewOverlay").classList.add("show");
+  page.innerHTML = `
+    <div class="detail-head">
+      <button class="backbtn" id="backBtn">← 返回列表</button>
+      <h2>${esc(r.title)}</h2>
+      <button class="editbtn" id="dEditBtn">✏️ 編輯</button>
+    </div>
+    <div class="detail-sec">
+      <div class="v-meta" style="margin-bottom:${r.content ? "14px" : "0"}">${meta.join("")}</div>
+      ${r.content ? `<div class="txt">${esc(r.content)}</div>` : ""}
+    </div>
+    <div class="detail-sec"><h3>📂 課程表與學員名單</h3>
+      ${files.length ? `<div class="thumb-grid">${files.map(thumbCard).join("")}</div>`
+                     : '<div class="none">（尚無附件——按右上「✏️ 編輯」即可上傳課程表、學員名單等檔案）</div>'}
+    </div>
+    <div class="detail-sec"><h3>📎 教材與投影片</h3>
+      ${mats.length ? mats.map(m =>
+        m.url ? `<a class="mat-link" href="${esc(m.url)}" target="_blank" rel="noopener">🔗 ${esc(m.name || m.url)}</a>`
+              : `<span class="mat-link">📄 ${esc(m.name)}</span>`).join("") : '<div class="none">（尚無教材連結）</div>'}
+    </div>
+    <div class="detail-sec"><h3>💬 學員回饋（${fbs.length}）</h3>
+      ${fbs.length ? fbs.map(f => `<div class="fb-card"><small>${esc(f.source || "回饋")}</small>${esc(f.text)}</div>`).join("")
+                   : '<div class="none">（尚無回饋紀錄）</div>'}
+    </div>
+    <div class="detail-sec"><h3>🪞 教學反思</h3>
+      ${r.reflection ? `<div class="refl-card">${esc(r.reflection)}</div>` : '<div class="none">（尚未撰寫反思）</div>'}
+      ${r.source === "gmail" ? `<div class="v-src">📧 由 Gmail 匯入 · 來源信件：${esc(r.gmailSubject || "")}</div>` : ""}
+    </div>`;
+  $("backBtn").onclick = () => { location.hash = ""; };
+  $("dEditBtn").onclick = () => openEdit(r.id);
 }
-$("vClose").onclick = () => $("viewOverlay").classList.remove("show");
-$("vEdit").onclick = () => { $("viewOverlay").classList.remove("show"); openEdit(viewingId); };
 
 /* ── 編輯 ── */
 $("addBtn").onclick = () => openEdit(null);
 $("editClose").onclick = $("cancelBtn").onclick = () => { discardNewUploads(); $("editOverlay").classList.remove("show"); };
 $("editOverlay").addEventListener("click", e => { if (e.target === $("editOverlay")) { discardNewUploads(); $("editOverlay").classList.remove("show"); } });
-$("viewOverlay").addEventListener("click", e => { if (e.target === $("viewOverlay")) $("viewOverlay").classList.remove("show"); });
 
 function matRow(m = {}) {
   const row = document.createElement("div");
@@ -843,6 +909,7 @@ $("delBtn").onclick = async () => {
       (rec?.files || []).forEach(f => { if (f.path) deleteObject(sRef(storage, f.path)).catch(() => {}); });
     }
     $("editOverlay").classList.remove("show");
+    if (currentDetailId() === editingId) location.hash = "";   // 刪掉正在看的那筆 → 回列表
     toast("已刪除");
   } catch (e) { console.error(e); toast("刪除失敗：" + (e.code || e.message)); }
 };
@@ -1066,7 +1133,7 @@ if (DEMO) {
       category:"急救復甦", method:"工作坊", audiences:["PGY","護理師"], audienceCount:24, location:"臨床技能中心",
       content:"高品質 CPR 實作、AED 使用、急救團隊分工演練。",
       materials:[{name:"投影片", url:"https://example.com"}],
-      files:[{name:"ALS課程表.pdf", path:"", url:"", size:245760}, {name:"學員名單.xlsx", path:"", url:"", size:18432}],
+      files:[{name:"ALS課程表.pdf", path:"", url:"", size:245760}, {name:"學員名單.xlsx", path:"", url:"", size:18432}, {name:"課程海報.png", path:"", url:"logo.png", size:52000}],
       feedbacks:[{source:"書面問卷", text:"實作時間充足，講師回饋具體。"}],
       reflection:"分組人數 6 人稍多，下次改 4 人一組增加操作次數。" },
     { id:"d2", title:"跨團隊 TRM 情境模擬：急診大量傷患", date:"2026-08-15", timeStart:"09:00", timeEnd:"12:00",
