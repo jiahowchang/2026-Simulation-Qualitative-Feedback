@@ -152,6 +152,11 @@ button { font-family: inherit; }
 .fb-card { position: relative; padding-right: 34px; }
 .fb-del { position: absolute; top: 8px; right: 8px; border: none; background: none; color: var(--rose); cursor: pointer; font-weight: 800; font-size: .85rem; opacity: .5; }
 .fb-del:hover { opacity: 1; }
+.mic-btn { border: none; background: var(--teal-l); color: var(--teal); border-radius: 10px; padding: 8px 14px; font-size: .85rem; font-weight: 800; cursor: pointer; font-family: inherit; white-space: nowrap; }
+.mic-btn:hover { background: #d1f0e8; }
+.mic-btn.rec { background: var(--rose); color: #fff; animation: micpulse 1.2s infinite; }
+.mic-btn.mini { padding: 5px 10px; font-size: .76rem; margin-top: 6px; }
+@keyframes micpulse { 0% { box-shadow: 0 0 0 0 rgba(192,57,43,.4); } 70% { box-shadow: 0 0 0 12px rgba(192,57,43,0); } 100% { box-shadow: 0 0 0 0 rgba(192,57,43,0); } }
 .detail-sec .txt { font-size: .97rem; line-height: 1.85; white-space: pre-wrap; }
 .detail-sec .none { color: #b9c2c6; font-size: .88rem; }
 .thumb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
@@ -855,6 +860,42 @@ async function uploadFilesToRecord(rec, kind, fileList) {
   }
 }
 
+/* 🎤 語音輸入：給任何 textarea 掛上聽寫按鈕（zh-TW，Web Speech API；不支援的瀏覽器不顯示） */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+function micButton(ta, mini) {
+  if (!SR) return null;
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "mic-btn" + (mini ? " mini" : "");
+  btn.textContent = "🎤 語音輸入";
+  let rec = null;
+  btn.onclick = () => {
+    if (rec) { rec.stop(); return; }
+    rec = new SR();
+    rec.lang = "zh-TW"; rec.continuous = true; rec.interimResults = true;
+    const base0 = ta.value ? ta.value.replace(/\s+$/, "") : "";
+    rec.onresult = e => {
+      let txt = "";
+      for (let i = 0; i < e.results.length; i++) txt += e.results[i][0].transcript;
+      ta.value = base0 + txt;
+      ta.dispatchEvent(new Event("input"));
+    };
+    rec.onerror = ev => {
+      if (ev.error === "not-allowed") toast("麥克風權限被拒絕，請到瀏覽器設定開啟");
+      else if (ev.error !== "aborted" && ev.error !== "no-speech") toast("語音辨識錯誤：" + ev.error);
+    };
+    rec.onend = () => { btn.classList.remove("rec"); btn.textContent = "🎤 語音輸入"; rec = null; };
+    try { rec.start(); } catch {}
+    btn.classList.add("rec"); btn.textContent = "⏹ 停止聽寫";
+  };
+  return btn;
+}
+/* 編輯視窗的內容摘要與教學反思掛語音輸入 */
+["eContent", "eRefl"].forEach(id => {
+  const m = micButton($(id), true);
+  if (m) $(id).insertAdjacentElement("afterend", m);
+});
+
 function inlineTextEditor(holder, initial, ph, save, recId) {
   holder.innerHTML = "";
   const ta = document.createElement("textarea");
@@ -869,6 +910,8 @@ function inlineTextEditor(holder, initial, ph, save, recId) {
     catch (e) { console.error(e); toast("儲存失敗：" + (e.code || e.message)); bs.disabled = false; }
   };
   row.append(bs, bc);
+  const mic = micButton(ta);
+  if (mic) row.appendChild(mic);
   holder.append(ta, row);
   ta.focus();
 }
@@ -1019,6 +1062,8 @@ function renderDetail(id) {
       catch (e) { console.error(e); toast("儲存失敗：" + (e.code || e.message)); bs.disabled = false; }
     };
     btns.append(bs);
+    const mic = micButton(ta);
+    if (mic) btns.appendChild(mic);
     holder.append(row, btns);
     ta.focus();
   };
