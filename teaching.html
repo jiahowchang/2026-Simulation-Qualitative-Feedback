@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a5276">
+<title>教學歷程檔案</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy: #1a5276; --navy-d: #123a54; --blue: #2980b9; --blue-l: #ebf5fb;
+  --teal: #148f77; --teal-l: #e8f6f3;
+  --amber: #b9770e; --amber-l: #fef5e7;
+  --rose: #c0392b; --rose-l: #fdedec;
+  --purple: #6c3483; --purple-l: #f4ecf7;
+  --ink: #1c2833; --gray: #707b7c; --line: #d5dbdb; --bg: #f4f6f7; --card: #fff;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", Roboto, sans-serif;
+  background: var(--bg); color: var(--ink); min-height: 100vh;
+}
+button { font-family: inherit; }
+
+/* ── 登入閘 ── */
+.gate { max-width: 420px; margin: 12vh auto; text-align: center; padding: 40px 24px; background: #fff; border-radius: 18px; box-shadow: 0 6px 30px rgba(26,82,118,.15); }
+.gate .big { font-size: 3.2rem; margin-bottom: 12px; }
+.gate h1 { font-size: 1.4rem; color: var(--navy); margin-bottom: 8px; }
+.gate p { color: var(--gray); margin-bottom: 24px; line-height: 1.7; font-size: .92rem; }
+.gbtn { display: inline-flex; align-items: center; gap: 10px; border: 1.5px solid var(--line); cursor: pointer; background: #fff; color: #333; font-size: 1rem; font-weight: 700; padding: 12px 26px; border-radius: 30px; transition: box-shadow .2s; }
+.gbtn:hover { box-shadow: 0 4px 14px rgba(26,82,118,.2); }
+.denied { display: none; margin-top: 16px; color: var(--rose); font-size: .9rem; line-height: 1.7; }
+
+/* ── 版面 ── */
+.app { display: none; }
+.topbar { background: var(--navy); color: #fff; padding: 0 20px; display: flex; align-items: center; gap: 14px; height: 56px; position: sticky; top: 0; z-index: 50; box-shadow: 0 2px 8px rgba(0,0,0,.18); }
+.topbar h1 { font-size: 1.08rem; font-weight: 800; letter-spacing: .05em; white-space: nowrap; }
+.topbar .sub { font-size: .75rem; opacity: .75; white-space: nowrap; }
+.topbar .spacer { flex: 1; }
+.topbar .user { display: flex; align-items: center; gap: 8px; font-size: .82rem; }
+.topbar .user img { width: 26px; height: 26px; border-radius: 50%; }
+.topbar .user button { border: none; background: rgba(255,255,255,.16); color: #fff; border-radius: 12px; padding: 4px 12px; font-size: .78rem; cursor: pointer; }
+.layout { display: grid; grid-template-columns: 300px 1fr; gap: 18px; max-width: 1240px; margin: 0 auto; padding: 18px 16px 80px; align-items: start; }
+
+/* ── 側邊欄 ── */
+.side { position: sticky; top: 74px; display: flex; flex-direction: column; gap: 14px; }
+.panel { background: var(--card); border-radius: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.08); padding: 14px; }
+.panel h3 { font-size: .82rem; color: var(--gray); letter-spacing: .08em; margin-bottom: 10px; font-weight: 700; }
+
+/* 小月曆 */
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.cal-head b { font-size: .95rem; color: var(--navy); }
+.cal-head button { border: none; background: var(--blue-l); color: var(--navy); width: 26px; height: 26px; border-radius: 8px; cursor: pointer; font-size: .9rem; line-height: 1; }
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; text-align: center; }
+.cal-grid .wd { font-size: .68rem; color: var(--gray); padding: 4px 0; font-weight: 700; }
+.cal-day { position: relative; border: none; background: none; cursor: pointer; font-size: .8rem; color: var(--ink); border-radius: 8px; padding: 6px 0 10px; font-family: inherit; }
+.cal-day:hover { background: var(--blue-l); }
+.cal-day.dim { color: #c8d0d3; }
+.cal-day.today { outline: 1.5px solid var(--blue); font-weight: 800; }
+.cal-day.sel { background: var(--navy); color: #fff; }
+.cal-day .dot { position: absolute; left: 50%; transform: translateX(-50%); bottom: 3px; width: 5px; height: 5px; border-radius: 50%; background: var(--teal); }
+.cal-day.sel .dot { background: #fff; }
+.cal-day.future-evt .dot { background: var(--amber); }
+.cal-clear { display: none; margin-top: 8px; width: 100%; border: none; background: var(--blue-l); color: var(--navy); border-radius: 8px; padding: 6px; font-size: .78rem; cursor: pointer; font-weight: 700; }
+
+/* 即將教學 */
+.upcoming-item { display: flex; gap: 10px; padding: 8px 6px; border-radius: 10px; cursor: pointer; align-items: flex-start; }
+.upcoming-item:hover { background: var(--blue-l); }
+.upcoming-item .d { flex: 0 0 auto; text-align: center; background: var(--amber-l); color: var(--amber); border-radius: 8px; padding: 4px 8px; font-size: .7rem; font-weight: 800; line-height: 1.3; min-width: 44px; }
+.upcoming-item .d b { display: block; font-size: 1rem; }
+.upcoming-item .t { font-size: .82rem; line-height: 1.45; }
+.upcoming-item .t small { color: var(--gray); display: block; font-size: .72rem; }
+.upcoming-empty { font-size: .8rem; color: var(--gray); padding: 4px 6px; }
+
+/* 統計 */
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat { background: var(--blue-l); border-radius: 10px; padding: 10px; text-align: center; }
+.stat b { display: block; font-size: 1.3rem; color: var(--navy); }
+.stat span { font-size: .7rem; color: var(--gray); font-weight: 700; }
+.aud-bars { margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
+.aud-bar { display: grid; grid-template-columns: 68px 1fr 30px; gap: 6px; align-items: center; font-size: .72rem; color: var(--gray); }
+.aud-bar .bar { height: 8px; border-radius: 4px; background: #e5eaec; overflow: hidden; }
+.aud-bar .bar i { display: block; height: 100%; background: var(--teal); border-radius: 4px; }
+.aud-bar b { text-align: right; color: var(--ink); }
+
+/* ── 主區 ── */
+.main { min-width: 0; }
+.toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.toolbar input[type=search] { flex: 1 1 200px; border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 13px; font-size: .92rem; font-family: inherit; outline: none; background: #fff; }
+.toolbar input[type=search]:focus { border-color: var(--blue); }
+.toolbar select { border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 10px; font-size: .88rem; font-family: inherit; background: #fff; color: var(--ink); outline: none; }
+.addbtn { border: none; background: var(--navy); color: #fff; border-radius: 10px; padding: 10px 18px; font-size: .92rem; font-weight: 800; cursor: pointer; box-shadow: 0 3px 10px rgba(26,82,118,.3); white-space: nowrap; }
+.addbtn:hover { background: var(--navy-d); }
+.addbtn.gmail { background: var(--teal); box-shadow: 0 3px 10px rgba(20,143,119,.3); }
+.addbtn.gmail:hover { background: #0e6655; }
+
+/* ── Gmail 匯入 ── */
+.imp-ctrl { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 14px; }
+.imp-ctrl .f { margin-bottom: 0; flex: 1 1 220px; }
+.imp-ctrl .f.days { flex: 0 0 110px; }
+.imp-status { font-size: .88rem; color: var(--gray); margin: 10px 0; min-height: 1.4em; line-height: 1.6; }
+.imp-status.err { color: var(--rose); }
+.spin { display: inline-block; width: 14px; height: 14px; border: 2.5px solid #cfd8dc; border-top-color: var(--teal); border-radius: 50%; animation: sp .7s linear infinite; vertical-align: -2px; margin-right: 6px; }
+@keyframes sp { to { transform: rotate(360deg); } }
+.imp-card { border: 2px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; display: flex; gap: 12px; align-items: flex-start; }
+.imp-card.on { border-color: var(--teal); background: var(--teal-l); }
+.imp-card.dup { opacity: .55; }
+.imp-card input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--teal); margin-top: 2px; flex-shrink: 0; }
+.imp-card .b { min-width: 0; flex: 1; }
+.imp-card .t { font-weight: 800; font-size: .95rem; margin-bottom: 4px; }
+.imp-card .m { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 5px; }
+.imp-card .src { font-size: .72rem; color: var(--gray); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.imp-card .dup-tag { color: var(--amber); font-weight: 700; font-size: .74rem; }
+.filter-note { display: none; background: var(--amber-l); color: var(--amber); font-size: .82rem; border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; font-weight: 700; }
+.filter-note button { border: none; background: none; color: var(--amber); text-decoration: underline; cursor: pointer; font-size: .82rem; font-weight: 700; margin-left: 6px; }
+
+.month-h { font-size: .85rem; font-weight: 800; color: var(--gray); letter-spacing: .06em; margin: 18px 2px 8px; }
+.rec { background: var(--card); border-radius: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.08); padding: 14px 16px; margin-bottom: 10px; cursor: pointer; display: grid; grid-template-columns: 56px 1fr auto; gap: 14px; align-items: center; transition: box-shadow .15s, transform .15s; border-left: 4px solid transparent; }
+.rec:hover { box-shadow: 0 4px 14px rgba(26,82,118,.15); transform: translateY(-1px); }
+.rec.future { border-left-color: var(--amber); }
+.rec .date { text-align: center; }
+.rec .date b { display: block; font-size: 1.35rem; color: var(--navy); line-height: 1.1; }
+.rec .date span { font-size: .68rem; color: var(--gray); font-weight: 700; }
+.rec .body { min-width: 0; }
+.rec .title { font-size: 1rem; font-weight: 800; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rec .meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: .74rem; color: var(--gray); }
+.tag { display: inline-block; border-radius: 7px; padding: 2px 8px; font-size: .72rem; font-weight: 700; }
+.tag.cat { background: var(--purple-l); color: var(--purple); }
+.tag.aud { background: var(--teal-l); color: var(--teal); }
+.tag.method { background: var(--blue-l); color: var(--blue); }
+.tag.future-tag { background: var(--amber-l); color: var(--amber); }
+.rec .marks { display: flex; gap: 8px; font-size: .95rem; }
+.rec .marks span { opacity: .35; }
+.rec .marks span.on { opacity: 1; }
+.empty { text-align: center; color: var(--gray); padding: 60px 20px; font-size: .95rem; line-height: 2; }
+.empty .big { font-size: 3rem; }
+
+/* ── Modal ── */
+.overlay { display: none; position: fixed; inset: 0; background: rgba(20,35,50,.55); z-index: 100; overflow-y: auto; padding: 30px 14px 60px; }
+.overlay.show { display: block; }
+.modal { max-width: 760px; margin: 0 auto; background: #fff; border-radius: 16px; box-shadow: 0 12px 50px rgba(0,0,0,.3); overflow: hidden; }
+.modal-head { background: var(--navy); color: #fff; padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
+.modal-head h2 { font-size: 1.05rem; flex: 1; line-height: 1.4; }
+.modal-head button { border: none; background: rgba(255,255,255,.18); color: #fff; border-radius: 10px; padding: 6px 14px; cursor: pointer; font-size: .82rem; font-weight: 700; white-space: nowrap; }
+.modal-body { padding: 20px; }
+.f { margin-bottom: 14px; }
+.f > label { display: block; font-size: .78rem; font-weight: 800; color: var(--gray); margin-bottom: 5px; letter-spacing: .04em; }
+.f input[type=text], .f input[type=date], .f input[type=time], .f input[type=number], .f input[type=url], .f select, .f textarea {
+  width: 100%; border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 12px;
+  font-size: .95rem; font-family: inherit; color: var(--ink); background: #fff; outline: none;
+}
+.f input:focus, .f select:focus, .f textarea:focus { border-color: var(--blue); }
+.f textarea { min-height: 90px; resize: vertical; line-height: 1.7; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.chip { border: 1.5px solid var(--line); background: #fff; border-radius: 20px; padding: 6px 13px; font-size: .82rem; cursor: pointer; color: var(--gray); font-weight: 700; transition: all .15s; }
+.chip.on { border-color: var(--teal); background: var(--teal-l); color: var(--teal); }
+.sect { border-top: 1.5px dashed var(--line); margin-top: 18px; padding-top: 14px; }
+.sect > h4 { font-size: .88rem; color: var(--navy); margin-bottom: 10px; font-weight: 800; }
+.item-row { display: grid; grid-template-columns: 1fr 1.4fr auto; gap: 8px; margin-bottom: 8px; }
+.item-row input { border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 11px; font-size: .88rem; font-family: inherit; outline: none; }
+.item-row input:focus { border-color: var(--blue); }
+.item-row .rm, .fb-row .rm { border: none; background: var(--rose-l); color: var(--rose); border-radius: 10px; padding: 0 12px; cursor: pointer; font-weight: 800; }
+.fb-row { display: grid; grid-template-columns: 110px 1fr auto; gap: 8px; margin-bottom: 8px; }
+.fb-row select, .fb-row textarea { border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 11px; font-size: .88rem; font-family: inherit; outline: none; }
+.fb-row textarea { min-height: 44px; resize: vertical; line-height: 1.6; }
+.mini-add { border: 1.5px dashed var(--line); background: none; color: var(--gray); border-radius: 10px; padding: 7px 14px; font-size: .82rem; cursor: pointer; font-weight: 700; }
+.mini-add:hover { border-color: var(--blue); color: var(--blue); }
+.modal-foot { display: flex; gap: 10px; padding: 16px 20px; border-top: 1.5px solid #eef2f3; background: #fafbfc; }
+.btn { border: none; cursor: pointer; border-radius: 10px; padding: 11px 20px; font-size: .95rem; font-weight: 800; font-family: inherit; }
+.btn.primary { background: var(--navy); color: #fff; flex: 1; }
+.btn.primary:hover { background: var(--navy-d); }
+.btn.ghost { background: #eef2f3; color: var(--gray); }
+.btn.danger { background: var(--rose-l); color: var(--rose); }
+.btn:disabled { opacity: .5; cursor: default; }
+
+/* ── 詳細檢視 ── */
+.v-meta { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+.v-block { margin-bottom: 16px; }
+.v-block h4 { font-size: .8rem; color: var(--gray); letter-spacing: .06em; margin-bottom: 6px; font-weight: 800; }
+.v-block .txt { font-size: .95rem; line-height: 1.8; white-space: pre-wrap; }
+.v-block .none { color: #b9c2c6; font-size: .88rem; }
+.mat-link { display: inline-flex; align-items: center; gap: 6px; background: var(--blue-l); color: var(--navy); border-radius: 10px; padding: 7px 13px; font-size: .85rem; text-decoration: none; font-weight: 700; margin: 0 8px 8px 0; }
+.mat-link:hover { background: #d6eaf8; }
+.fb-card { background: var(--teal-l); border-radius: 10px; padding: 10px 13px; margin-bottom: 8px; font-size: .9rem; line-height: 1.7; }
+.fb-card small { display: block; color: var(--teal); font-weight: 800; font-size: .72rem; margin-bottom: 2px; }
+.refl-card { background: var(--purple-l); border-radius: 10px; padding: 12px 14px; font-size: .93rem; line-height: 1.8; white-space: pre-wrap; }
+.toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(80px); background: var(--ink); color: #fff; border-radius: 12px; padding: 11px 22px; font-size: .9rem; z-index: 200; transition: transform .25s; box-shadow: 0 6px 20px rgba(0,0,0,.3); }
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; }
+  .side { position: static; }
+  .grid3 { grid-template-columns: 1fr; }
+  .topbar .sub { display: none; }
+  .rec { grid-template-columns: 48px 1fr; }
+  .rec .marks { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- 登入 -->
+<div class="gate" id="gate">
+  <div class="big">📚</div>
+  <h1>教學歷程檔案</h1>
+  <p>紀錄教學行程、內容教材、學員回饋與教學反思<br>僅限本人帳號登入使用</p>
+  <button class="gbtn" id="loginBtn">
+    <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+    使用 Google 登入
+  </button>
+  <div class="denied" id="denied">此帳號沒有使用權限。</div>
+</div>
+
+<!-- 主畫面 -->
+<div class="app" id="app">
+  <div class="topbar">
+    <h1>📚 教學歷程檔案</h1>
+    <span class="sub">Teaching Portfolio</span>
+    <div class="spacer"></div>
+    <div class="user"><img id="uphoto" alt=""><span id="uname"></span><button id="logoutBtn">登出</button></div>
+  </div>
+
+  <div class="layout">
+    <!-- 側邊欄 -->
+    <div class="side">
+      <div class="panel">
+        <div class="cal-head">
+          <button id="calPrev">‹</button><b id="calTitle"></b><button id="calNext">›</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <button class="cal-clear" id="calClear">顯示全部日期</button>
+      </div>
+      <div class="panel">
+        <h3>📌 即將進行的教學</h3>
+        <div id="upcomingList"></div>
+      </div>
+      <div class="panel">
+        <h3 id="statsTitle">📊 年度統計</h3>
+        <div class="stats-grid">
+          <div class="stat"><b id="stSessions">0</b><span>教學場次</span></div>
+          <div class="stat"><b id="stHours">0</b><span>教學時數</span></div>
+          <div class="stat"><b id="stLearners">0</b><span>學員人次</span></div>
+          <div class="stat"><b id="stFeedback">0</b><span>回饋則數</span></div>
+        </div>
+        <div class="aud-bars" id="audBars"></div>
+      </div>
+    </div>
+
+    <!-- 主區 -->
+    <div class="main">
+      <div class="toolbar">
+        <input type="search" id="q" placeholder="搜尋課程名稱、內容、反思…">
+        <select id="fCat"><option value="">全部類別</option></select>
+        <select id="fAud"><option value="">全部對象</option></select>
+        <select id="fYear"><option value="">全部年份</option></select>
+        <button class="addbtn gmail" id="gmailBtn">📧 Gmail 匯入</button>
+        <button class="addbtn" id="addBtn">＋ 新增教學紀錄</button>
+      </div>
+      <div class="filter-note" id="filterNote"></div>
+      <div id="recList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 編輯 Modal -->
+<div class="overlay" id="editOverlay">
+  <div class="modal">
+    <div class="modal-head"><h2 id="editTitle">新增教學紀錄</h2><button id="editClose">✕ 關閉</button></div>
+    <div class="modal-body">
+      <div class="f"><label>課程／教學名稱 *</label><input type="text" id="eTitle" placeholder="例：PGY 急救復甦工作坊 — 高品質 CPR 與團隊合作"></div>
+      <div class="grid3">
+        <div class="f"><label>日期 *</label><input type="date" id="eDate"></div>
+        <div class="f"><label>開始時間</label><input type="time" id="eStart"></div>
+        <div class="f"><label>結束時間</label><input type="time" id="eEnd"></div>
+      </div>
+      <div class="grid2">
+        <div class="f"><label>教學類別</label><select id="eCat"></select></div>
+        <div class="f"><label>教學形式</label><select id="eMethod"></select></div>
+      </div>
+      <div class="f"><label>教學對象（可複選）</label><div class="chips" id="eAud"></div></div>
+      <div class="grid2">
+        <div class="f"><label>學員人數</label><input type="number" id="eCount" min="0" placeholder="0"></div>
+        <div class="f"><label>地點</label><input type="text" id="eLoc" placeholder="例：急診部討論室、臨床技能中心"></div>
+      </div>
+      <div class="f"><label>教學內容摘要</label><textarea id="eContent" placeholder="課程大綱、教學目標、進行方式…"></textarea></div>
+
+      <div class="sect">
+        <h4>📎 教材與投影片連結</h4>
+        <div id="eMats"></div>
+        <button class="mini-add" id="addMat">＋ 新增教材連結</button>
+      </div>
+
+      <div class="sect">
+        <h4>💬 學員回饋</h4>
+        <div id="eFbs"></div>
+        <button class="mini-add" id="addFb">＋ 新增回饋</button>
+      </div>
+
+      <div class="sect">
+        <h4>🪞 教學反思</h4>
+        <div class="f"><textarea id="eRefl" placeholder="這次教學哪裡做得好？哪裡可以改進？下次要調整什麼？"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn danger" id="delBtn" style="display:none">刪除</button>
+      <button class="btn ghost" id="cancelBtn">取消</button>
+      <button class="btn primary" id="saveBtn">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Gmail 匯入 Modal -->
+<div class="overlay" id="impOverlay">
+  <div class="modal">
+    <div class="modal-head"><h2>📧 從 Gmail 匯入教學行程</h2><button id="impClose">✕ 關閉</button></div>
+    <div class="modal-body">
+      <div class="imp-ctrl">
+        <div class="f days"><label>搜尋範圍</label>
+          <select id="impDays"><option value="14">近 14 天</option><option value="30" selected>近 30 天</option><option value="60">近 60 天</option><option value="90">近 90 天</option></select>
+        </div>
+        <div class="f"><label>關鍵字（Gmail 搜尋語法）</label>
+          <input type="text" id="impQ" value="教學 OR 授課 OR 課程 OR 演講 OR 工作坊 OR 模擬 OR 講師 OR 急救 OR OSCE OR TRM">
+        </div>
+        <button class="btn primary" id="impScan" style="flex:0 0 auto">🔍 掃描信箱</button>
+      </div>
+      <div class="imp-status" id="impStatus">會讀取信件內容，由 AI 挑出你擔任講師的教學行程；信件本身不會被修改。</div>
+      <div id="impList"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" id="impCancel">關閉</button>
+      <button class="btn primary" id="impSave" disabled>加入勾選的行程</button>
+    </div>
+  </div>
+</div>
+
+<!-- 檢視 Modal -->
+<div class="overlay" id="viewOverlay">
+  <div class="modal">
+    <div class="modal-head"><h2 id="vTitle"></h2><button id="vEdit">✏️ 編輯</button><button id="vClose">✕</button></div>
+    <div class="modal-body" id="vBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, serverTimestamp, query, orderBy }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey:"AIzaSyBrs80vpFVe-iEh5ctzRWfYHUBb3KGvILo",
+  authDomain:"speech-to-text-2f776.firebaseapp.com",
+  projectId:"speech-to-text-2f776",
+  storageBucket:"speech-to-text-2f776.firebasestorage.app",
+  messagingSenderId:"283739023798",
+  appId:"1:283739023798:web:3091ec2bcf6262b5ecb917"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const $ = id => document.getElementById(id);
+
+const ALLOWED = ["jiahowchang@gmail.com"];
+const CATS = ["急救復甦", "TRM 團隊資源管理", "跨專業教育 IPE", "模擬醫學", "災難醫學", "臨床教學", "演講／課程", "其他"];
+const METHODS = ["工作坊", "模擬情境演練", "課堂講授", "床邊教學", "OSCE／技能考核", "線上課程", "小組討論", "其他"];
+const AUDS = ["臨床醫師", "PGY", "醫學生", "護理師", "專科護理師", "呼吸治療師", "醫事放射師", "藥師", "其他"];
+const FB_SOURCES = ["書面問卷", "口頭回饋", "線上表單", "課後訪談", "其他"];
+const WD = ["日","一","二","三","四","五","六"];
+
+let records = [];       // 全部紀錄（含 id）
+let unsub = null;
+let editingId = null;   // 編輯中的 doc id
+let viewingId = null;
+let calCursor = new Date(); calCursor.setDate(1);
+let selDate = "";       // 月曆點選的日期 yyyy-mm-dd，空字串 = 不過濾
+
+const DEMO = new URLSearchParams(location.search).has("demo");
+
+/* ── 登入 ── */
+$("loginBtn").onclick = () => {
+  const p = new GoogleAuthProvider();
+  p.setCustomParameters({ prompt: "select_account" });
+  signInWithPopup(auth, p).catch(e => console.error(e));
+};
+$("logoutBtn").onclick = () => signOut(auth);
+
+onAuthStateChanged(auth, user => {
+  if (DEMO) return;
+  const ok = user && ALLOWED.includes((user.email || "").toLowerCase());
+  if (ok) {
+    $("gate").style.display = "none";
+    $("app").style.display = "block";
+    $("uname").textContent = user.displayName || user.email;
+    if (user.photoURL) $("uphoto").src = user.photoURL;
+    subscribe();
+  } else {
+    $("gate").style.display = "block";
+    $("app").style.display = "none";
+    $("denied").style.display = user ? "block" : "none";
+    if (user) signOut(auth);
+    if (unsub) { unsub(); unsub = null; }
+  }
+});
+
+function subscribe() {
+  if (unsub) unsub();
+  unsub = onSnapshot(query(collection(db, "teaching_records"), orderBy("date", "desc")), snap => {
+    records = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderAll();
+  }, e => { console.error(e); toast("讀取資料失敗：" + e.code); });
+}
+
+/* ── 小工具 ── */
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._tm); t._tm = setTimeout(() => t.classList.remove("show"), 2400);
+}
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
+function durationHours(r) {
+  if (!r.timeStart || !r.timeEnd) return 0;
+  const [h1,m1] = r.timeStart.split(":").map(Number), [h2,m2] = r.timeEnd.split(":").map(Number);
+  const mins = (h2*60+m2) - (h1*60+m1);
+  return mins > 0 ? mins/60 : 0;
+}
+const isFuture = r => r.date > todayStr();
+
+/* ── 篩選選單 ── */
+function initSelect(sel, items, withEmpty) {
+  items.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = v; sel.appendChild(o); });
+}
+initSelect($("fCat"), CATS);
+initSelect($("fAud"), AUDS);
+initSelect($("eCat"), CATS);
+initSelect($("eMethod"), METHODS);
+AUDS.forEach(a => {
+  const c = document.createElement("button");
+  c.type = "button"; c.className = "chip"; c.textContent = a; c.dataset.v = a;
+  c.onclick = () => c.classList.toggle("on");
+  $("eAud").appendChild(c);
+});
+["q","fCat","fAud","fYear"].forEach(id => $(id).addEventListener("input", renderList));
+
+/* ── 渲染總控 ── */
+function renderAll() {
+  renderYearOptions();
+  renderCalendar();
+  renderUpcoming();
+  renderStats();
+  renderList();
+}
+
+function renderYearOptions() {
+  const years = [...new Set(records.map(r => (r.date||"").slice(0,4)).filter(Boolean))].sort().reverse();
+  const sel = $("fYear"), cur = sel.value;
+  sel.innerHTML = '<option value="">全部年份</option>';
+  years.forEach(y => { const o = document.createElement("option"); o.value = y; o.textContent = y + " 年"; sel.appendChild(o); });
+  if (years.includes(cur)) sel.value = cur;
+}
+
+/* ── 小月曆 ── */
+$("calPrev").onclick = () => { calCursor.setMonth(calCursor.getMonth()-1); renderCalendar(); };
+$("calNext").onclick = () => { calCursor.setMonth(calCursor.getMonth()+1); renderCalendar(); };
+$("calClear").onclick = () => { selDate = ""; renderCalendar(); renderList(); };
+
+function renderCalendar() {
+  const y = calCursor.getFullYear(), m = calCursor.getMonth();
+  $("calTitle").textContent = `${y} 年 ${m+1} 月`;
+  const byDate = {};
+  records.forEach(r => { if (r.date) (byDate[r.date] = byDate[r.date] || []).push(r); });
+  const grid = $("calGrid"); grid.innerHTML = "";
+  WD.forEach(w => { const d = document.createElement("div"); d.className = "wd"; d.textContent = w; grid.appendChild(d); });
+  const first = new Date(y, m, 1), startWd = first.getDay();
+  const today = todayStr();
+  // 42 格：前月補齊 + 本月 + 次月補齊
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(y, m, 1 - startWd + i);
+    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    const btn = document.createElement("button");
+    btn.className = "cal-day";
+    if (d.getMonth() !== m) btn.classList.add("dim");
+    if (ds === today) btn.classList.add("today");
+    if (ds === selDate) btn.classList.add("sel");
+    btn.textContent = d.getDate();
+    const evts = byDate[ds];
+    if (evts) {
+      btn.appendChild(Object.assign(document.createElement("span"), { className: "dot" }));
+      if (evts.every(isFuture)) btn.classList.add("future-evt");
+    }
+    btn.onclick = () => {
+      selDate = (selDate === ds) ? "" : ds;
+      if (d.getMonth() !== m) { calCursor = new Date(d.getFullYear(), d.getMonth(), 1); }
+      renderCalendar(); renderList();
+    };
+    grid.appendChild(btn);
+  }
+  $("calClear").style.display = selDate ? "block" : "none";
+}
+
+/* ── 即將進行 ── */
+function renderUpcoming() {
+  const today = todayStr();
+  const ups = records.filter(r => r.date >= today).sort((a,b) => a.date.localeCompare(b.date)).slice(0, 5);
+  const box = $("upcomingList"); box.innerHTML = "";
+  if (!ups.length) { box.innerHTML = '<div class="upcoming-empty">目前沒有排定的教學行程</div>'; return; }
+  ups.forEach(r => {
+    const d = new Date(r.date + "T00:00:00");
+    const el = document.createElement("div");
+    el.className = "upcoming-item";
+    el.innerHTML = `<div class="d">${d.getMonth()+1}月<b>${d.getDate()}</b>週${WD[d.getDay()]}</div>
+      <div class="t">${esc(r.title)}<small>${esc(r.timeStart || "")}${r.timeStart && r.location ? " · " : ""}${esc(r.location || "")}</small></div>`;
+    el.onclick = () => openView(r.id);
+    box.appendChild(el);
+  });
+}
+
+/* ── 統計 ── */
+function renderStats() {
+  const yFilter = $("fYear").value || String(new Date().getFullYear());
+  $("statsTitle").textContent = `📊 ${yFilter} 年統計`;
+  const ys = records.filter(r => (r.date||"").startsWith(yFilter) && !isFuture(r));
+  $("stSessions").textContent = ys.length;
+  $("stHours").textContent = Math.round(ys.reduce((s,r) => s + durationHours(r), 0) * 10) / 10;
+  $("stLearners").textContent = ys.reduce((s,r) => s + (Number(r.audienceCount) || 0), 0);
+  $("stFeedback").textContent = ys.reduce((s,r) => s + (r.feedbacks?.length || 0), 0);
+  // 對象分布
+  const cnt = {};
+  ys.forEach(r => (r.audiences || []).forEach(a => cnt[a] = (cnt[a]||0) + 1));
+  const max = Math.max(1, ...Object.values(cnt));
+  const box = $("audBars"); box.innerHTML = "";
+  Object.entries(cnt).sort((a,b) => b[1]-a[1]).forEach(([a,n]) => {
+    const el = document.createElement("div");
+    el.className = "aud-bar";
+    el.innerHTML = `<span>${esc(a)}</span><span class="bar"><i style="width:${Math.round(n/max*100)}%"></i></span><b>${n}</b>`;
+    box.appendChild(el);
+  });
+}
+
+/* ── 主列表 ── */
+function renderList() {
+  const q = $("q").value.trim().toLowerCase();
+  const fc = $("fCat").value, fa = $("fAud").value, fy = $("fYear").value;
+  let list = records.filter(r => {
+    if (selDate && r.date !== selDate) return false;
+    if (fy && !(r.date||"").startsWith(fy)) return false;
+    if (fc && r.category !== fc) return false;
+    if (fa && !(r.audiences || []).includes(fa)) return false;
+    if (q) {
+      const hay = [r.title, r.content, r.reflection, r.location, (r.feedbacks||[]).map(f=>f.text).join(" ")].join(" ").toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  const note = $("filterNote");
+  if (selDate) {
+    note.style.display = "block";
+    note.innerHTML = `僅顯示 ${esc(selDate)} 的紀錄<button id="noteClear">清除</button>`;
+    note.querySelector("#noteClear").onclick = () => { selDate = ""; renderCalendar(); renderList(); };
+  } else note.style.display = "none";
+
+  const box = $("recList"); box.innerHTML = "";
+  if (!list.length) {
+    box.innerHTML = `<div class="empty"><div class="big">🗂</div>${records.length ? "沒有符合條件的紀錄" : "還沒有教學紀錄<br>點右上「＋ 新增教學紀錄」開始建立"}</div>`;
+    renderStats();
+    return;
+  }
+  let curMonth = "";
+  list.forEach(r => {
+    const mKey = (r.date||"").slice(0,7);
+    if (mKey !== curMonth) {
+      curMonth = mKey;
+      const h = document.createElement("div");
+      h.className = "month-h";
+      const [yy,mm] = mKey.split("-");
+      h.textContent = `${yy} 年 ${Number(mm)} 月`;
+      box.appendChild(h);
+    }
+    const d = new Date(r.date + "T00:00:00");
+    const el = document.createElement("div");
+    el.className = "rec" + (isFuture(r) ? " future" : "");
+    const audTags = (r.audiences||[]).slice(0,3).map(a => `<span class="tag aud">${esc(a)}</span>`).join("");
+    el.innerHTML = `
+      <div class="date"><b>${d.getDate()}</b><span>週${WD[d.getDay()]}</span></div>
+      <div class="body">
+        <div class="title">${esc(r.title)}</div>
+        <div class="meta">
+          ${isFuture(r) ? '<span class="tag future-tag">即將進行</span>' : ""}
+          ${r.category ? `<span class="tag cat">${esc(r.category)}</span>` : ""}
+          ${r.method ? `<span class="tag method">${esc(r.method)}</span>` : ""}
+          ${audTags}
+          ${r.timeStart ? `<span>${esc(r.timeStart)}${r.timeEnd ? "–" + esc(r.timeEnd) : ""}</span>` : ""}
+          ${r.location ? `<span>📍${esc(r.location)}</span>` : ""}
+        </div>
+      </div>
+      <div class="marks" title="教材／回饋／反思">
+        <span class="${r.materials?.length ? "on" : ""}" title="教材 ${r.materials?.length||0} 份">📎</span>
+        <span class="${r.feedbacks?.length ? "on" : ""}" title="回饋 ${r.feedbacks?.length||0} 則">💬</span>
+        <span class="${r.reflection ? "on" : ""}" title="教學反思">🪞</span>
+      </div>`;
+    el.onclick = () => openView(r.id);
+    box.appendChild(el);
+  });
+  renderStats();
+}
+
+/* ── 檢視 ── */
+function openView(id) {
+  const r = records.find(x => x.id === id);
+  if (!r) return;
+  viewingId = id;
+  $("vTitle").textContent = r.title;
+  const d = new Date(r.date + "T00:00:00");
+  const meta = [];
+  meta.push(`<span class="tag method">${r.date}（週${WD[d.getDay()]}）${r.timeStart ? " " + esc(r.timeStart) + (r.timeEnd ? "–" + esc(r.timeEnd) : "") : ""}</span>`);
+  if (isFuture(r)) meta.push('<span class="tag future-tag">即將進行</span>');
+  if (r.category) meta.push(`<span class="tag cat">${esc(r.category)}</span>`);
+  if (r.method) meta.push(`<span class="tag method">${esc(r.method)}</span>`);
+  (r.audiences||[]).forEach(a => meta.push(`<span class="tag aud">${esc(a)}</span>`));
+  if (r.audienceCount) meta.push(`<span class="tag aud">👥 ${Number(r.audienceCount)} 人</span>`);
+  if (r.location) meta.push(`<span class="tag method">📍 ${esc(r.location)}</span>`);
+
+  const mats = (r.materials||[]).filter(m => m.name || m.url);
+  const fbs = r.feedbacks || [];
+  $("vBody").innerHTML = `
+    <div class="v-meta">${meta.join("")}</div>
+    <div class="v-block"><h4>📖 教學內容</h4>${r.content ? `<div class="txt">${esc(r.content)}</div>` : '<div class="none">（未填寫）</div>'}</div>
+    <div class="v-block"><h4>📎 教材與投影片</h4>${mats.length ? mats.map(m =>
+      m.url ? `<a class="mat-link" href="${esc(m.url)}" target="_blank" rel="noopener">🔗 ${esc(m.name || m.url)}</a>`
+            : `<span class="mat-link">📄 ${esc(m.name)}</span>`).join("") : '<div class="none">（尚無教材連結）</div>'}</div>
+    <div class="v-block"><h4>💬 學員回饋（${fbs.length}）</h4>${fbs.length ? fbs.map(f =>
+      `<div class="fb-card"><small>${esc(f.source || "回饋")}</small>${esc(f.text)}</div>`).join("") : '<div class="none">（尚無回饋紀錄）</div>'}</div>
+    <div class="v-block"><h4>🪞 教學反思</h4>${r.reflection ? `<div class="refl-card">${esc(r.reflection)}</div>` : '<div class="none">（尚未撰寫反思）</div>'}</div>`;
+  $("viewOverlay").classList.add("show");
+}
+$("vClose").onclick = () => $("viewOverlay").classList.remove("show");
+$("vEdit").onclick = () => { $("viewOverlay").classList.remove("show"); openEdit(viewingId); };
+
+/* ── 編輯 ── */
+$("addBtn").onclick = () => openEdit(null);
+$("editClose").onclick = $("cancelBtn").onclick = () => $("editOverlay").classList.remove("show");
+[$("editOverlay"), $("viewOverlay")].forEach(ov => ov.addEventListener("click", e => { if (e.target === ov) ov.classList.remove("show"); }));
+
+function matRow(m = {}) {
+  const row = document.createElement("div");
+  row.className = "item-row";
+  row.innerHTML = `<input type="text" placeholder="教材名稱（例：投影片）" value="${esc(m.name||"")}">
+    <input type="text" placeholder="連結網址 https://…" value="${esc(m.url||"")}">
+    <button class="rm" type="button">✕</button>`;
+  row.querySelector(".rm").onclick = () => row.remove();
+  return row;
+}
+function fbRow(f = {}) {
+  const row = document.createElement("div");
+  row.className = "fb-row";
+  const sel = document.createElement("select");
+  FB_SOURCES.forEach(s => { const o = document.createElement("option"); o.value = s; o.textContent = s; sel.appendChild(o); });
+  if (f.source) sel.value = f.source;
+  const ta = document.createElement("textarea");
+  ta.placeholder = "回饋內容…"; ta.value = f.text || "";
+  const rm = document.createElement("button");
+  rm.className = "rm"; rm.type = "button"; rm.textContent = "✕"; rm.onclick = () => row.remove();
+  row.append(sel, ta, rm);
+  return row;
+}
+$("addMat").onclick = () => $("eMats").appendChild(matRow());
+$("addFb").onclick = () => $("eFbs").appendChild(fbRow());
+
+function openEdit(id) {
+  editingId = id;
+  const r = id ? records.find(x => x.id === id) : null;
+  $("editTitle").textContent = r ? "編輯教學紀錄" : "新增教學紀錄";
+  $("delBtn").style.display = r ? "block" : "none";
+  $("eTitle").value = r?.title || "";
+  $("eDate").value = r?.date || (selDate || todayStr());
+  $("eStart").value = r?.timeStart || "";
+  $("eEnd").value = r?.timeEnd || "";
+  $("eCat").value = r?.category || CATS[0];
+  $("eMethod").value = r?.method || METHODS[0];
+  $("eCount").value = r?.audienceCount ?? "";
+  $("eLoc").value = r?.location || "";
+  $("eContent").value = r?.content || "";
+  $("eRefl").value = r?.reflection || "";
+  [...$("eAud").children].forEach(c => c.classList.toggle("on", !!(r?.audiences||[]).includes(c.dataset.v)));
+  $("eMats").innerHTML = "";
+  (r?.materials?.length ? r.materials : [{}]).forEach(m => $("eMats").appendChild(matRow(m)));
+  $("eFbs").innerHTML = "";
+  (r?.feedbacks || []).forEach(f => $("eFbs").appendChild(fbRow(f)));
+  $("editOverlay").classList.add("show");
+  $("eTitle").focus();
+}
+
+$("saveBtn").onclick = async () => {
+  const title = $("eTitle").value.trim();
+  const date = $("eDate").value;
+  if (!title) { toast("請填寫課程名稱"); return; }
+  if (!date) { toast("請選擇日期"); return; }
+  const data = {
+    title, date,
+    timeStart: $("eStart").value || "",
+    timeEnd: $("eEnd").value || "",
+    category: $("eCat").value,
+    method: $("eMethod").value,
+    audiences: [...$("eAud").children].filter(c => c.classList.contains("on")).map(c => c.dataset.v),
+    audienceCount: Number($("eCount").value) || 0,
+    location: $("eLoc").value.trim(),
+    content: $("eContent").value.trim(),
+    materials: [...$("eMats").children].map(row => {
+      const [n,u] = row.querySelectorAll("input");
+      return { name: n.value.trim(), url: u.value.trim() };
+    }).filter(m => m.name || m.url),
+    feedbacks: [...$("eFbs").children].map(row => ({
+      source: row.querySelector("select").value,
+      text: row.querySelector("textarea").value.trim()
+    })).filter(f => f.text),
+    reflection: $("eRefl").value.trim(),
+    updatedAt: serverTimestamp()
+  };
+  $("saveBtn").disabled = true;
+  try {
+    if (DEMO) {
+      if (editingId) { const i = records.findIndex(r => r.id === editingId); records[i] = { ...records[i], ...data }; }
+      else records.unshift({ ...data, id: "demo-" + Math.random().toString(36).slice(2) });
+      records.sort((a,b) => b.date.localeCompare(a.date));
+      renderAll();
+    }
+    else if (editingId) await updateDoc(doc(db, "teaching_records", editingId), data);
+    else await addDoc(collection(db, "teaching_records"), { ...data, createdAt: serverTimestamp() });
+    $("editOverlay").classList.remove("show");
+    toast(DEMO ? "已儲存（示範模式，重新整理即消失）" : "已儲存 ✓");
+  } catch (e) {
+    console.error(e);
+    toast("儲存失敗：" + (e.code || e.message));
+  } finally {
+    $("saveBtn").disabled = false;
+  }
+};
+
+$("delBtn").onclick = async () => {
+  if (!editingId) return;
+  if (!confirm("確定要刪除這筆教學紀錄？此動作無法復原。")) return;
+  try {
+    if (DEMO) { records = records.filter(r => r.id !== editingId); renderAll(); }
+    else await deleteDoc(doc(db, "teaching_records", editingId));
+    $("editOverlay").classList.remove("show");
+    toast("已刪除");
+  } catch (e) { console.error(e); toast("刪除失敗：" + (e.code || e.message)); }
+};
+
+/* ══════════ Gmail 匯入 ══════════ */
+const PROXY_URL = "https://patient-mkargc7maa-uc.a.run.app";
+const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
+let impCandidates = [];   // 解析出的候選行程
+
+$("gmailBtn").onclick = () => { $("impOverlay").classList.add("show"); };
+$("impClose").onclick = $("impCancel").onclick = () => $("impOverlay").classList.remove("show");
+$("impOverlay").addEventListener("click", e => { if (e.target === $("impOverlay")) $("impOverlay").classList.remove("show"); });
+
+function impStatus(msg, err, spin) {
+  const el = $("impStatus");
+  el.className = "imp-status" + (err ? " err" : "");
+  el.innerHTML = (spin ? '<span class="spin"></span>' : "") + msg;
+}
+
+/* Gmail access token：sessionStorage 快取 55 分鐘，過期或 401 重新彈窗授權 */
+async function getGmailToken(force) {
+  if (!force) {
+    try {
+      const c = JSON.parse(sessionStorage.getItem("tp_gtok") || "null");
+      if (c && c.exp > Date.now()) return c.t;
+    } catch {}
+  }
+  const p = new GoogleAuthProvider();
+  p.addScope(GMAIL_SCOPE);
+  p.setCustomParameters({ login_hint: ALLOWED[0] });
+  const result = await signInWithPopup(auth, p);
+  const cred = GoogleAuthProvider.credentialFromResult(result);
+  if (!cred?.accessToken) throw new Error("拿不到 Gmail 授權");
+  sessionStorage.setItem("tp_gtok", JSON.stringify({ t: cred.accessToken, exp: Date.now() + 55*60*1000 }));
+  return cred.accessToken;
+}
+
+/* base64url → UTF-8 字串 */
+function b64uDecode(s) {
+  if (!s) return "";
+  const bin = atob(s.replace(/-/g, "+").replace(/_/g, "/"));
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  return new TextDecoder("utf-8").decode(bytes);
+}
+/* 從 Gmail message payload 挖出純文字內文 */
+function extractBody(payload) {
+  if (!payload) return "";
+  if (payload.mimeType === "text/plain" && payload.body?.data) return b64uDecode(payload.body.data);
+  if (payload.mimeType === "text/html" && payload.body?.data)
+    return b64uDecode(payload.body.data).replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<[^>]+>/g, " ");
+  for (const part of payload.parts || []) {
+    const t = extractBody(part);
+    if (t.trim()) return t;
+  }
+  return "";
+}
+const header = (msg, name) => (msg.payload?.headers || []).find(h => h.name.toLowerCase() === name.toLowerCase())?.value || "";
+
+async function gmailFetch(path, token) {
+  const r = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/" + path, {
+    headers: { Authorization: "Bearer " + token }
+  });
+  if (r.status === 401 || r.status === 403) throw Object.assign(new Error("AUTH"), { auth: true });
+  if (!r.ok) throw new Error("Gmail API HTTP " + r.status);
+  return r.json();
+}
+
+$("impScan").onclick = async () => {
+  $("impScan").disabled = true;
+  $("impSave").disabled = true;
+  $("impList").innerHTML = "";
+  impCandidates = [];
+  try {
+    impStatus("正在取得 Gmail 授權…", false, true);
+    let token = await getGmailToken(false);
+    const days = $("impDays").value;
+    const q = `newer_than:${days}d (${$("impQ").value.trim()})`;
+    impStatus("正在搜尋信件…", false, true);
+    let listRes;
+    try {
+      listRes = await gmailFetch("messages?maxResults=20&q=" + encodeURIComponent(q), token);
+    } catch (e) {
+      if (!e.auth) throw e;
+      token = await getGmailToken(true);   // 401/403 → 重新授權一次
+      listRes = await gmailFetch("messages?maxResults=20&q=" + encodeURIComponent(q), token);
+    }
+    const ids = (listRes.messages || []).map(m => m.id);
+    if (!ids.length) { impStatus("這個範圍內找不到符合關鍵字的信件。試著放寬天數或改關鍵字。"); return; }
+
+    impStatus(`找到 ${ids.length} 封信，正在讀取內容…`, false, true);
+    const mails = [];
+    for (const id of ids) {
+      const msg = await gmailFetch("messages/" + id + "?format=full", token);
+      mails.push({
+        id,
+        subject: header(msg, "Subject"),
+        from: header(msg, "From"),
+        date: header(msg, "Date"),
+        body: extractBody(msg.payload).replace(/\s+/g, " ").trim().slice(0, 1500)
+      });
+    }
+
+    impStatus(`AI 正在從 ${mails.length} 封信中挑出教學行程…`, false, true);
+    const system =
+`你是教學行程擷取引擎。使用者是急診專科醫師張家豪（jiahowchang@gmail.com），專長急救復甦教學、TRM、跨專業教育、模擬醫學。現在時間：${new Date().toLocaleString("zh-TW", { timeZone: "Asia/Taipei" })}（台灣時間）。
+以下是他信箱中的多封信件。請挑出「他本人要授課／演講／帶教學活動」的具體行程（有明確或可推算的日期），只輸出 JSON 陣列，不要任何其他文字：
+[{"emailIndex":0,"title":"","date":"YYYY-MM-DD","timeStart":"HH:MM","timeEnd":"HH:MM","location":"","category":"","audiences":[],"audienceCount":0,"content":""}]
+規則：
+- category 必須從這些選一個：${JSON.stringify(CATS)}
+- audiences 只能從這些挑（可複選）：${JSON.stringify(AUDS)}
+- 不是他授課的（如他是學員、系統通知、廣告、會議通知）一律略過
+- 同一封信有多個場次就每場各列一筆；時間不明給空字串；人數不明給 0
+- content 用一兩句話摘要課程內容
+- 一筆都沒有就輸出 []`;
+    const emailText = mails.map((m, i) =>
+      `【信件 ${i}】主旨：${m.subject}\n寄件者：${m.from}\n日期：${m.date}\n內文：${m.body}`).join("\n\n---\n\n");
+    const r = await fetch(PROXY_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6", max_tokens: 3000, system,
+        messages: [{ role: "user", content: emailText }]
+      })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data?.error?.message || ("HTTP " + r.status));
+    const raw = (data.content?.[0]?.text || "").trim().replace(/^```(json)?/i, "").replace(/```$/, "").trim();
+    const events = JSON.parse(raw);
+    if (!Array.isArray(events) || !events.length) { impStatus("這些信裡沒有找到你授課的行程。"); return; }
+
+    impCandidates = events.filter(ev => ev.title && /^\d{4}-\d{2}-\d{2}$/.test(ev.date || "")).map(ev => {
+      const mail = mails[ev.emailIndex] || {};
+      const dup = records.some(x => x.gmailMsgId === mail.id && x.date === ev.date) ||
+                  records.some(x => x.date === ev.date && x.title === ev.title);
+      return { ...ev, gmailMsgId: mail.id || "", gmailSubject: mail.subject || "", dup };
+    });
+    renderImpList();
+    const fresh = impCandidates.filter(c => !c.dup).length;
+    impStatus(`解析出 ${impCandidates.length} 筆教學行程${fresh < impCandidates.length ? `（${impCandidates.length - fresh} 筆看起來已存在，預設不勾）` : ""}，確認後按「加入勾選的行程」。`);
+  } catch (e) {
+    console.error(e);
+    impStatus("匯入失敗：" + (e.auth ? "Gmail 授權失敗，請重試" : e.message), true);
+  } finally {
+    $("impScan").disabled = false;
+  }
+};
+
+function renderImpList() {
+  const box = $("impList"); box.innerHTML = "";
+  impCandidates.forEach((c, i) => {
+    const el = document.createElement("div");
+    el.className = "imp-card" + (c.dup ? " dup" : " on");
+    el.innerHTML = `
+      <input type="checkbox" ${c.dup ? "" : "checked"}>
+      <div class="b">
+        <div class="t">${esc(c.title)}</div>
+        <div class="m">
+          <span class="tag method">${esc(c.date)}${c.timeStart ? " " + esc(c.timeStart) + (c.timeEnd ? "–" + esc(c.timeEnd) : "") : ""}</span>
+          ${c.category ? `<span class="tag cat">${esc(c.category)}</span>` : ""}
+          ${(c.audiences||[]).map(a => `<span class="tag aud">${esc(a)}</span>`).join("")}
+          ${c.location ? `<span class="tag method">📍${esc(c.location)}</span>` : ""}
+          ${c.dup ? '<span class="dup-tag">⚠ 可能已存在</span>' : ""}
+        </div>
+        <div class="src">來源信件：${esc(c.gmailSubject)}</div>
+      </div>`;
+    const cb = el.querySelector("input");
+    cb.onchange = () => { el.classList.toggle("on", cb.checked); updateImpSave(); };
+    el.dataset.idx = i;
+    box.appendChild(el);
+  });
+  updateImpSave();
+}
+function updateImpSave() {
+  const n = [...$("impList").querySelectorAll("input:checked")].length;
+  $("impSave").disabled = !n;
+  $("impSave").textContent = n ? `加入勾選的 ${n} 筆行程` : "加入勾選的行程";
+}
+
+$("impSave").onclick = async () => {
+  const picked = [...$("impList").querySelectorAll(".imp-card")]
+    .filter(el => el.querySelector("input").checked)
+    .map(el => impCandidates[Number(el.dataset.idx)]);
+  if (!picked.length) return;
+  $("impSave").disabled = true;
+  impStatus(`正在加入 ${picked.length} 筆行程…`, false, true);
+  try {
+    for (const c of picked) {
+      const rec = {
+        title: c.title, date: c.date,
+        timeStart: c.timeStart || "", timeEnd: c.timeEnd || "",
+        category: CATS.includes(c.category) ? c.category : "其他",
+        method: "",
+        audiences: (c.audiences || []).filter(a => AUDS.includes(a)),
+        audienceCount: Number(c.audienceCount) || 0,
+        location: c.location || "",
+        content: c.content || "",
+        materials: [], feedbacks: [], reflection: "",
+        source: "gmail", gmailMsgId: c.gmailMsgId, gmailSubject: c.gmailSubject,
+        updatedAt: serverTimestamp(), createdAt: serverTimestamp()
+      };
+      if (DEMO) { records.unshift({ ...rec, id: "demo-" + Math.random().toString(36).slice(2) }); }
+      else await addDoc(collection(db, "teaching_records"), rec);
+    }
+    if (DEMO) { records.sort((a,b) => b.date.localeCompare(a.date)); renderAll(); }
+    $("impOverlay").classList.remove("show");
+    toast(`已加入 ${picked.length} 筆教學行程 ✓`);
+  } catch (e) {
+    console.error(e);
+    impStatus("加入失敗：" + (e.code || e.message), true);
+    $("impSave").disabled = false;
+  }
+};
+
+/* ── 示範模式（?demo=1）：本機假資料試用介面，不讀寫 Firestore ── */
+if (DEMO) {
+  $("gate").style.display = "none";
+  $("app").style.display = "block";
+  $("uname").textContent = "示範模式（資料不會儲存）";
+  records = [
+    { id:"d1", title:"PGY 急救復甦工作坊 — 高品質 CPR 與團隊合作", date: todayStr(), timeStart:"13:30", timeEnd:"16:30",
+      category:"急救復甦", method:"工作坊", audiences:["PGY","護理師"], audienceCount:24, location:"臨床技能中心",
+      content:"高品質 CPR 實作、AED 使用、急救團隊分工演練。",
+      materials:[{name:"投影片", url:"https://example.com"}],
+      feedbacks:[{source:"書面問卷", text:"實作時間充足，講師回饋具體。"}],
+      reflection:"分組人數 6 人稍多，下次改 4 人一組增加操作次數。" },
+    { id:"d2", title:"跨團隊 TRM 情境模擬：急診大量傷患", date:"2026-08-15", timeStart:"09:00", timeEnd:"12:00",
+      category:"TRM 團隊資源管理", method:"模擬情境演練", audiences:["臨床醫師","護理師","呼吸治療師"], audienceCount:18,
+      location:"急診部", content:"", materials:[], feedbacks:[], reflection:"" },
+    { id:"d3", title:"醫學生 BLS 課程", date:"2026-07-10", timeStart:"14:00", timeEnd:"17:00",
+      category:"急救復甦", method:"課堂講授", audiences:["醫學生"], audienceCount:30, location:"教學大樓",
+      content:"BLS 流程與實作。", materials:[], feedbacks:[{source:"線上表單", text:"節奏適中，示範清楚。"}],
+      reflection:"影片示範比口頭講解有效。" },
+  ];
+  renderAll();
+}
+</script>
+</body>
+</html>

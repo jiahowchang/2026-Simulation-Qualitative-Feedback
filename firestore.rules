@@ -115,6 +115,11 @@ service cloud.firestore {
       allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
     }
 
+    // 教學歷程檔案（teaching.html）：僅管理員本人可讀寫
+    match /teaching_records/{document} {
+      allow read, write: if isAdmin();
+    }
+
     // 其他集合預設禁止存取
     match /{document=**} {
       allow read, write: if false;

@@ -32,6 +32,7 @@ const ALLOWED_ORIGINS = [
   "http://localhost:8081",
   "http://localhost:5000",
   "http://localhost:3000",
+  "http://localhost:8087",
 ];
 // 只允許這些模型，避免被改成更貴的設定
 const ALLOWED_MODELS = ["claude-opus-4-8", "claude-sonnet-4-6", "claude-haiku-4-5"];
