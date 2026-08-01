@@ -43,6 +43,19 @@ button { font-family: inherit; }
 
 /* ── 側邊欄 ── */
 .side { position: sticky; top: 74px; display: flex; flex-direction: column; gap: 14px; }
+
+/* 桌機版：左右兩欄各自獨立捲動（側欄固定可見、清單有自己的捲軸） */
+@media (min-width: 861px) {
+  body { overflow: hidden; }
+  .layout { height: calc(100vh - 56px); padding-bottom: 0; align-items: stretch; }
+  .side { position: static; overflow-y: auto; padding-bottom: 30px; padding-right: 2px; }
+  .main { overflow-y: auto; padding-bottom: 60px; padding-right: 2px; }
+  .side, .main { scrollbar-width: thin; scrollbar-color: #b8c6d0 transparent; }
+  .side::-webkit-scrollbar, .main::-webkit-scrollbar { width: 8px; }
+  .side::-webkit-scrollbar-thumb, .main::-webkit-scrollbar-thumb { background: #b8c6d0; border-radius: 4px; }
+  .side::-webkit-scrollbar-thumb:hover, .main::-webkit-scrollbar-thumb:hover { background: #8fa3b0; }
+  .side::-webkit-scrollbar-track, .main::-webkit-scrollbar-track { background: transparent; }
+}
 .panel { background: var(--card); border-radius: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.08); padding: 14px; }
 .panel h3 { font-size: .82rem; color: var(--gray); letter-spacing: .08em; margin-bottom: 10px; font-weight: 700; }
 
@@ -332,7 +345,7 @@ button { font-family: inherit; }
     </div>
 
     <!-- 主區 -->
-    <div class="main">
+    <div class="main" id="mainCol">
       <div id="detailPage" style="display:none"></div>
       <div id="listView">
       <div class="toolbar">
@@ -341,6 +354,7 @@ button { font-family: inherit; }
         <select id="fCat"><option value="">全部類別</option></select>
         <select id="fAud"><option value="">全部對象</option></select>
         <select id="fYear"><option value="">全部年份</option></select>
+        <select id="jumpMonth"><option value="">跳至月份…</option></select>
         <button class="addbtn gmail" id="gmailBtn">📥 Gmail／日曆匯入</button>
         <button class="addbtn pdf" id="pdfBtn">📄 匯出 PDF</button>
         <button class="addbtn" id="addBtn">＋ 新增教學紀錄</button>
@@ -696,6 +710,7 @@ function renderList() {
       curMonth = mKey;
       const h = document.createElement("div");
       h.className = "month-h";
+      h.id = "m-" + mKey;
       const [yy,mm] = mKey.split("-");
       h.textContent = `${yy} 年 ${Number(mm)} 月`;
       box.appendChild(h);
@@ -726,8 +741,20 @@ function renderList() {
     el.onclick = () => openView(r.id);
     box.appendChild(el);
   });
+  // 「跳至月份」下拉選單
+  const jm = $("jumpMonth");
+  const months = [...new Set(list.map(r => (r.date||"").slice(0,7)))];
+  jm.innerHTML = '<option value="">跳至月份…</option>' + months.map(mk => {
+    const [yy,mm] = mk.split("-");
+    return `<option value="${mk}">${yy} 年 ${Number(mm)} 月</option>`;
+  }).join("");
   renderStats();
 }
+$("jumpMonth").addEventListener("change", () => {
+  const mk = $("jumpMonth").value;
+  if (mk) document.getElementById("m-" + mk)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  $("jumpMonth").value = "";
+});
 
 /* ── 課程詳情頁（#rec=<id> 路由）── */
 function openView(id) { location.hash = "rec=" + encodeURIComponent(id); }
@@ -747,7 +774,7 @@ function renderMain() {
     renderList();
   }
 }
-window.addEventListener("hashchange", () => { renderMain(); window.scrollTo(0, 0); });
+window.addEventListener("hashchange", () => { renderMain(); window.scrollTo(0, 0); $("mainCol").scrollTop = 0; });
 
 function thumbCard(f) {
   const isImg = /\.(png|jpe?g|heic|gif|webp)$/i.test(f.name);
