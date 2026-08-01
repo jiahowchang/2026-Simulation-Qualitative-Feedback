@@ -110,6 +110,14 @@ button { font-family: inherit; }
 .imp-card .m { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 5px; }
 .imp-card .src { font-size: .72rem; color: var(--gray); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .imp-card .dup-tag { color: var(--amber); font-weight: 700; font-size: .74rem; }
+
+/* ── 檔案附件 ── */
+.file-row { display: flex; align-items: center; gap: 10px; border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 12px; margin-bottom: 8px; font-size: .88rem; }
+.file-row .ico { flex-shrink: 0; }
+.file-row .fname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+.file-row .fsize { color: var(--gray); font-size: .76rem; flex-shrink: 0; }
+.file-row .rm { border: none; background: var(--rose-l); color: var(--rose); border-radius: 8px; padding: 4px 10px; cursor: pointer; font-weight: 800; flex-shrink: 0; }
+.v-src { margin-top: 18px; padding-top: 12px; border-top: 1.5px dashed var(--line); font-size: .78rem; color: var(--gray); line-height: 1.6; }
 .filter-note { display: none; background: var(--amber-l); color: var(--amber); font-size: .82rem; border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; font-weight: 700; }
 .filter-note button { border: none; background: none; color: var(--amber); text-decoration: underline; cursor: pointer; font-size: .82rem; font-weight: 700; margin-left: 6px; }
 
@@ -292,6 +300,15 @@ button { font-family: inherit; }
       </div>
 
       <div class="sect">
+        <h4>📂 檔案附件（課程表、學員名單、講義檔案）</h4>
+        <div id="eFiles"></div>
+        <button class="mini-add" id="addFileBtn" type="button">＋ 上傳檔案</button>
+        <input type="file" id="fileInput" multiple style="display:none"
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,.png,.jpg,.jpeg,.heic,.zip">
+        <div class="imp-status" id="fileStatus"></div>
+      </div>
+
+      <div class="sect">
         <h4>💬 學員回饋</h4>
         <div id="eFbs"></div>
         <button class="mini-add" id="addFb">＋ 新增回饋</button>
@@ -350,6 +367,8 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChang
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, serverTimestamp, query, orderBy }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getStorage, ref as sRef, uploadBytes, getDownloadURL, deleteObject }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey:"AIzaSyBrs80vpFVe-iEh5ctzRWfYHUBb3KGvILo",
@@ -362,6 +381,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app);
 const $ = id => document.getElementById(id);
 
 const ALLOWED = ["jiahowchang@gmail.com"];
@@ -597,7 +617,7 @@ function renderList() {
         </div>
       </div>
       <div class="marks" title="教材／回饋／反思">
-        <span class="${r.materials?.length ? "on" : ""}" title="教材 ${r.materials?.length||0} 份">📎</span>
+        <span class="${(r.materials?.length || r.files?.length) ? "on" : ""}" title="教材 ${r.materials?.length||0} 份、附件 ${r.files?.length||0} 個">📎</span>
         <span class="${r.feedbacks?.length ? "on" : ""}" title="回饋 ${r.feedbacks?.length||0} 則">💬</span>
         <span class="${r.reflection ? "on" : ""}" title="教學反思">🪞</span>
       </div>`;
@@ -624,6 +644,7 @@ function openView(id) {
   if (r.location) meta.push(`<span class="tag method">📍 ${esc(r.location)}</span>`);
 
   const mats = (r.materials||[]).filter(m => m.name || m.url);
+  const files = r.files || [];
   const fbs = r.feedbacks || [];
   $("vBody").innerHTML = `
     <div class="v-meta">${meta.join("")}</div>
@@ -631,9 +652,13 @@ function openView(id) {
     <div class="v-block"><h4>📎 教材與投影片</h4>${mats.length ? mats.map(m =>
       m.url ? `<a class="mat-link" href="${esc(m.url)}" target="_blank" rel="noopener">🔗 ${esc(m.name || m.url)}</a>`
             : `<span class="mat-link">📄 ${esc(m.name)}</span>`).join("") : '<div class="none">（尚無教材連結）</div>'}</div>
+    <div class="v-block"><h4>📂 檔案附件（課程表、學員名單）</h4>${files.length ? files.map(f =>
+      f.url ? `<a class="mat-link" href="${esc(f.url)}" target="_blank" rel="noopener">${fileIcon(f.name)} ${esc(f.name)}${f.size ? `（${fmtSize(f.size)}）` : ""}</a>`
+            : `<span class="mat-link">${fileIcon(f.name)} ${esc(f.name)}</span>`).join("") : '<div class="none">（尚無附件，可在編輯中上傳課程表與學員名單）</div>'}</div>
     <div class="v-block"><h4>💬 學員回饋（${fbs.length}）</h4>${fbs.length ? fbs.map(f =>
       `<div class="fb-card"><small>${esc(f.source || "回饋")}</small>${esc(f.text)}</div>`).join("") : '<div class="none">（尚無回饋紀錄）</div>'}</div>
-    <div class="v-block"><h4>🪞 教學反思</h4>${r.reflection ? `<div class="refl-card">${esc(r.reflection)}</div>` : '<div class="none">（尚未撰寫反思）</div>'}</div>`;
+    <div class="v-block"><h4>🪞 教學反思</h4>${r.reflection ? `<div class="refl-card">${esc(r.reflection)}</div>` : '<div class="none">（尚未撰寫反思）</div>'}</div>
+    ${r.source === "gmail" ? `<div class="v-src">📧 由 Gmail 匯入 · 來源信件：${esc(r.gmailSubject || "")}</div>` : ""}`;
   $("viewOverlay").classList.add("show");
 }
 $("vClose").onclick = () => $("viewOverlay").classList.remove("show");
@@ -641,8 +666,9 @@ $("vEdit").onclick = () => { $("viewOverlay").classList.remove("show"); openEdit
 
 /* ── 編輯 ── */
 $("addBtn").onclick = () => openEdit(null);
-$("editClose").onclick = $("cancelBtn").onclick = () => $("editOverlay").classList.remove("show");
-[$("editOverlay"), $("viewOverlay")].forEach(ov => ov.addEventListener("click", e => { if (e.target === ov) ov.classList.remove("show"); }));
+$("editClose").onclick = $("cancelBtn").onclick = () => { discardNewUploads(); $("editOverlay").classList.remove("show"); };
+$("editOverlay").addEventListener("click", e => { if (e.target === $("editOverlay")) { discardNewUploads(); $("editOverlay").classList.remove("show"); } });
+$("viewOverlay").addEventListener("click", e => { if (e.target === $("viewOverlay")) $("viewOverlay").classList.remove("show"); });
 
 function matRow(m = {}) {
   const row = document.createElement("div");
@@ -669,6 +695,66 @@ function fbRow(f = {}) {
 $("addMat").onclick = () => $("eMats").appendChild(matRow());
 $("addFb").onclick = () => $("eFbs").appendChild(fbRow());
 
+/* ── 檔案附件（Firebase Storage）── */
+let editFiles = [];      // 編輯中的附件清單 [{name,path,url,size}]
+let newUploads = [];     // 本次編輯新上傳的 storage path（取消時要清掉）
+let removedFiles = [];   // 按了移除的 storage path（存檔成功後才真的刪）
+
+const fmtSize = b => !b ? "" : b < 1048576 ? Math.round(b/1024) + " KB" : (b/1048576).toFixed(1) + " MB";
+const fileIcon = n => /\.(png|jpe?g|heic|gif)$/i.test(n) ? "🖼" : /\.(xls|xlsx|csv)$/i.test(n) ? "📊" : /\.(ppt|pptx)$/i.test(n) ? "📽" : "📄";
+
+function renderEditFiles() {
+  const box = $("eFiles"); box.innerHTML = "";
+  editFiles.forEach((f, i) => {
+    const row = document.createElement("div");
+    row.className = "file-row";
+    row.innerHTML = `<span class="ico">${fileIcon(f.name)}</span><span class="fname">${esc(f.name)}</span>
+      <span class="fsize">${fmtSize(f.size)}</span><button class="rm" type="button">✕</button>`;
+    row.querySelector(".rm").onclick = () => {
+      if (f.path) {
+        if (newUploads.includes(f.path)) {   // 剛上傳還沒存檔的 → 直接刪
+          deleteObject(sRef(storage, f.path)).catch(() => {});
+          newUploads = newUploads.filter(p => p !== f.path);
+        } else removedFiles.push(f.path);    // 既有檔案 → 存檔成功後才刪
+      }
+      editFiles.splice(i, 1);
+      renderEditFiles();
+    };
+    box.appendChild(row);
+  });
+}
+
+$("addFileBtn").onclick = () => $("fileInput").click();
+$("fileInput").onchange = async () => {
+  const files = [...$("fileInput").files];
+  $("fileInput").value = "";
+  if (!files.length) return;
+  for (const file of files) {
+    if (file.size > 25 * 1048576) { $("fileStatus").textContent = `${file.name} 超過 25MB，略過`; continue; }
+    if (DEMO) { editFiles.push({ name: file.name, path: "", url: "", size: file.size }); renderEditFiles(); continue; }
+    $("fileStatus").innerHTML = `<span class="spin"></span>正在上傳 ${esc(file.name)}…`;
+    try {
+      const path = `teaching_files/${Date.now()}_${file.name.replace(/[\\/#?%*:|"<>]/g, "_")}`;
+      const snap = await uploadBytes(sRef(storage, path), file);
+      const url = await getDownloadURL(snap.ref);
+      editFiles.push({ name: file.name, path, url, size: file.size });
+      newUploads.push(path);
+      renderEditFiles();
+      $("fileStatus").textContent = "";
+    } catch (e) {
+      console.error(e);
+      $("fileStatus").textContent = `上傳失敗（${file.name}）：` + (e.code || e.message);
+    }
+  }
+  if (DEMO && files.length) $("fileStatus").textContent = "示範模式：檔案僅暫存於畫面，不會真的上傳";
+};
+
+/* 取消／關閉編輯時，清掉這次新上傳但沒存檔的檔案 */
+function discardNewUploads() {
+  newUploads.forEach(p => deleteObject(sRef(storage, p)).catch(() => {}));
+  newUploads = []; removedFiles = [];
+}
+
 function openEdit(id) {
   editingId = id;
   const r = id ? records.find(x => x.id === id) : null;
@@ -689,6 +775,10 @@ function openEdit(id) {
   (r?.materials?.length ? r.materials : [{}]).forEach(m => $("eMats").appendChild(matRow(m)));
   $("eFbs").innerHTML = "";
   (r?.feedbacks || []).forEach(f => $("eFbs").appendChild(fbRow(f)));
+  editFiles = (r?.files || []).map(f => ({ ...f }));
+  newUploads = []; removedFiles = [];
+  renderEditFiles();
+  $("fileStatus").textContent = "";
   $("editOverlay").classList.add("show");
   $("eTitle").focus();
 }
@@ -716,6 +806,7 @@ $("saveBtn").onclick = async () => {
       source: row.querySelector("select").value,
       text: row.querySelector("textarea").value.trim()
     })).filter(f => f.text),
+    files: editFiles,
     reflection: $("eRefl").value.trim(),
     updatedAt: serverTimestamp()
   };
@@ -729,6 +820,8 @@ $("saveBtn").onclick = async () => {
     }
     else if (editingId) await updateDoc(doc(db, "teaching_records", editingId), data);
     else await addDoc(collection(db, "teaching_records"), { ...data, createdAt: serverTimestamp() });
+    removedFiles.forEach(p => deleteObject(sRef(storage, p)).catch(() => {}));   // 存檔成功才真的刪被移除的舊檔
+    newUploads = []; removedFiles = [];
     $("editOverlay").classList.remove("show");
     toast(DEMO ? "已儲存（示範模式，重新整理即消失）" : "已儲存 ✓");
   } catch (e) {
@@ -744,7 +837,11 @@ $("delBtn").onclick = async () => {
   if (!confirm("確定要刪除這筆教學紀錄？此動作無法復原。")) return;
   try {
     if (DEMO) { records = records.filter(r => r.id !== editingId); renderAll(); }
-    else await deleteDoc(doc(db, "teaching_records", editingId));
+    else {
+      const rec = records.find(r => r.id === editingId);
+      await deleteDoc(doc(db, "teaching_records", editingId));
+      (rec?.files || []).forEach(f => { if (f.path) deleteObject(sRef(storage, f.path)).catch(() => {}); });
+    }
     $("editOverlay").classList.remove("show");
     toast("已刪除");
   } catch (e) { console.error(e); toast("刪除失敗：" + (e.code || e.message)); }
@@ -969,6 +1066,7 @@ if (DEMO) {
       category:"急救復甦", method:"工作坊", audiences:["PGY","護理師"], audienceCount:24, location:"臨床技能中心",
       content:"高品質 CPR 實作、AED 使用、急救團隊分工演練。",
       materials:[{name:"投影片", url:"https://example.com"}],
+      files:[{name:"ALS課程表.pdf", path:"", url:"", size:245760}, {name:"學員名單.xlsx", path:"", url:"", size:18432}],
       feedbacks:[{source:"書面問卷", text:"實作時間充足，講師回饋具體。"}],
       reflection:"分組人數 6 人稍多，下次改 4 人一組增加操作次數。" },
     { id:"d2", title:"跨團隊 TRM 情境模擬：急診大量傷患", date:"2026-08-15", timeStart:"09:00", timeEnd:"12:00",
