@@ -341,7 +341,7 @@ button { font-family: inherit; }
         <select id="fCat"><option value="">全部類別</option></select>
         <select id="fAud"><option value="">全部對象</option></select>
         <select id="fYear"><option value="">全部年份</option></select>
-        <button class="addbtn gmail" id="gmailBtn">📧 Gmail 匯入</button>
+        <button class="addbtn gmail" id="gmailBtn">📥 Gmail／日曆匯入</button>
         <button class="addbtn pdf" id="pdfBtn">📄 匯出 PDF</button>
         <button class="addbtn" id="addBtn">＋ 新增教學紀錄</button>
       </div>
@@ -421,17 +421,21 @@ button { font-family: inherit; }
 <!-- Gmail 匯入 Modal -->
 <div class="overlay" id="impOverlay">
   <div class="modal">
-    <div class="modal-head"><h2>📧 從 Gmail 匯入教學行程</h2><button id="impClose">✕ 關閉</button></div>
+    <div class="modal-head"><h2>📥 匯入課程行程</h2><button id="impClose">✕ 關閉</button></div>
     <div class="modal-body">
       <div class="imp-ctrl">
+        <div class="f days"><label>來源</label>
+          <select id="impSrc"><option value="gmail">📧 Gmail</option><option value="gcal">📅 Google 日曆</option></select>
+        </div>
         <div class="f days"><label>搜尋範圍</label>
           <select id="impDays"><option value="year" selected>今年</option><option value="14">近 14 天</option><option value="30">近 30 天</option><option value="60">近 60 天</option><option value="90">近 90 天</option></select>
         </div>
-        <div class="f"><label>關鍵字（Gmail 搜尋語法）</label>
+        <div class="f" id="impQWrap"><label>關鍵字（Gmail 搜尋語法）</label>
           <input type="text" id="impQ" value="教學 OR 授課 OR 課程 OR 演講 OR 工作坊 OR 模擬 OR 講師 OR 急救 OR OSCE OR TRM OR 研習 OR 師資 OR 競賽 OR 指導 OR 評審 OR 公假">
         </div>
-        <button class="btn primary" id="impScan" style="flex:0 0 auto">🔍 掃描信箱</button>
+        <button class="btn primary" id="impScan" style="flex:0 0 auto">🔍 掃描</button>
       </div>
+      <div class="chips" id="impCals" style="display:none;margin-bottom:10px"></div>
       <div class="imp-status" id="impStatus">會讀取信件內容，由 AI 挑出你「擔任講師」與「報名進修」的課程行程；信件本身不會被修改。支援 jiahowchang 與 changjiahow 兩個帳號，掃描時在 Google 視窗選擇即可。</div>
       <div id="impList"></div>
       <button class="mini-add" id="impSwitchAcc" type="button" style="margin-top:6px">🔁 改用其他 Google 帳號授權</button>
@@ -813,6 +817,7 @@ function renderDetail(id) {
     <div class="detail-sec"><h3>🪞 教學反思</h3>
       ${r.reflection ? `<div class="refl-card">${esc(r.reflection)}</div>` : '<div class="none">（尚未撰寫反思）</div>'}
       ${r.source === "gmail" ? `<div class="v-src">📧 由 Gmail 匯入 · 來源信件：${esc(r.gmailSubject || "")}</div>` : ""}
+      ${r.source === "gcal" ? `<div class="v-src">📅 由 Google 日曆匯入 · ${esc(r.gmailSubject || "")}</div>` : ""}
     </div>`;
   $("backBtn").onclick = () => { location.hash = ""; };
   $("dEditBtn").onclick = () => openEdit(r.id);
@@ -1179,7 +1184,18 @@ $("pdfBtn").onclick = () => {
 /* ══════════ Gmail 匯入 ══════════ */
 const PROXY_URL = "https://patient-mkargc7maa-uc.a.run.app";
 const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
+const GCAL_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
 let impCandidates = [];   // 解析出的候選行程
+let gcalList = null;      // 快取的日曆清單
+
+$("impSrc").onchange = () => {
+  const isCal = $("impSrc").value === "gcal";
+  $("impQWrap").style.display = isCal ? "none" : "";
+  $("impCals").style.display = (isCal && gcalList) ? "flex" : "none";
+  impStatus(isCal
+    ? "會讀取你 Google 日曆中的事件（含跟婆的共用日曆、急診科行事曆等），由 AI 挑出課程行程；日曆本身不會被修改。可補到沒有邀請信、只記在行事曆的場次。"
+    : "會讀取信件內容，由 AI 挑出你「擔任講師」與「報名進修」的課程行程；信件本身不會被修改。支援 jiahowchang 與 changjiahow 兩個帳號，掃描時在 Google 視窗選擇即可。");
+};
 
 $("gmailBtn").onclick = () => { $("impOverlay").classList.add("show"); };
 $("impClose").onclick = $("impCancel").onclick = () => $("impOverlay").classList.remove("show");
@@ -1205,6 +1221,7 @@ async function getGmailToken(force) {
   }
   const p = new GoogleAuthProvider();
   p.addScope(GMAIL_SCOPE);
+  p.addScope(GCAL_SCOPE);
   p.setCustomParameters({ prompt: "select_account" });
   const result = await signInWithPopup(gmailAuth, p);
   const cred = GoogleAuthProvider.credentialFromResult(result);
@@ -1247,6 +1264,113 @@ async function gmailFetch(path, token) {
   if (!r.ok) throw new Error("Gmail API HTTP " + r.status);
   return r.json();
 }
+async function gcalFetch(path, token) {
+  const r = await fetch("https://www.googleapis.com/calendar/v3/" + path, {
+    headers: { Authorization: "Bearer " + token }
+  });
+  if (r.status === 401 || r.status === 403) throw Object.assign(new Error("AUTH"), { auth: true });
+  if (!r.ok) throw new Error("Calendar API HTTP " + r.status);
+  return r.json();
+}
+
+/* AI 解析共用：把來源清單丟給 patient 代理，回傳事件陣列 */
+async function aiExtract(system, userText) {
+  const r = await fetch(PROXY_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 3000, system, messages: [{ role: "user", content: userText }] })
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data?.error?.message || ("HTTP " + r.status));
+  const raw = (data.content?.[0]?.text || "").trim().replace(/^```(json)?/i, "").replace(/```$/, "").trim();
+  return JSON.parse(raw);
+}
+
+/* ── Google 日曆掃描 ── */
+async function scanCalendar() {
+  impStatus("正在取得 Google 授權…", false, true);
+  let token = await getGmailToken(false);
+  const dv = $("impDays").value;
+  const y = new Date().getFullYear();
+  const iso = d => d.toISOString();
+  const timeMin = dv === "year" ? `${y}-01-01T00:00:00Z` : iso(new Date(Date.now() - Number(dv) * 86400000));
+  const timeMax = dv === "year" ? `${y}-12-31T23:59:59Z` : iso(new Date(Date.now() + 90 * 86400000));
+
+  impStatus("正在讀取日曆清單…", false, true);
+  let calRes;
+  try { calRes = await gcalFetch("users/me/calendarList?maxResults=50", token); }
+  catch (e) {
+    if (!e.auth) throw e;
+    token = await getGmailToken(true);
+    calRes = await gcalFetch("users/me/calendarList?maxResults=50", token);
+  }
+  const cals = (calRes.items || []).map(c => ({ id: c.id, name: c.summaryOverride || c.summary || c.id }));
+  // 日曆勾選（預設全選，勾選狀態跨次掃描保留）
+  if (!gcalList || gcalList.map(c => c.id).join() !== cals.map(c => c.id).join()) {
+    gcalList = cals;
+    $("impCals").innerHTML = "";
+    cals.forEach(c => {
+      const chip = document.createElement("button");
+      chip.type = "button"; chip.className = "chip on"; chip.textContent = "📅 " + c.name; chip.dataset.id = c.id;
+      chip.onclick = () => chip.classList.toggle("on");
+      $("impCals").appendChild(chip);
+    });
+  }
+  $("impCals").style.display = "flex";
+  const picked = [...$("impCals").children].filter(c => c.classList.contains("on")).map(c => c.dataset.id);
+  if (!picked.length) { impStatus("請至少勾選一個日曆再掃描。", true); return; }
+
+  impStatus(`正在讀取 ${picked.length} 個日曆的事件…`, false, true);
+  const events = [];
+  for (const id of picked) {
+    const name = gcalList.find(c => c.id === id)?.name || id;
+    const res = await gcalFetch(`calendars/${encodeURIComponent(id)}/events?singleEvents=true&orderBy=startTime&maxResults=120&timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}`, token);
+    (res.items || []).forEach(ev => {
+      if (!ev.summary || ev.status === "cancelled") return;
+      events.push({
+        id: ev.id, cal: name, summary: ev.summary,
+        start: ev.start?.dateTime || ev.start?.date || "",
+        end: ev.end?.dateTime || ev.end?.date || "",
+        location: ev.location || "",
+        desc: (ev.description || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 150)
+      });
+    });
+  }
+  if (!events.length) { impStatus("這個範圍內沒有日曆事件。"); return; }
+  const capped = events.slice(0, 200);
+  if (events.length > 200) impStatus(`事件過多，僅分析前 200 筆（共 ${events.length} 筆）…`, false, true);
+
+  impStatus(`AI 正在從 ${capped.length} 個日曆事件中挑出課程行程…`, false, true);
+  const system =
+`你是課程行程擷取引擎。使用者是急診專科醫師張家豪，專長急救復甦教學、TRM、跨專業教育、模擬醫學。現在時間：${new Date().toLocaleString("zh-TW", { timeZone: "Asia/Taipei" })}（台灣時間）。
+以下是他 Google 日曆中的事件。請挑出兩類課程行程，只輸出 JSON 陣列，不要任何其他文字：
+1. role="講師"：他授課／演講／帶模擬訓練／擔任競賽或團隊指導
+2. role="學生"：他以學員身分參加的課程、工作坊、研習、研討會、學會年會
+[{"eventIndex":0,"role":"講師","title":"","date":"YYYY-MM-DD","timeStart":"HH:MM","timeEnd":"HH:MM","location":"","category":"","audiences":[],"audienceCount":0,"content":""}]
+規則：
+- category 從 ${JSON.stringify(CATS)} 選一個；audiences 從 ${JSON.stringify(AUDS)} 挑（role="學生" 給空陣列）
+- 一定要排除：門診、值班、支援班、行政會議、甄選面試、私人行程（家庭、聚餐、運動、旅遊、繳費等）
+- 事件標題精簡也要盡力判讀（如「生醫原位模擬」＝他帶的原位模擬教學）；判斷不了是否課程就略過
+- 全天事件 timeStart/timeEnd 給空字串；跨日活動以第一天為 date
+- title 補成完整課程名稱；content 一句話摘要
+- 一筆都沒有就輸出 []`;
+  const eventText = capped.map((e, i) =>
+    `【事件 ${i}】日曆：${e.cal}｜標題：${e.summary}｜開始：${e.start}｜結束：${e.end}${e.location ? "｜地點：" + e.location : ""}${e.desc ? "｜說明：" + e.desc : ""}`).join("\n");
+  const parsed = await aiExtract(system, eventText);
+  if (!Array.isArray(parsed) || !parsed.length) { impStatus("日曆裡沒有找到課程行程。"); return; }
+
+  impCandidates = parsed.filter(ev => ev.title && /^\d{4}-\d{2}-\d{2}$/.test(ev.date || "")).map(ev => {
+    const src = capped[ev.eventIndex] || {};
+    const key = "gcal_" + (src.id || "");
+    const dup = records.some(x => x.gmailMsgId === key) ||
+                records.some(x => x.date === ev.date && x.title === ev.title);
+    return { ...ev, role: ev.role === "學生" ? "學生" : "講師", src: "gcal",
+             gmailMsgId: key, gmailSubject: `日曆事件：${src.summary || ""}（${src.cal || ""}）`, dup };
+  });
+  renderImpList();
+  const fresh = impCandidates.filter(c => !c.dup).length;
+  impStatus(`解析出 ${impCandidates.length} 筆課程行程${fresh < impCandidates.length ? `（${impCandidates.length - fresh} 筆看起來已存在，預設不勾）` : ""}，確認後按「加入勾選的行程」。`);
+}
 
 $("impScan").onclick = async () => {
   $("impScan").disabled = true;
@@ -1254,6 +1378,7 @@ $("impScan").onclick = async () => {
   $("impList").innerHTML = "";
   impCandidates = [];
   try {
+    if ($("impSrc").value === "gcal") { await scanCalendar(); return; }
     impStatus("正在取得 Gmail 授權…", false, true);
     let token = await getGmailToken(false);
     const dv = $("impDays").value;
@@ -1384,8 +1509,8 @@ $("impSave").onclick = async () => {
         audienceCount: Number(c.audienceCount) || 0,
         location: c.location || "",
         content: c.content || "",
-        materials: [], feedbacks: [], reflection: "",
-        source: "gmail", gmailMsgId: c.gmailMsgId, gmailSubject: c.gmailSubject,
+        materials: [], files: [], certs: [], feedbacks: [], reflection: "",
+        source: c.src === "gcal" ? "gcal" : "gmail", gmailMsgId: c.gmailMsgId, gmailSubject: c.gmailSubject,
         updatedAt: serverTimestamp(), createdAt: serverTimestamp()
       };
       if (DEMO) { records.unshift({ ...rec, id: "demo-" + Math.random().toString(36).slice(2) }); }
