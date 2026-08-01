@@ -11,6 +11,18 @@ const { defineSecret } = require("firebase-functions/params");
 const ANTHROPIC_KEY = defineSecret("ANTHROPIC_KEY");
 const ELEVEN_KEY = defineSecret("ELEVEN_KEY");   // ElevenLabs 聲音克隆（未設定時 tts 自動退回 Google）
 const YATING_KEY = defineSecret("YATING_KEY");   // 雅婷 TTS（台語/國語聲優；未設定時自動退回 Google）
+const TRM_ADMIN_KEY = defineSecret("TRM_ADMIN_KEY"); // TRM 教學網站問答記錄後台管理密碼
+
+// Firestore admin lazy init（避免在冷啟動時就付出成本）
+let _adminApp = null;
+function getFirestore() {
+  if (!_adminApp) {
+    const admin = require("firebase-admin");
+    _adminApp = admin.apps.length ? admin.app() : admin.initializeApp();
+    _adminApp.__admin = admin;
+  }
+  return { db: _adminApp.__admin.firestore(), admin: _adminApp.__admin };
+}
 
 // 只允許這些來源呼叫（輕量防護；真正的花費上限請在 Anthropic Console 設定）
 const ALLOWED_ORIGINS = [
@@ -68,6 +80,245 @@ exports.patient = onRequest(
       res.status(upstream.status).json(data);
     } catch (e) {
       res.status(502).json({ error: { message: "proxy error: " + (e && e.message || e) } });
+    }
+  }
+);
+
+/* ================================================================
+   TRM 教學網站問答機器人（小醫）Claude Haiku 代理
+   - 前端 index.html 找不到 KB 匹配時，POST 過來給我，
+     加上「僅回答 TRM 相關」的系統提示，轉發給 Claude
+   - 拒答非 TRM 問題（AI 自我判斷 + 提示規範）
+   - 使用 Claude Haiku 4.5：每次約 $0.001-0.003 USD
+   ================================================================ */
+const TRM_SYSTEM_PROMPT = `你是「小醫 🩺」，新竹台大分院急診醫學部 TRM（Team Resource Management）教學網站的 AI 助理。
+
+## 你只回答以下範圍的問題：
+✅ AHRQ TeamSTEPPS 四大模組：溝通 (Communication)、領導 (Team Leadership)、警覺 (Situation Monitoring)、互助 (Mutual Support)
+✅ TRM/CRM 相關工具：SBAR、CUS、DESC、I-PASS、STEP、I'M SAFE、KAICS、Brief、Huddle、Debrief、Call-out、Check-back、Teach-back、Two-Challenge Rule、Cross-Monitoring、STAR、Task Assistance、Advocacy & Assertion、Formative Feedback 等
+✅ 病人安全 (Patient Safety)、心理安全 (Psychological Safety)、共享心智模式 (Shared Mental Model)
+✅ 急救團隊分工 (ACLS/BLS teamwork)、交班與傳遞 (handoff)、原位模擬 (in-situ simulation)
+✅ 醫療團隊衝突處理、溝通失誤預防、跨專業合作
+✅ CRM/TRM 歷史案例（如特內里費空難、復興航空 235、醫療錯誤案例）
+✅ 本網站相關問題（作者：張家豪醫師；提供 4 大模組 6 大分頁互動內容）
+
+## 你不回答的問題（請禮貌拒絕）：
+❌ 天氣、政治、股市、體育、娛樂等一般話題
+❌ 具體臨床診斷、治療決策、藥物劑量建議（要引導對方詢問專業醫師）
+❌ 寫程式、翻譯、寫作、數學計算等一般 AI 任務
+❌ 有害、不當、非教育目的的請求
+
+## 回答風格：
+- 用繁體中文（台灣醫療用語）
+- 保持簡潔實用，重點加粗
+- 儘量用列點與 emoji 幫助閱讀
+- 引用 AHRQ TeamSTEPPS 官方框架作為權威來源
+- 若不確定或超出範圍，誠實說「這個問題我沒有把握，建議詢問張醫師（右上角建議與QA）」
+- 每次回答控制在 300 字內；若複雜可分點列出
+- **只使用 HTML 標籤**（<b>, <br>, <ul>, <li>, <i>）；絕對不要用 Markdown 的 # ## - * 或反引號等符號
+- 段落之間用 <br><br>，重點用 <b>粗體</b>，項目用 <ul><li>...</li></ul>
+
+## 拒答範例：
+若使用者問：「今天天氣如何？」
+你回：「這個問題不在我的專業範圍喔 🙅‍♀️<br>我是 TRM 教學助理，可以回答關於<b>團隊溝通、病人安全、急救合作、TeamSTEPPS 工具</b>的問題。<br>要不要試試看：「什麼是 SBAR？」或「急救時怎麼分工？」」
+
+若使用者問「這個病人該給多少劑量？」
+你回：「臨床用藥決策需由當班醫師依病人狀況判斷，我不宜給建議 ⚠️<br>不過我可以說明<b>如何用 SBAR 向資深醫師報告</b>，或<b>如何用 CUS 表達安全疑慮</b>，需要嗎？」
+
+現在請根據使用者的問題，依上述規範回答。`;
+
+exports.trmAsk = onRequest(
+  {
+    region: "us-central1",
+    secrets: [ANTHROPIC_KEY],
+    maxInstances: 5,           // 教學使用，限制併發防暴衝
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    cors: false,               // 手動處理 CORS
+  },
+  async (req, res) => {
+    const origin = req.headers.origin || "";
+    const originOk = ALLOWED_ORIGINS.includes(origin);
+    if (originOk) res.set("Access-Control-Allow-Origin", origin);
+    res.set("Vary", "Origin");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
+    if (!originOk) { res.status(403).json({ error: "Origin not allowed" }); return; }
+
+    const body = req.body || {};
+    const question = typeof body.question === "string" ? body.question.trim() : "";
+    if (!question || question.length > 500) {
+      res.status(400).json({ error: "question required (max 500 chars)" });
+      return;
+    }
+
+    // ── logOnly 模式：僅記錄 KB 命中（不呼叫 Claude） ──
+    if (body.logOnly === true) {
+      try {
+        const { db, admin } = getFirestore();
+        await db.collection("trm_chatbot_logs").add({
+          question,
+          answer_preview: (typeof body.kbAnswer === "string" ? body.kbAnswer : "").slice(0, 500),
+          source: "kb",
+          kb_hit: true,
+          origin,
+          user_agent: (req.headers["user-agent"] || "").slice(0, 200),
+          session_id: (typeof body.session_id === "string" ? body.session_id : "").slice(0, 60) || null,
+          ts: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      } catch (e) { console.error("KB log failed:", e && e.message); }
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    // 短對話上下文（前端傳最近 2 輪，避免暴衝）
+    const history = Array.isArray(body.history) ? body.history.slice(-4) : [];
+    const messages = [];
+    for (const h of history) {
+      if (h && typeof h.role === "string" && typeof h.content === "string" && h.content.length < 800) {
+        if (h.role === "user" || h.role === "assistant") {
+          messages.push({ role: h.role, content: h.content });
+        }
+      }
+    }
+    messages.push({ role: "user", content: question });
+
+    try {
+      const upstream = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": ANTHROPIC_KEY.value(),
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5",
+          max_tokens: 600,
+          system: TRM_SYSTEM_PROMPT,
+          messages,
+        }),
+      });
+      const data = await upstream.json();
+      if (!upstream.ok) {
+        res.status(502).json({ error: "upstream error", detail: data });
+        return;
+      }
+      // 取出純文字回覆
+      const answer = Array.isArray(data.content) && data.content[0] && data.content[0].text
+        ? data.content[0].text : "";
+
+      // ── 記錄 LLM 呼叫（fire-and-forget，不阻塞回應） ──
+      (async () => {
+        try {
+          const { db, admin } = getFirestore();
+          await db.collection("trm_chatbot_logs").add({
+            question,
+            answer_preview: answer.slice(0, 800),
+            source: "llm",
+            kb_hit: false,
+            model: data.model || "claude-haiku-4-5",
+            input_tokens: data.usage && data.usage.input_tokens || null,
+            output_tokens: data.usage && data.usage.output_tokens || null,
+            origin,
+            user_agent: (req.headers["user-agent"] || "").slice(0, 200),
+            session_id: (typeof body.session_id === "string" ? body.session_id : "").slice(0, 60) || null,
+            history_turns: messages.length - 1,
+            ts: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        } catch (e) { console.error("LLM log failed:", e && e.message); }
+      })();
+
+      res.status(200).json({ answer, model: data.model || "claude-haiku-4-5" });
+    } catch (e) {
+      res.status(502).json({ error: "proxy error: " + (e && e.message || e) });
+    }
+  }
+);
+
+/* ================================================================
+   TRM 後台管理：查詢提問記錄
+   - 前端 admin.html 輸入密碼呼叫
+   - Header: X-Admin-Key 或 body.adminKey 驗證
+   - 回傳最新 N 筆記錄（question, answer_preview, source, ts...）
+   ================================================================ */
+exports.trmLogs = onRequest(
+  {
+    region: "us-central1",
+    secrets: [TRM_ADMIN_KEY],
+    maxInstances: 3,
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    cors: false,
+  },
+  async (req, res) => {
+    const origin = req.headers.origin || "";
+    const originOk = ALLOWED_ORIGINS.includes(origin);
+    if (originOk) res.set("Access-Control-Allow-Origin", origin);
+    res.set("Vary", "Origin");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type, X-Admin-Key");
+
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
+    if (!originOk) { res.status(403).json({ error: "Origin not allowed" }); return; }
+
+    const body = req.body || {};
+    const providedKey = req.headers["x-admin-key"] || body.adminKey || "";
+    if (!providedKey || providedKey !== TRM_ADMIN_KEY.value()) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const limit = Math.min(Math.max(parseInt(body.limit, 10) || 200, 1), 1000);
+    const filterSource = ["kb", "llm"].includes(body.source) ? body.source : null;
+    const search = typeof body.search === "string" ? body.search.trim() : "";
+
+    try {
+      const { db } = getFirestore();
+      let query = db.collection("trm_chatbot_logs").orderBy("ts", "desc").limit(limit);
+      if (filterSource) query = db.collection("trm_chatbot_logs").where("source", "==", filterSource).orderBy("ts", "desc").limit(limit);
+      const snap = await query.get();
+      let logs = snap.docs.map(d => {
+        const data = d.data();
+        return {
+          id: d.id,
+          question: data.question || "",
+          answer_preview: data.answer_preview || "",
+          source: data.source || "unknown",
+          model: data.model || null,
+          input_tokens: data.input_tokens || null,
+          output_tokens: data.output_tokens || null,
+          origin: data.origin || "",
+          user_agent: data.user_agent || "",
+          session_id: data.session_id || null,
+          history_turns: data.history_turns || 0,
+          ts: data.ts ? data.ts.toDate().toISOString() : null,
+        };
+      });
+      // Server-side text filter (small dataset, quick)
+      if (search) {
+        const s = search.toLowerCase();
+        logs = logs.filter(l =>
+          (l.question || "").toLowerCase().includes(s) ||
+          (l.answer_preview || "").toLowerCase().includes(s)
+        );
+      }
+      // Aggregate stats for admin dashboard
+      const stats = {
+        total: logs.length,
+        kb_hits: logs.filter(l => l.source === "kb").length,
+        llm_calls: logs.filter(l => l.source === "llm").length,
+        unique_sessions: new Set(logs.map(l => l.session_id).filter(Boolean)).size,
+        total_input_tokens: logs.reduce((a, l) => a + (l.input_tokens || 0), 0),
+        total_output_tokens: logs.reduce((a, l) => a + (l.output_tokens || 0), 0),
+      };
+      res.status(200).json({ logs, stats });
+    } catch (e) {
+      console.error("trmLogs error:", e);
+      res.status(500).json({ error: "query failed: " + (e && e.message || e) });
     }
   }
 );
