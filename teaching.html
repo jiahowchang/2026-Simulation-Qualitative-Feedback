@@ -140,7 +140,18 @@ button { font-family: inherit; }
 .editbtn { border: none; background: var(--navy); color: #fff; border-radius: 10px; padding: 9px 18px; font-size: .88rem; font-weight: 800; cursor: pointer; white-space: nowrap; }
 .editbtn:hover { background: var(--navy-d); }
 .detail-sec { background: var(--card); border-radius: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.08); padding: 16px 18px; margin-bottom: 14px; }
-.detail-sec > h3 { font-size: .88rem; color: var(--navy); margin-bottom: 12px; font-weight: 800; letter-spacing: .04em; }
+.detail-sec > h3 { font-size: .88rem; color: var(--navy); margin-bottom: 12px; font-weight: 800; letter-spacing: .04em; display: flex; align-items: center; gap: 8px; }
+.sec-btn { margin-left: auto; border: none; background: var(--blue-l); color: var(--navy); border-radius: 8px; padding: 4px 12px; font-size: .76rem; cursor: pointer; font-weight: 700; font-family: inherit; white-space: nowrap; }
+.sec-btn:hover { background: #d6eaf8; }
+.detail-sec.dragover { outline: 2.5px dashed var(--teal); outline-offset: -3px; background: var(--teal-l); }
+.drop-hint { margin-top: 10px; font-size: .73rem; color: #b9c2c6; }
+.inline-ta { width: 100%; min-height: 110px; border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px; font-family: inherit; font-size: .95rem; line-height: 1.7; outline: none; resize: vertical; }
+.inline-ta:focus { border-color: var(--blue); }
+.inline-btns { display: flex; gap: 8px; margin-top: 10px; }
+.inline-btns .btn { flex: 0 0 auto; padding: 8px 18px; font-size: .85rem; }
+.fb-card { position: relative; padding-right: 34px; }
+.fb-del { position: absolute; top: 8px; right: 8px; border: none; background: none; color: var(--rose); cursor: pointer; font-weight: 800; font-size: .85rem; opacity: .5; }
+.fb-del:hover { opacity: 1; }
 .detail-sec .txt { font-size: .97rem; line-height: 1.85; white-space: pre-wrap; }
 .detail-sec .none { color: #b9c2c6; font-size: .88rem; }
 .thumb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
@@ -800,6 +811,68 @@ function thumbCard(f) {
     : `<div class="thumb-card">${inner}</div>`;
 }
 
+/* 就地更新單筆紀錄（詳情頁直接編輯／拖放上傳共用） */
+async function patchRecord(id, data) {
+  if (DEMO) {
+    const i = records.findIndex(x => x.id === id);
+    if (i >= 0) records[i] = { ...records[i], ...data };
+    renderAll();
+  } else {
+    await updateDoc(doc(db, "teaching_records", id), { ...data, updatedAt: serverTimestamp() });
+  }
+}
+
+const KIND_ACCEPT = {
+  files: ["pdf","doc","docx","xls","xlsx","ppt","pptx","csv","txt","png","jpg","jpeg","heic","zip"],
+  certs: ["pdf","png","jpg","jpeg","heic"],
+  photos: ["png","jpg","jpeg","heic","pdf"],
+};
+const KIND_LABEL = { files: "附件", certs: "感謝狀／證明", photos: "活動照片" };
+
+async function uploadFilesToRecord(rec, kind, fileList) {
+  const okFiles = [...fileList].filter(f => {
+    const ext = (f.name.split(".").pop() || "").toLowerCase();
+    if (!KIND_ACCEPT[kind].includes(ext)) { toast(`${f.name}：格式不支援，已略過`); return false; }
+    if (f.size > 25 * 1048576) { toast(`${f.name} 超過 25MB，已略過`); return false; }
+    return true;
+  });
+  if (!okFiles.length) return;
+  try {
+    const added = [];
+    for (const file of okFiles) {
+      if (DEMO) { added.push({ name: file.name, path: "", url: "", size: file.size }); continue; }
+      toast(`上傳中：${file.name}…`);
+      const path = `teaching_files/${Date.now()}_${file.name.replace(/[\\/#?%*:|"<>]/g, "_")}`;
+      const snap = await uploadBytes(sRef(storage, path), file);
+      const url = await getDownloadURL(snap.ref);
+      added.push({ name: file.name, path, url, size: file.size });
+    }
+    await patchRecord(rec.id, { [kind]: [...(rec[kind] || []), ...added] });
+    toast(`已上傳 ${added.length} 個${KIND_LABEL[kind]} ✓`);
+  } catch (e) {
+    console.error(e);
+    toast("上傳失敗：" + (e.code || e.message));
+  }
+}
+
+function inlineTextEditor(holder, initial, ph, save, recId) {
+  holder.innerHTML = "";
+  const ta = document.createElement("textarea");
+  ta.className = "inline-ta"; ta.value = initial; ta.placeholder = ph;
+  const row = document.createElement("div"); row.className = "inline-btns";
+  const bs = document.createElement("button"); bs.className = "btn primary"; bs.textContent = "儲存";
+  const bc = document.createElement("button"); bc.className = "btn ghost"; bc.textContent = "取消";
+  bc.onclick = () => renderDetail(recId);
+  bs.onclick = async () => {
+    bs.disabled = true;
+    try { await save(ta.value.trim()); toast("已儲存 ✓"); }
+    catch (e) { console.error(e); toast("儲存失敗：" + (e.code || e.message)); bs.disabled = false; }
+  };
+  row.append(bs, bc);
+  holder.append(ta, row);
+  ta.focus();
+}
+
 function renderDetail(id) {
   const page = $("detailPage");
   const r = records.find(x => x.id === id);
@@ -831,37 +904,133 @@ function renderDetail(id) {
       <button class="editbtn" id="dEditBtn">✏️ 編輯</button>
     </div>
     <div class="detail-sec">
-      <div class="v-meta" style="margin-bottom:${r.content ? "14px" : "0"}">${meta.join("")}</div>
-      ${r.content ? `<div class="txt">${esc(r.content)}</div>` : ""}
+      <div class="v-meta" style="margin-bottom:14px">${meta.join("")}</div>
+      <h3>📖 教學內容<button class="sec-btn" data-edittext="content">✏️ 編輯</button></h3>
+      <div id="dContent">${r.content ? `<div class="txt">${esc(r.content)}</div>` : '<div class="none">（未填寫——點「✏️ 編輯」直接輸入）</div>'}</div>
     </div>
-    <div class="detail-sec"><h3>📂 課程表與學員名單</h3>
+    <div class="detail-sec" data-drop="files"><h3>📂 課程表與學員名單<button class="sec-btn" data-upload="files">＋ 上傳</button></h3>
       ${files.length ? `<div class="thumb-grid">${files.map(thumbCard).join("")}</div>`
-                     : '<div class="none">（尚無附件——按右上「✏️ 編輯」即可上傳課程表、學員名單等檔案）</div>'}
+                     : '<div class="none">（尚無附件）</div>'}
+      <div class="drop-hint">可直接把檔案拖曳到這個區塊上傳</div>
     </div>
-    <div class="detail-sec"><h3>🏆 感謝狀與上課證明</h3>
+    <div class="detail-sec" data-drop="certs"><h3>🏆 感謝狀與上課證明<button class="sec-btn" data-upload="certs">＋ 上傳</button></h3>
       ${certs.length ? `<div class="thumb-grid">${certs.map(thumbCard).join("")}</div>`
-                     : '<div class="none">（尚無感謝狀或證明——按右上「✏️ 編輯」即可上傳）</div>'}
+                     : '<div class="none">（尚無感謝狀或證明）</div>'}
+      <div class="drop-hint">可直接把檔案拖曳到這個區塊上傳（PNG／JPG／PDF）</div>
     </div>
-    <div class="detail-sec"><h3>📸 活動照片</h3>
+    <div class="detail-sec" data-drop="photos"><h3>📸 活動照片<button class="sec-btn" data-upload="photos">＋ 上傳</button></h3>
       ${photos.length ? `<div class="thumb-grid">${photos.map(thumbCard).join("")}</div>`
-                      : '<div class="none">（尚無活動照片——按右上「✏️ 編輯」即可上傳 PNG／JPG／PDF）</div>'}
+                      : '<div class="none">（尚無活動照片）</div>'}
+      <div class="drop-hint">可直接把檔案拖曳到這個區塊上傳（PNG／JPG／PDF）</div>
     </div>
-    <div class="detail-sec"><h3>📎 教材與投影片</h3>
-      ${mats.length ? mats.map(m =>
+    <div class="detail-sec"><h3>📎 教材與投影片<button class="sec-btn" id="dMatsEdit">✏️ 編輯連結</button></h3>
+      <div id="dMats">${mats.length ? mats.map(m =>
         m.url ? `<a class="mat-link" href="${esc(m.url)}" target="_blank" rel="noopener">🔗 ${esc(m.name || m.url)}</a>`
-              : `<span class="mat-link">📄 ${esc(m.name)}</span>`).join("") : '<div class="none">（尚無教材連結）</div>'}
+              : `<span class="mat-link">📄 ${esc(m.name)}</span>`).join("") : '<div class="none">（尚無教材連結）</div>'}</div>
     </div>
-    <div class="detail-sec"><h3>💬 學員回饋（${fbs.length}）</h3>
-      ${fbs.length ? fbs.map(f => `<div class="fb-card"><small>${esc(f.source || "回饋")}</small>${esc(f.text)}</div>`).join("")
+    <div class="detail-sec"><h3>💬 學員回饋（${fbs.length}）<button class="sec-btn" id="dFbAdd">＋ 新增回饋</button></h3>
+      ${fbs.length ? fbs.map((f, i) => `<div class="fb-card"><small>${esc(f.source || "回饋")}</small>${esc(f.text)}<button class="fb-del" data-delfb="${i}" title="刪除這則回饋">✕</button></div>`).join("")
                    : '<div class="none">（尚無回饋紀錄）</div>'}
+      <div id="dFbForm"></div>
     </div>
-    <div class="detail-sec"><h3>🪞 教學反思</h3>
-      ${r.reflection ? `<div class="refl-card">${esc(r.reflection)}</div>` : '<div class="none">（尚未撰寫反思）</div>'}
+    <div class="detail-sec"><h3>🪞 教學反思<button class="sec-btn" data-edittext="reflection">✏️ 編輯</button></h3>
+      <div id="dReflection">${r.reflection ? `<div class="refl-card">${esc(r.reflection)}</div>` : '<div class="none">（尚未撰寫反思——點「✏️ 編輯」直接輸入）</div>'}</div>
       ${r.source === "gmail" ? `<div class="v-src">📧 由 Gmail 匯入 · 來源信件：${esc(r.gmailSubject || "")}</div>` : ""}
       ${r.source === "gcal" ? `<div class="v-src">📅 由 Google 日曆匯入 · ${esc(r.gmailSubject || "")}</div>` : ""}
     </div>`;
   $("backBtn").onclick = () => { location.hash = ""; };
   $("dEditBtn").onclick = () => openEdit(r.id);
+
+  /* 檔案區：點「＋上傳」或直接拖放 */
+  page.querySelectorAll("[data-upload]").forEach(btn => {
+    btn.onclick = () => {
+      const kind = btn.dataset.upload;
+      const inp = document.createElement("input");
+      inp.type = "file"; inp.multiple = true;
+      inp.accept = KIND_ACCEPT[kind].map(e => "." + e).join(",");
+      inp.onchange = () => uploadFilesToRecord(r, kind, inp.files);
+      inp.click();
+    };
+  });
+  page.querySelectorAll("[data-drop]").forEach(zone => {
+    const kind = zone.dataset.drop;
+    zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("dragover"); });
+    zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
+    zone.addEventListener("drop", e => {
+      e.preventDefault(); zone.classList.remove("dragover");
+      if (e.dataTransfer?.files?.length) uploadFilesToRecord(r, kind, e.dataTransfer.files);
+    });
+  });
+
+  /* 教學內容、教學反思：就地編輯 */
+  page.querySelectorAll("[data-edittext]").forEach(btn => {
+    btn.onclick = () => {
+      const f = btn.dataset.edittext;
+      inlineTextEditor(f === "content" ? $("dContent") : $("dReflection"), r[f] || "",
+        f === "content" ? "課程大綱、教學目標、進行方式…" : "這次教學哪裡做得好？哪裡可以改進？",
+        v => patchRecord(r.id, { [f]: v }), r.id);
+    };
+  });
+
+  /* 教材連結：就地編輯 */
+  $("dMatsEdit").onclick = () => {
+    const holder = $("dMats");
+    holder.innerHTML = "";
+    const box = document.createElement("div");
+    ((r.materials?.length) ? r.materials : [{}]).forEach(m => box.appendChild(matRow(m)));
+    const add = document.createElement("button");
+    add.className = "mini-add"; add.type = "button"; add.textContent = "＋ 新增教材連結";
+    add.onclick = () => box.appendChild(matRow());
+    const row = document.createElement("div"); row.className = "inline-btns";
+    const bs = document.createElement("button"); bs.className = "btn primary"; bs.textContent = "儲存";
+    const bc = document.createElement("button"); bc.className = "btn ghost"; bc.textContent = "取消";
+    bc.onclick = () => renderDetail(r.id);
+    bs.onclick = async () => {
+      bs.disabled = true;
+      const materials = [...box.querySelectorAll(".item-row")].map(rw => {
+        const [n, u] = rw.querySelectorAll("input");
+        return { name: n.value.trim(), url: u.value.trim() };
+      }).filter(m => m.name || m.url);
+      try { await patchRecord(r.id, { materials }); toast("已儲存 ✓"); }
+      catch (e) { console.error(e); toast("儲存失敗：" + (e.code || e.message)); bs.disabled = false; }
+    };
+    row.append(bs, bc);
+    holder.append(box, add, row);
+  };
+
+  /* 學員回饋：就地新增與刪除 */
+  $("dFbAdd").onclick = () => {
+    const holder = $("dFbForm");
+    if (holder.childElementCount) return;
+    const row = document.createElement("div"); row.className = "fb-row";
+    const sel = document.createElement("select");
+    FB_SOURCES.forEach(s => { const o = document.createElement("option"); o.value = s; o.textContent = s; sel.appendChild(o); });
+    const ta = document.createElement("textarea"); ta.placeholder = "回饋內容…";
+    const rm = document.createElement("button"); rm.className = "rm"; rm.type = "button"; rm.textContent = "✕";
+    rm.onclick = () => { holder.innerHTML = ""; };
+    row.append(sel, ta, rm);
+    const btns = document.createElement("div"); btns.className = "inline-btns";
+    const bs = document.createElement("button"); bs.className = "btn primary"; bs.textContent = "加入回饋";
+    bs.onclick = async () => {
+      const text = ta.value.trim();
+      if (!text) { toast("請先輸入回饋內容"); return; }
+      bs.disabled = true;
+      try { await patchRecord(r.id, { feedbacks: [...(r.feedbacks || []), { source: sel.value, text }] }); toast("已加入回饋 ✓"); }
+      catch (e) { console.error(e); toast("儲存失敗：" + (e.code || e.message)); bs.disabled = false; }
+    };
+    btns.append(bs);
+    holder.append(row, btns);
+    ta.focus();
+  };
+  page.querySelectorAll("[data-delfb]").forEach(b => {
+    b.onclick = async () => {
+      if (!confirm("刪除這則回饋？")) return;
+      const arr = [...(r.feedbacks || [])];
+      arr.splice(Number(b.dataset.delfb), 1);
+      try { await patchRecord(r.id, { feedbacks: arr }); toast("已刪除"); }
+      catch (e) { console.error(e); toast("刪除失敗：" + (e.code || e.message)); }
+    };
+  });
 }
 
 /* ── 編輯 ── */
