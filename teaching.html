@@ -59,6 +59,13 @@ button { font-family: inherit; }
 .panel { background: var(--card); border-radius: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.08); padding: 14px; }
 .panel h3 { font-size: .82rem; color: var(--gray); letter-spacing: .08em; margin-bottom: 10px; font-weight: 700; }
 
+/* 個人形象卡 */
+.profile-card { padding: 0; overflow: hidden; flex-shrink: 0; }
+.profile-card img { display: block; width: 100%; height: 175px; object-fit: cover; object-position: top; }
+.profile-card .pc-info { padding: 12px 14px 14px; }
+.profile-card .pc-info b { display: block; font-size: 1.05rem; color: var(--navy); margin-bottom: 3px; }
+.profile-card .pc-info span { display: block; font-size: .76rem; color: var(--gray); line-height: 1.6; }
+
 /* 小月曆 */
 .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .cal-head b { font-size: .95rem; color: var(--navy); }
@@ -337,6 +344,14 @@ button { font-family: inherit; }
   <div class="layout">
     <!-- 側邊欄 -->
     <div class="side">
+      <div class="panel profile-card">
+        <img src="profile.jpg" alt="張家豪醫師" loading="lazy">
+        <div class="pc-info">
+          <b>張家豪 醫師</b>
+          <span>新竹臺大分院 急診醫學部副主任</span>
+          <span>臨床講師｜急救復甦・TRM・模擬醫學</span>
+        </div>
+      </div>
       <div class="panel">
         <div class="cal-head">
           <button id="calPrev">‹</button><b id="calTitle"></b><button id="calNext">›</button>
