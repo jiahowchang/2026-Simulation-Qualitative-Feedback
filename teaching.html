@@ -722,7 +722,7 @@ function filteredRecords() {
     if (fc && r.category !== fc) return false;
     if (fa && !(r.audiences || []).includes(fa)) return false;
     if (q) {
-      const hay = [r.title, r.content, r.reflection, r.location, (r.feedbacks||[]).map(f=>f.text).join(" ")].join(" ").toLowerCase();
+      const hay = [r.title, r.content, r.reflection, r.rosterText, r.location, (r.feedbacks||[]).map(f=>f.text).join(" ")].join(" ").toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -966,9 +966,10 @@ function renderDetail(id) {
       <h3>📖 教學內容<button class="sec-btn" data-edittext="content">✏️ 編輯</button></h3>
       <div id="dContent">${r.content ? `<div class="txt">${esc(r.content)}</div>` : '<div class="none">（未填寫——點「✏️ 編輯」直接輸入）</div>'}</div>
     </div>
-    <div class="detail-sec" data-drop="files"><h3>📂 課程表與學員名單<button class="sec-btn" data-upload="files">＋ 上傳</button></h3>
+    <div class="detail-sec" data-drop="files"><h3>📂 課程表與學員名單<button class="sec-btn" data-edittext="rosterText">✏️ 手動輸入</button><button class="sec-btn" data-upload="files">＋ 上傳</button></h3>
+      <div id="dRoster">${r.rosterText ? `<div class="txt">${esc(r.rosterText)}</div>` : ""}</div>
       ${files.length ? `<div class="thumb-grid">${files.map(thumbCard).join("")}</div>`
-                     : '<div class="none">（尚無附件）</div>'}
+                     : (r.rosterText ? "" : '<div class="none">（尚無附件——可上傳檔案，或點「✏️ 手動輸入」直接填寫）</div>')}
       <div class="drop-hint">可直接把檔案拖曳到這個區塊上傳</div>
     </div>
     <div class="detail-sec" data-drop="certs"><h3>🏆 感謝狀與上課證明<button class="sec-btn" data-upload="certs">＋ 上傳</button></h3>
@@ -1024,8 +1025,11 @@ function renderDetail(id) {
   page.querySelectorAll("[data-edittext]").forEach(btn => {
     btn.onclick = () => {
       const f = btn.dataset.edittext;
-      inlineTextEditor(f === "content" ? $("dContent") : $("dReflection"), r[f] || "",
-        f === "content" ? "課程大綱、教學目標、進行方式…" : "這次教學哪裡做得好？哪裡可以改進？",
+      const HOLDER = { content: "dContent", reflection: "dReflection", rosterText: "dRoster" };
+      const HINT = { content: "課程大綱、教學目標、進行方式…",
+                     reflection: "這次教學哪裡做得好？哪裡可以改進？",
+                     rosterText: "課程表與學員名單——可直接打字或貼上文字，例如：\n13:00-13:30 報到\n13:30-14:30 情境演練\n學員：王小明、李小華…" };
+      inlineTextEditor($(HOLDER[f]), r[f] || "", HINT[f],
         v => patchRecord(r.id, { [f]: v }), r.id);
     };
   });
@@ -1368,6 +1372,7 @@ function buildReport(list) {
       ${r.content ? `<h4>教學內容</h4><div class="body-txt">${esc(r.content)}</div>` : ""}
       ${mats.length ? `<h4>教材與投影片</h4><ul>${mats.map(m =>
         `<li>${esc(m.name || m.url)}${m.url ? ` <span class="url">${esc(m.url)}</span>` : ""}</li>`).join("")}</ul>` : ""}
+      ${r.rosterText ? `<h4>課程表與學員名單</h4><div class="pr-refl">${esc(r.rosterText)}</div>` : ""}
       ${files.length ? `<h4>附件（課程表／學員名單）</h4><ul>${files.map(f =>
         `<li>${esc(f.name)}${f.size ? `（${fmtSize(f.size)}）` : ""}</li>`).join("")}</ul>` : ""}
       ${certs.length ? `<h4>感謝狀／證明</h4><ul>${certs.map(f =>
@@ -1822,6 +1827,7 @@ if (DEMO) {
       content:"高品質 CPR 實作、AED 使用、急救團隊分工演練。",
       materials:[{name:"投影片", url:"https://example.com"}],
       files:[{name:"ALS課程表.pdf", path:"", url:"", size:245760}, {name:"學員名單.xlsx", path:"", url:"", size:18432}, {name:"課程海報.png", path:"", url:"logo.png", size:52000}],
+      rosterText:"13:00-13:20 報到與分組\n13:20-14:10 高品質 CPR 實作\n14:10-15:00 AED 與團隊分工演練\n學員：PGY 12 名、護理師 12 名（分 4 組）",
       photos:[{name:"分組演練照片.png", path:"", url:"logo.png", size:48000}],
       feedbacks:[{source:"書面問卷", text:"實作時間充足，講師回饋具體。"}],
       reflection:"分組人數 6 人稍多，下次改 4 人一組增加操作次數。" },
