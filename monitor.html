@@ -359,6 +359,8 @@
           <button class="scn-btn" id="cScnRestartBtn" style="flex:1;background:#3a3a3c;color:#fff">&#x21BA; 重來</button>
           <button class="scn-btn" id="cScnStopBtn" style="flex:1;background:#ff3b30;color:#fff">&#x25A0; 結束</button>
         </div>
+        <!-- 播放進度（僅教師看得到；學員端監視器不顯示播放列，避免劇透接下來的病況） -->
+        <div id="cScnPlayInfo" style="display:none;margin-top:8px;padding:9px 12px;background:#0e2030;border-left:3px solid #0a84ff;border-radius:0 8px 8px 0;font-size:14px;line-height:1.55"></div>
         <div style="display:flex;gap:8px;margin-top:8px"><button class="scn-btn" id="cScnSaveBtn" style="flex:1;background:#3a3a3c;color:#fff">存入教案庫</button></div>
         <div style="margin-top:12px;font-size:13px;font-weight:700;color:#5ac8fa">教案庫 <button class="scn-btn" id="cScnLibBtn" style="float:right;margin-top:-4px;padding:5px 10px;font-size:13px;background:#3a3a3c;color:#fff">重新整理</button></div>
         <div id="cScnLib"><div style="color:#777;font-size:13px;padding:6px 0">按「重新整理」載入已儲存教案</div></div>
@@ -1234,7 +1236,9 @@ function scnTick(){
 }
 function fmtMMSS(s){ s=Math.max(0,Math.floor(s)); return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
 function updateScnBar(){
-  if (!scn.steps){ document.getElementById('scnBar').style.display='none'; return; }
+  // 遠端（教師控制台）啟動的教案：學員畫面完全不顯示播放列——上面的「下一步」會劇透接下來的病況；
+  // 進度改顯示在教師控制台。本機 🎬 視窗自己啟動的照常顯示（操作者就在機器前）。
+  if (!scn.steps || scn.remote){ document.getElementById('scnBar').style.display='none'; return; }
   document.getElementById('scnBar').style.display='flex';
   document.getElementById('scnElapsed').textContent = fmtMMSS(scnElapsed());
   const done = scn.idx>0 ? scn.steps[scn.idx-1] : null;
@@ -1243,8 +1247,9 @@ function updateScnBar(){
   document.getElementById('scnNext').textContent = next ? ('下一步 '+(next.label||'')+'　@'+fmtMMSS(next.t)+(scn.active?'（'+fmtMMSS(Math.max(0,next.t-scnElapsed()))+' 後）':'')) : (scn.active?'教案結束':'');
   const pb=document.getElementById('scnPlayBtn'); pb.innerHTML = (scn.active&&!scn.paused)?'❚❚':'▶'; pb.classList.toggle('play', !(scn.active&&!scn.paused));
 }
-window.scenarioLoad = function(steps, title){
+window.scenarioLoad = function(steps, title, remote){
   scn.steps = steps; scn.title = title||'教案'; scn.idx=0; scn.active=false; scn.paused=false;
+  scn.remote = !!remote;   // 遠端啟動＝學員端，不顯示播放列
   updateScnBar();
 };
 window.scenarioPlay = function(){
@@ -1791,7 +1796,7 @@ function applyRemoteCtrl(c){
   if (c.scnSeq && c.scnSeq > remote.lastScn){
     remote.lastScn = c.scnSeq;
     const cmd = c.scnCmd;
-    if (cmd === "start" && Array.isArray(c.scnSteps)){ window.scenarioLoad(c.scnSteps, c.scnTitle); window.scenarioPlay(); }
+    if (cmd === "start" && Array.isArray(c.scnSteps)){ window.scenarioLoad(c.scnSteps, c.scnTitle, true); window.scenarioPlay(); }
     else if (cmd === "play") window.scenarioPlay();
     else if (cmd === "pause") window.scenarioPause();
     else if (cmd === "stop") window.scenarioStop();
@@ -2369,8 +2374,32 @@ $("cScnParseBtn").onclick = async ()=>{
 $("cScnStartBtn").onclick = async ()=>{
   if (!cScnParsed) return;
   const ok = await sendScnCmd("start", { "ctrl.scnSteps": cScnParsed.steps, "ctrl.scnTitle": cScnParsed.title||"教案" });
-  if (ok){ cScnMsg("已送到監視器並開始播放 ✓"); showCScnPlayback(true); }
+  if (ok){ cScnMsg("已送到監視器並開始播放 ✓"); showCScnPlayback(true);
+    cScnClock.t0=Date.now(); cScnClock.pausedAt=null; renderCScnPlayInfo(); }
 };
+
+/* ---------- 教師端播放進度（本地時鐘鏡像）----------
+   學員端監視器不顯示播放列（會劇透「下一步」的病況變化），教師在這裡看目前/下一步與倒數。 */
+const cScnClock = { t0:null, pausedAt:null };
+function cScnElapsed(){ if(!cScnClock.t0) return 0; return ((cScnClock.pausedAt ?? Date.now())-cScnClock.t0)/1000; }
+function renderCScnPlayInfo(){
+  const box=$("cScnPlayInfo");
+  if (!cScnParsed || !cScnClock.t0){ box.style.display="none"; return; }
+  box.style.display="block";
+  const elp=cScnElapsed(), steps=cScnParsed.steps||[];
+  let idx=0; while (idx<steps.length && elp>=(+steps[idx].t||0)) idx++;
+  const done=idx>0?steps[idx-1]:null, next=idx<steps.length?steps[idx]:null;
+  box.textContent="";
+  const tm=document.createElement("b");
+  tm.style.color="#5ac8fa"; tm.textContent=fmtMMSS(elp)+(cScnClock.pausedAt!=null?"（已暫停）":"");
+  const cur=document.createElement("div");
+  cur.style.cssText="color:#30e050;font-weight:700"; cur.textContent="▸ "+(done?(done.label||"進行中"):"準備開始");
+  const nx=document.createElement("div");
+  nx.style.color="#9ac2e8";
+  nx.textContent = next ? ("下一步 "+(next.label||"")+"　@"+fmtMMSS(next.t)+"（"+fmtMMSS(Math.max(0,(+next.t||0)-elp))+" 後）") : "教案結束";
+  box.append(tm,cur,nx);
+}
+setInterval(renderCScnPlayInfo, 1000);
 
 /* ---------- 教案檔上傳：PDF / Word(.docx) → 擷取文字 → 自動 AI 解析 ----------
    擷取全在瀏覽器端完成（pdf.js / mammoth 按需從 CDN 載入），檔案本身不會上傳到任何伺服器；
@@ -2429,11 +2458,15 @@ function wireScnUpload(btnId, inputId, taId, parseBtnId, msg){
 wireScnUpload("scnFileBtn","scnFile","scnText","scnParseBtn",scnMsg);
 wireScnUpload("cScnFileBtn","cScnFile","cScnText","cScnParseBtn",cScnMsg);
 $("cScnPlayPauseBtn").onclick = async ()=>{
-  if (cScnPaused){ if(await sendScnCmd("play")){ cScnPaused=false; $("cScnPlayPauseBtn").innerHTML="❚❚ 暫停"; cScnMsg("已繼續"); } }
-  else { if(await sendScnCmd("pause")){ cScnPaused=true; $("cScnPlayPauseBtn").innerHTML="▶ 繼續"; cScnMsg("已暫停"); } }
+  if (cScnPaused){ if(await sendScnCmd("play")){ cScnPaused=false; $("cScnPlayPauseBtn").innerHTML="❚❚ 暫停"; cScnMsg("已繼續");
+    if (cScnClock.pausedAt!=null){ cScnClock.t0 += Date.now()-cScnClock.pausedAt; cScnClock.pausedAt=null; } renderCScnPlayInfo(); } }
+  else { if(await sendScnCmd("pause")){ cScnPaused=true; $("cScnPlayPauseBtn").innerHTML="▶ 繼續"; cScnMsg("已暫停");
+    cScnClock.pausedAt=Date.now(); renderCScnPlayInfo(); } }
 };
-$("cScnRestartBtn").onclick = async ()=>{ if(await sendScnCmd("restart")){ cScnPaused=false; $("cScnPlayPauseBtn").innerHTML="❚❚ 暫停"; cScnMsg("已從頭重來"); } };
-$("cScnStopBtn").onclick = async ()=>{ if(await sendScnCmd("stop")){ showCScnPlayback(false); cScnMsg("已結束教案"); } };
+$("cScnRestartBtn").onclick = async ()=>{ if(await sendScnCmd("restart")){ cScnPaused=false; $("cScnPlayPauseBtn").innerHTML="❚❚ 暫停"; cScnMsg("已從頭重來");
+  cScnClock.t0=Date.now(); cScnClock.pausedAt=null; renderCScnPlayInfo(); } };
+$("cScnStopBtn").onclick = async ()=>{ if(await sendScnCmd("stop")){ showCScnPlayback(false); cScnMsg("已結束教案");
+  cScnClock.t0=null; cScnClock.pausedAt=null; renderCScnPlayInfo(); } };
 $("cScnSaveBtn").onclick = async ()=>{
   if (!cScnParsed){ cScnMsg("請先 AI 解析"); return; }
   if (!db){ cScnMsg("Firebase 無法連線"); return; }
