@@ -339,6 +339,7 @@
         <div style="display:flex;gap:8px;margin-top:10px">
           <button id="cImgSendBtn" disabled style="flex:2;padding:14px;background:#0a84ff;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:800;cursor:pointer;opacity:.5">&#x1F4E4; 傳送到監視器</button>
           <button id="cImgCloseBtn" style="flex:1;padding:14px;background:#3a3a3c;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">&#x2715; 關閉影像</button>
+          <button id="cImgClearBtn" style="flex:1;padding:14px;background:#8e2a25;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">&#x1F5D1; 清空列表</button>
         </div>
       </div>
 
@@ -1552,6 +1553,14 @@ window.addInvestigation = function(m){
 };
 // 關閉檢查結果視窗（教師控制台可遠端呼叫），畫面回到監視器
 window.closeInvestigation = function(){ stopInvPlayback(); closeModal('ecg12Modal'); };
+// 清空已推送的檢查結果清單（教師控制台遠端呼叫；換情境/換組時用。12導程為內建項目保留）
+window.clearInvestigations = function(){
+  stopInvPlayback();
+  investigations.length = 0;
+  invSel = 'ecg12';
+  renderInvThumbs();
+  closeModal('ecg12Modal');
+};
 document.querySelector('#ecg12Modal .modal-x').addEventListener('click', stopInvPlayback);
 document.getElementById('ecg12Modal').addEventListener('click', e=>{ if (e.target.id==='ecg12Modal') stopInvPlayback(); });
 document.getElementById('btn12Lead').onclick = ()=>{ selectInv('ecg12'); openModal('ecg12Modal'); };
@@ -1720,7 +1729,7 @@ function renderCtrlGate(){
 }
 
 // ========== 監視器端 ==========
-const remote = { code:null, unsub:null, lastSeq:0, lastNibp:0, lastSilence:0, lastMedia:0, lastMediaClose:0, lastScn:0, lastEcg12:0, lastCapno:0, pubTimer:null };
+const remote = { code:null, unsub:null, lastSeq:0, lastNibp:0, lastSilence:0, lastMedia:0, lastMediaClose:0, lastMediaClear:0, lastScn:0, lastEcg12:0, lastCapno:0, pubTimer:null };
 
 function snapshotStatus(){
   const hr = dispHR();
@@ -1791,6 +1800,11 @@ function applyRemoteCtrl(c){
   if (c.mediaCloseSeq && c.mediaCloseSeq > remote.lastMediaClose){
     remote.lastMediaClose = c.mediaCloseSeq;
     if (window.closeInvestigation) window.closeInvestigation();
+  }
+  // 教師控制台按「清空檢查列表」：移除學生端已閱覽過的全部檢查縮圖（換情境/換組用）
+  if (c.mediaClearSeq && c.mediaClearSeq > remote.lastMediaClear){
+    remote.lastMediaClear = c.mediaClearSeq;
+    if (window.clearInvestigations) window.clearInvestigations();
   }
   // 控制台遠端控制 timeline 教案
   if (c.scnSeq && c.scnSeq > remote.lastScn){
@@ -2039,6 +2053,13 @@ async function pushMediaClose(){
   await updateDoc(doc(db,SESS,ctrl.code), { "ctrl.mediaCloseSeq": Date.now() });
   cImgMsg("已關閉學生端影像，畫面回到監視器");
 }
+// 清空學生端已閱覽過的檢查縮圖清單（換情境/換組時用；媒體庫本身不受影響）
+async function pushMediaClear(){
+  if (!ctrl.code){ cImgMsg("請先連線監視器"); return; }
+  if (!confirm("清空學生端 Investigations 已閱覽列表？（媒體庫不受影響，之後仍可再推送）")) return;
+  await updateDoc(doc(db,SESS,ctrl.code), { "ctrl.mediaClearSeq": Date.now() });
+  cImgMsg("已清空學生端檢查列表");
+}
 // 上傳影像到媒體庫（jpg/png 壓縮；gif 原樣保留動畫；>900KB 分塊）
 async function uploadImageMedia(file){
   const raw = await readDataURL(file);
@@ -2170,6 +2191,7 @@ $("cImgSendBtn").onclick = async ()=>{
   finally{ b.disabled = false; }
 };
 $("cImgCloseBtn").onclick = ()=> pushMediaClose();
+$("cImgClearBtn").onclick = ()=> pushMediaClear();
 
 // 情境快速鍵（沿用主程式的 PRESETS，按下立即送出）
 PRESETS.forEach(p=>{
