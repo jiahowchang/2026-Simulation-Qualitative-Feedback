@@ -347,8 +347,10 @@
         <textarea id="cScnText" placeholder="例：&#10;58歲男性敗血症。初始 HR 105、BP 110/65、SpO2 95%、RR 24、體溫 38.8、竇性。&#10;第2分鐘血壓1分鐘內降到 85/48，HR 125，SpO2 92，RR 30。&#10;第5分鐘惡化為 SVT，HR 160、BP 70/40、SpO2 88、EtCO2 26。&#10;第8分鐘心跳停止變成粗顫 VF，EtCO2 12。" style="width:100%;min-height:110px;background:#2c2c2e;border:1px solid #48484a;color:#fff;font-size:15px;padding:10px;border-radius:10px;resize:vertical"></textarea>
         <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
           <button class="scn-btn" id="cScnExampleBtn" style="background:#3a3a3c;color:#fff">載入範例</button>
+          <button class="scn-btn" id="cScnFileBtn" style="background:#5e5ce6;color:#fff">&#x1F4C4; 上傳 PDF/Word</button>
           <button class="scn-btn" id="cScnParseBtn" style="background:#0a84ff;color:#fff">&#x1F9E0; AI 解析</button>
         </div>
+        <input type="file" id="cScnFile" accept=".pdf,.docx,.txt,.md" hidden>
         <div id="cScnMsg" style="font-size:14px;color:#ff9f0a;min-height:18px;margin:8px 0"></div>
         <div id="cScnSteps" style="max-height:200px;overflow-y:auto"></div>
         <button id="cScnStartBtn" disabled style="width:100%;margin-top:10px;padding:14px;background:#30d158;color:#000;border:none;border-radius:10px;font-size:16px;font-weight:800;cursor:pointer">載入並開始（送到監視器）</button>
@@ -562,8 +564,10 @@
       <textarea id="scnText" placeholder="例：&#10;58歲男性敗血症。初始 HR 105、BP 110/65、SpO2 95%、RR 24、體溫 38.8、竇性心律。&#10;第2分鐘血壓開始下降，1分鐘內降到 85/48，HR 升到 125，SpO2 92，RR 30。&#10;第5分鐘惡化為 SVT，HR 160、BP 70/40、SpO2 88、EtCO2 26。&#10;第8分鐘心跳停止，變成粗顫 VF，EtCO2 12。"></textarea>
       <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
         <button class="scn-btn" id="scnExampleBtn">載入範例</button>
+        <button class="scn-btn" id="scnFileBtn" style="background:#5e5ce6;color:#fff">&#x1F4C4; 上傳 PDF/Word</button>
         <button class="scn-btn" id="scnParseBtn">&#x1F9E0; AI 解析</button>
       </div>
+      <input type="file" id="scnFile" accept=".pdf,.docx,.txt,.md" hidden>
       <div id="scnMsg"></div>
       <div id="scnSteps"></div>
       <button id="scnStartBtn" disabled>載入並開始播放</button>
@@ -2367,6 +2371,63 @@ $("cScnStartBtn").onclick = async ()=>{
   const ok = await sendScnCmd("start", { "ctrl.scnSteps": cScnParsed.steps, "ctrl.scnTitle": cScnParsed.title||"教案" });
   if (ok){ cScnMsg("已送到監視器並開始播放 ✓"); showCScnPlayback(true); }
 };
+
+/* ---------- 教案檔上傳：PDF / Word(.docx) → 擷取文字 → 自動 AI 解析 ----------
+   擷取全在瀏覽器端完成（pdf.js / mammoth 按需從 CDN 載入），檔案本身不會上傳到任何伺服器；
+   擷取出的「文字」才會走既有 AI 解析流程送到 Claude 代理。 */
+function loadLib(src){ return new Promise((ok,bad)=>{ const s=document.createElement("script");
+  s.src=src; s.onload=ok; s.onerror=()=>bad(new Error("元件載入失敗，請檢查網路")); document.head.appendChild(s); }); }
+async function extractDocText(file){
+  const name=(file.name||"").toLowerCase();
+  const buf=await file.arrayBuffer();
+  if (name.endsWith(".pdf")){
+    if (!window.pdfjsLib){
+      await loadLib("https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js");
+      pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+    }
+    // cMap 供中文等 CJK 字型解碼，缺了很多中文 PDF 會抽不出字
+    const pdf=await pdfjsLib.getDocument({ data:buf,
+      cMapUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/", cMapPacked:true }).promise;
+    const parts=[];
+    const n=Math.min(pdf.numPages, 30);   // 教案通常數頁內；30 頁上限防呆
+    for (let i=1;i<=n;i++){
+      const tc=await (await pdf.getPage(i)).getTextContent();
+      parts.push(tc.items.map(x=>x.str).join(" "));
+    }
+    // pdf.js 對 CJK 常逐字加空格（模 擬 教 案）→ 移除中文字元間的空白，數字/英文保留
+    const out=parts.join("\n")
+      .replace(/([⺀-鿿])[ \t]+(?=[⺀-鿿，。、；：（）！？%])/g,"$1").trim();
+    if (!out) throw new Error("這份 PDF 沒有文字層（可能是掃描影像），請改用文字版 PDF 或直接貼上文字");
+    return out;
+  }
+  if (name.endsWith(".docx")){
+    if (!window.mammoth) await loadLib("https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js");
+    const r=await mammoth.extractRawText({ arrayBuffer:buf });
+    const out=(r.value||"").trim();
+    if (!out) throw new Error("Word 檔內沒有可擷取的文字");
+    return out;
+  }
+  if (name.endsWith(".txt")||name.endsWith(".md")) return new TextDecoder().decode(buf).trim();
+  if (name.endsWith(".doc")) throw new Error("舊版 .doc 不支援，請在 Word 另存為 .docx");
+  throw new Error("僅支援 PDF / Word(.docx) / 純文字檔");
+}
+function wireScnUpload(btnId, inputId, taId, parseBtnId, msg){
+  $(btnId).onclick = ()=> $(inputId).click();
+  $(inputId).onchange = async e=>{
+    const f=e.target.files[0]; e.target.value="";   // 清空讓同一檔可重選
+    if (!f) return;
+    if (f.size > 15*1024*1024){ msg("檔案超過 15MB，請縮小後再試"); return; }
+    msg("📄 擷取「"+f.name+"」文字中…");
+    try{
+      let text=await extractDocText(f);
+      if (text.length>12000) text=text.slice(0,12000);   // 過長截斷，避免超出 AI 輸入
+      $(taId).value=text;
+      $(parseBtnId).click();   // 擷取完直接自動 AI 解析
+    }catch(err){ msg("讀取失敗："+err.message); }
+  };
+}
+wireScnUpload("scnFileBtn","scnFile","scnText","scnParseBtn",scnMsg);
+wireScnUpload("cScnFileBtn","cScnFile","cScnText","cScnParseBtn",cScnMsg);
 $("cScnPlayPauseBtn").onclick = async ()=>{
   if (cScnPaused){ if(await sendScnCmd("play")){ cScnPaused=false; $("cScnPlayPauseBtn").innerHTML="❚❚ 暫停"; cScnMsg("已繼續"); } }
   else { if(await sendScnCmd("pause")){ cScnPaused=true; $("cScnPlayPauseBtn").innerHTML="▶ 繼續"; cScnMsg("已暫停"); } }
