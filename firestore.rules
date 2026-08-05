@@ -120,6 +120,27 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // ================================================================
+    // NCMEA 備戰中心（ncmea.html）：8/17 現場報告 7 人團隊協作
+    // 無帳號設計（成員多在手機上快速使用）：
+    // - 讀取開放（內容為賽事準備素材；頁面本身另有通關碼閘門）
+    // - 寫入須在資料帶 tc 欄位＝團隊通關碼。通關碼「不寫在本檔」
+    //   （repo 公開），而是存在 ncmea_secret/config 文件的 code 欄位，
+    //   該集合無任何讀取規則＝外界讀不到；僅管理員以 Admin 權限設定
+    // - 刪除僅管理員（誤刪防護；清空需求用欄位旗標處理）
+    // 8/17 賽後可把這整段改成唯讀封存
+    // ================================================================
+    function ncmeaW() {
+      return request.resource.data.tc ==
+        get(/databases/$(database)/documents/ncmea_secret/config).data.code;
+    }
+    match /ncmea_state/{document}      { allow read: if true; allow create, update: if ncmeaW(); allow delete: if isAdmin(); }
+    match /ncmea_notes/{document}      { allow read: if true; allow create, update: if ncmeaW(); allow delete: if isAdmin(); }
+    match /ncmea_cards/{document}      { allow read: if true; allow create, update: if ncmeaW(); allow delete: if isAdmin(); }
+    match /ncmea_chat/{document}       { allow read: if true; allow create, update: if ncmeaW(); allow delete: if isAdmin(); }
+    match /ncmea_meetings/{document}   { allow read: if true; allow create, update: if ncmeaW(); allow delete: if isAdmin(); }
+    match /ncmea_meet_lines/{document} { allow read: if true; allow create, update: if ncmeaW(); allow delete: if isAdmin(); }
+
     // 其他集合預設禁止存取
     match /{document=**} {
       allow read, write: if false;

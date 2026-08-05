@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0f2b46">
+<title>NCMEA 備戰中心｜2026H2023</title>
+<style>
+:root{
+  --navy:#0f2b46; --navy2:#16405f; --accent:#f59e0b; --accent2:#fbbf24;
+  --bg:#f2f5f9; --card:#ffffff; --ink:#1e2a38; --sub:#5b6b7c; --line:#e3e9f0;
+  --ok:#16a34a; --warn:#dc2626; --info:#2563eb;
+  --catA:#2563eb; --catB:#0f766e; --catC:#b45309; --catD:#7c3aed; --catE:#be185d; --catF:#475569; --catM:#f59e0b;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{margin:0; font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif; background:var(--bg); color:var(--ink); font-size:15.5px; line-height:1.65; padding-bottom:calc(64px + env(safe-area-inset-bottom))}
+button{font-family:inherit}
+h1,h2,h3,h4{line-height:1.4}
+small{color:var(--sub)}
+a{color:var(--info)}
+
+/* ── header ── */
+header{position:sticky; top:0; z-index:50; background:linear-gradient(135deg,var(--navy),var(--navy2)); color:#fff; padding:10px 14px calc(10px); box-shadow:0 2px 10px rgba(15,43,70,.25)}
+.hd-row{display:flex; align-items:center; gap:10px; max-width:1080px; margin:0 auto}
+.hd-title{font-size:17px; font-weight:800; letter-spacing:.5px; white-space:nowrap}
+.hd-sub{font-size:11px; opacity:.75; white-space:nowrap}
+.hd-count{margin-left:auto; text-align:right; font-size:11px; opacity:.9; line-height:1.3}
+.hd-count b{font-size:15px; color:var(--accent2); font-variant-numeric:tabular-nums}
+.me-chip{background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; border-radius:99px; padding:4px 10px; font-size:12.5px; cursor:pointer; white-space:nowrap}
+
+/* ── layout ── */
+main{max-width:1080px; margin:0 auto; padding:14px 12px 30px}
+.tab{display:none; animation:fadein .18s ease}
+.tab.on{display:block}
+@keyframes fadein{from{opacity:0; transform:translateY(4px)}to{opacity:1; transform:none}}
+.card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:12px; box-shadow:0 1px 3px rgba(20,40,60,.05)}
+.card h3{margin:0 0 8px; font-size:16px}
+.grid2{display:grid; grid-template-columns:1fr; gap:12px}
+@media(min-width:820px){ .grid2{grid-template-columns:1fr 1fr} }
+
+/* ── bottom nav ── */
+nav#nav{position:fixed; bottom:0; left:0; right:0; z-index:60; background:#fff; border-top:1px solid var(--line); display:grid; grid-template-columns:repeat(7,1fr); padding-bottom:env(safe-area-inset-bottom); box-shadow:0 -2px 12px rgba(20,40,60,.08)}
+nav#nav button{background:none; border:0; padding:7px 0 6px; font-size:10.5px; color:var(--sub); cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:2px}
+nav#nav button .ic{font-size:19px; line-height:1}
+nav#nav button.on{color:var(--navy); font-weight:700}
+nav#nav button.on .ic{transform:scale(1.12)}
+@media(min-width:900px){
+  body{padding-bottom:20px}
+  nav#nav{position:sticky; top:56px; bottom:auto; grid-template-columns:repeat(7,auto); justify-content:center; gap:6px; border-top:0; border-bottom:1px solid var(--line)}
+  nav#nav button{flex-direction:row; font-size:13.5px; padding:10px 14px; gap:6px}
+}
+
+/* ── generic UI ── */
+.btn{border:0; border-radius:10px; padding:9px 16px; font-size:14px; font-weight:700; cursor:pointer; background:var(--navy); color:#fff}
+.btn.sec{background:#e8eef5; color:var(--navy)}
+.btn.amber{background:var(--accent); color:#3b2600}
+.btn.danger{background:var(--warn); color:#fff}
+.btn.ghost{background:none; border:1px solid var(--line); color:var(--sub); font-weight:500}
+.btn:disabled{opacity:.45; cursor:not-allowed}
+.btn.sm{padding:5px 10px; font-size:12.5px; border-radius:8px}
+.chip{display:inline-block; border-radius:99px; padding:2px 10px; font-size:12px; font-weight:600; background:#eef2f7; color:var(--sub); margin:2px 3px 2px 0; border:1px solid transparent}
+.chip.click{cursor:pointer}
+.chip.on{background:var(--navy); color:#fff}
+.badge{display:inline-block; border-radius:6px; padding:1px 7px; font-size:11.5px; font-weight:700; margin-right:4px; vertical-align:1px}
+.star{color:#d97706; font-weight:800}
+input[type=text],textarea,select{width:100%; border:1.5px solid var(--line); border-radius:10px; padding:9px 12px; font-size:15px; font-family:inherit; background:#fff; color:var(--ink)}
+textarea{resize:vertical; min-height:74px}
+input:focus,textarea:focus{outline:none; border-color:var(--navy2)}
+details.acc{background:var(--card); border:1px solid var(--line); border-radius:14px; margin-bottom:12px; overflow:hidden}
+details.acc>summary{list-style:none; cursor:pointer; padding:13px 16px; font-weight:800; font-size:15.5px; display:flex; align-items:center; gap:8px}
+details.acc>summary::-webkit-details-marker{display:none}
+details.acc>summary:after{content:"▾"; margin-left:auto; color:var(--sub); transition:transform .2s}
+details.acc[open]>summary:after{transform:rotate(180deg)}
+details.acc>.bd{padding:2px 16px 14px}
+table.tb{width:100%; border-collapse:collapse; font-size:13.5px}
+table.tb th{background:#f0f4f8; text-align:left; padding:7px 9px; border:1px solid var(--line); white-space:nowrap}
+table.tb td{padding:7px 9px; border:1px solid var(--line); vertical-align:top}
+.tbwrap{overflow-x:auto}
+.progress{height:9px; border-radius:99px; background:#e6ecf3; overflow:hidden}
+.progress>i{display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,#22c55e,#16a34a); transition:width .4s}
+.note-meta{font-size:11.5px; color:var(--sub); margin-top:3px}
+.src{display:block; font-size:11px; color:#93a3b3; margin-top:6px}
+.warnbox{background:#fff7ed; border:1px solid #fed7aa; border-radius:10px; padding:8px 12px; font-size:13.5px; color:#9a3412; margin-top:8px}
+.hl{background:#fef3c7; border-radius:4px; padding:0 3px}
+
+/* ── home hero ── */
+.hero{background:linear-gradient(140deg,var(--navy) 0%,var(--navy2) 70%,#1d5a85 100%); color:#fff; border-radius:16px; padding:18px 18px 16px; margin-bottom:12px; position:relative; overflow:hidden}
+.hero:before{content:"⚕"; position:absolute; right:-14px; top:-30px; font-size:150px; opacity:.06}
+.hero .ttl{font-size:13px; opacity:.85; letter-spacing:1px}
+.hero .theme{font-size:15.5px; font-weight:800; margin:4px 0 10px; line-height:1.5}
+.cd-days{font-size:44px; font-weight:900; color:var(--accent2); font-variant-numeric:tabular-nums; line-height:1}
+.cd-days small{font-size:15px; color:#fff; opacity:.9; font-weight:600}
+.cd-hms{font-size:16px; font-variant-numeric:tabular-nums; opacity:.92; margin-top:2px}
+.cd-when{font-size:12px; opacity:.75; margin-top:6px}
+.miles{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px}
+.mile{background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22); border-radius:10px; padding:6px 10px; font-size:11.5px; line-height:1.4}
+.mile b{display:block; font-size:13px}
+.mile.urgent{background:rgba(220,38,38,.28); border-color:#f87171}
+.mile.done{opacity:.55; text-decoration:line-through}
+.statrow{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:12px}
+.stat{background:var(--card); border:1px solid var(--line); border-radius:13px; padding:11px 8px; text-align:center}
+.stat b{font-size:21px; display:block; font-variant-numeric:tabular-nums}
+.stat span{font-size:11.5px; color:var(--sub)}
+
+/* ── team ── */
+.mem{border-left:5px solid var(--mc,#888)}
+.mem .avatar{width:42px; height:42px; border-radius:50%; background:var(--mc,#888); color:#fff; font-weight:800; font-size:17px; display:flex; align-items:center; justify-content:center; flex-shrink:0}
+.mem .mhd{display:flex; gap:11px; align-items:center; margin-bottom:6px}
+.mem .mhd h3{margin:0}
+.mem .mhd .jt{font-size:12.5px; color:var(--sub)}
+.mem dl{margin:8px 0; font-size:13.8px}
+.mem dt{font-weight:700; color:var(--navy2); margin-top:8px; font-size:12.5px}
+.mem dd{margin:2px 0 0}
+.tasklist{margin:6px 0 0; padding:0; list-style:none}
+.tasklist li{display:flex; gap:9px; align-items:flex-start; padding:7px 0; border-top:1px dashed var(--line); font-size:14px}
+.tasklist li:first-child{border-top:0}
+.ckbox{width:21px; height:21px; border-radius:6px; border:2px solid #b8c4d0; background:#fff; cursor:pointer; flex-shrink:0; margin-top:1px; display:flex; align-items:center; justify-content:center; font-size:14px; color:#fff}
+.ckbox.on{background:var(--ok); border-color:var(--ok)}
+.ck-done{color:#8798a8; text-decoration:line-through}
+.ck-meta{display:block; font-size:11px; color:#94a6b6}
+
+/* ── flashcards ── */
+.qitem{border:1px solid var(--line); border-radius:12px; margin-bottom:10px; overflow:hidden; background:#fff}
+.qitem>summary{list-style:none; cursor:pointer; padding:11px 13px; font-weight:700; font-size:14.5px; display:flex; gap:8px; align-items:flex-start}
+.qitem>summary::-webkit-details-marker{display:none}
+.qitem .qa{padding:0 14px 13px; font-size:14.5px}
+.qtag{flex-shrink:0; margin-top:1px}
+.lvl{display:inline-flex; gap:6px; margin-top:10px}
+.lvl button{border:1.5px solid var(--line); background:#fff; border-radius:8px; padding:4px 10px; font-size:13px; cursor:pointer}
+.lvl button.on{border-color:var(--navy); background:var(--navy); color:#fff}
+#fcOverlay{position:fixed; inset:0; background:rgba(10,25,40,.94); z-index:100; display:none; flex-direction:column; padding:14px}
+#fcOverlay.on{display:flex}
+.fc-top{display:flex; align-items:center; color:#cdd9e4; font-size:13px; gap:10px}
+.fc-card{flex:1; margin:14px auto; width:100%; max-width:660px; background:#fff; border-radius:18px; padding:22px 20px; overflow-y:auto; display:flex; flex-direction:column; box-shadow:0 10px 40px rgba(0,0,0,.4)}
+.fc-q{font-size:19px; font-weight:800; line-height:1.55}
+.fc-a{font-size:15.5px; margin-top:14px; border-top:2px dashed var(--line); padding-top:14px}
+.fc-hint{margin-top:auto; padding-top:18px; text-align:center; color:var(--sub); font-size:13px}
+.fc-btns{display:flex; gap:9px; justify-content:center; padding-bottom:env(safe-area-inset-bottom)}
+.fc-btns .btn{flex:1; max-width:150px; padding:13px 0; font-size:15px}
+.deckbar{display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px}
+
+/* ── plan/timeline ── */
+.period{position:relative; padding-left:24px}
+.period:before{content:""; position:absolute; left:7px; top:6px; bottom:-14px; width:2.5px; background:#d5dfe9}
+.period:last-child:before{bottom:auto; height:20px}
+.period .dot{position:absolute; left:0; top:4px; width:17px; height:17px; border-radius:50%; background:#fff; border:4px solid var(--navy2)}
+.period.now .dot{border-color:var(--accent); box-shadow:0 0 0 5px rgba(245,158,11,.25)}
+.period.past .dot{border-color:#9fb0c0}
+.period h4{margin:0 0 2px; font-size:15.5px}
+.period .rng{font-size:12px; color:var(--sub); margin-bottom:6px}
+
+/* ── chat ── */
+#chatBox{height:56vh; overflow-y:auto; padding:6px 2px; display:flex; flex-direction:column; gap:8px}
+.msg{max-width:82%; align-self:flex-start}
+.msg.mine{align-self:flex-end; text-align:right}
+.msg .bub{display:inline-block; background:#fff; border:1px solid var(--line); border-radius:13px 13px 13px 4px; padding:8px 12px; font-size:14.5px; text-align:left; white-space:pre-wrap; word-break:break-word}
+.msg.mine .bub{background:var(--navy); color:#fff; border-color:var(--navy); border-radius:13px 13px 4px 13px}
+.msg .who{font-size:11.5px; color:var(--sub); margin:0 4px 2px}
+.daysep{text-align:center; font-size:11.5px; color:#94a6b6; margin:8px 0 2px}
+.chatline{display:flex; gap:8px; margin-top:10px}
+.chatline input{flex:1}
+
+/* ── meeting ── */
+#jitsiWrap{display:none; border-radius:13px; overflow:hidden; border:1px solid var(--line); background:#000}
+#jitsiWrap iframe{width:100%; height:52vh; border:0; display:block}
+#liveLines{max-height:38vh; overflow-y:auto; background:#0f2033; color:#dce8f2; border-radius:12px; padding:10px 13px; font-size:14px}
+#liveLines .ln{margin-bottom:6px}
+#liveLines .ln b{color:var(--accent2); font-weight:700}
+#liveLines .interim{opacity:.55; font-style:italic}
+.recdot{display:inline-block; width:10px; height:10px; border-radius:50%; background:#dc2626; margin-right:6px; animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.25}}
+.minutes{background:#f8fafc; border:1px solid var(--line); border-radius:12px; padding:12px 15px; font-size:14.5px}
+.minutes h4{margin:12px 0 5px; font-size:15px; color:var(--navy2)}
+.minutes h4:first-child{margin-top:0}
+.minutes ul{margin:4px 0; padding-left:22px}
+
+/* ── export ── */
+#packPreview{background:#fff; border:1px solid var(--line); border-radius:13px; padding:16px; max-height:60vh; overflow-y:auto; font-size:14px}
+
+/* ── gate & toast ── */
+#gate{position:fixed; inset:0; z-index:200; background:linear-gradient(150deg,var(--navy),#1d5a85); display:none; align-items:center; justify-content:center; padding:18px}
+#gate.on{display:flex}
+.gate-card{background:#fff; border-radius:18px; padding:24px 22px; width:100%; max-width:420px; box-shadow:0 18px 60px rgba(0,0,0,.4)}
+.gate-card h2{margin:0 0 2px; font-size:20px}
+.idgrid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:14px 0}
+.idgrid button{border:1.8px solid var(--line); background:#fff; border-radius:11px; padding:10px 6px; font-size:14.5px; font-weight:700; cursor:pointer}
+.idgrid button.on{border-color:var(--navy); background:var(--navy); color:#fff}
+#toast{position:fixed; left:50%; bottom:calc(84px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(20px); background:#0f2b46; color:#fff; border-radius:11px; padding:10px 18px; font-size:14px; opacity:0; pointer-events:none; transition:.25s; z-index:300; max-width:88vw; text-align:center}
+#toast.on{opacity:1; transform:translateX(-50%)}
+.empty{color:#94a6b6; font-size:13.5px; text-align:center; padding:14px 0}
+.secttl{font-size:13px; font-weight:800; color:var(--navy2); letter-spacing:1.5px; margin:20px 0 8px; display:flex; align-items:center; gap:8px}
+.secttl:after{content:""; flex:1; height:1px; background:var(--line)}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gate-card">
+    <h2>⚕️ NCMEA 備戰中心</h2>
+    <small>2026H2023・轉化臨床危機為教學契機<br>115/8/17（一）15:30 北區第 6 順位</small>
+    <div style="font-weight:700; margin-top:14px">我是誰？</div>
+    <div class="idgrid" id="gateIds"></div>
+    <div style="font-weight:700">團隊通關碼 <small style="font-weight:400">（寫入用；向家豪索取。留空＝訪客唯讀）</small></div>
+    <input type="text" id="gateTc" placeholder="輸入通關碼" autocomplete="off" style="margin-top:6px">
+    <button class="btn amber" id="gateGo" style="width:100%; margin-top:14px; padding:12px">進入備戰中心 🚀</button>
+  </div>
+</div>
+
+<header>
+  <div class="hd-row">
+    <div>
+      <div class="hd-title">⚕️ NCMEA 備戰中心</div>
+      <div class="hd-sub">2026H2023・8/17 北區第 6 順位</div>
+    </div>
+    <div class="hd-count" id="hdCount"></div>
+    <button class="me-chip" id="meChip" title="切換身分／通關碼">👤</button>
+  </div>
+</header>
+
+<nav id="nav">
+  <button data-tab="home" class="on"><span class="ic">🏠</span>總覽</button>
+  <button data-tab="team"><span class="ic">🤝</span>分工</button>
+  <button data-tab="cards"><span class="ic">🃏</span>題庫</button>
+  <button data-tab="plan"><span class="ic">📅</span>時程</button>
+  <button data-tab="chat"><span class="ic">💬</span>討論</button>
+  <button data-tab="meet"><span class="ic">🎦</span>會議</button>
+  <button data-tab="export"><span class="ic">📦</span>攜帶包</button>
+</nav>
+
+<main>
+  <section class="tab on" id="tab-home"></section>
+  <section class="tab" id="tab-team"></section>
+  <section class="tab" id="tab-cards"></section>
+  <section class="tab" id="tab-plan"></section>
+  <section class="tab" id="tab-chat">
+    <div class="card">
+      <h3>💬 團隊即時討論</h3>
+      <div id="chatBox"></div>
+      <div class="chatline">
+        <input type="text" id="chatInput" placeholder="輸入訊息，Enter 送出" maxlength="1000">
+        <button class="btn" id="chatSend">送出</button>
+      </div>
+    </div>
+  </section>
+  <section class="tab" id="tab-meet"></section>
+  <section class="tab" id="tab-export"></section>
+</main>
+
+<div id="fcOverlay"></div>
+<div id="toast"></div>
+<script type="module">
+/* ═══════════ 30分鐘詢答題庫（v2 手冊陸章，55題）═══════════ */
+const CATS={A:'整體運作',B:'確實性',C:'成果表現',D:'檢討與未來',E:'加分項與學術',F:'臨場應對',M:'必背卡'};
+const CATCOLOR={A:'var(--catA)',B:'var(--catB)',C:'var(--catC)',D:'var(--catD)',E:'var(--catE)',F:'var(--catF)',M:'var(--catM)'};
+const QUESTIONS=[
+/* ── Ａ、整體運作：計畫設計、資源與理論 ── */
+{id:'A1',cat:'A',star:0,must:0,owners:['黃沛銓','陳俊維'],src:'成果報告書壹一、貳二；準備計畫書陸Q1',
+q:'為什麼選擇原位模擬，而不是在模擬中心演練？',
+a:`先講教育理由，模擬教室難以複製真實場域的空間限制、設備位置與人員動線，技能遷移受限，這是情境學習理論的核心；本案三大問題中「場域不符」與「忽略團隊動能」，唯有回到真實場域、與真實值班團隊一起演練才能解決。再講證據，Patterson 2013年研究顯示原位模擬幾乎每場都能識別潛在安全威脅，檢出率遠高於傳統模擬室；ILCOR 2025年系統性回顧已正式建議原位模擬應被視為CPR訓練之選項。最後講資源，原位模擬使用現有臨床空間與真實設備，增加的是制度設計而非重資本投資。`},
+{id:'A2',cat:'A',star:0,must:0,owners:['黃沛銓','張毓倫'],src:'成果報告書貳、參四；準備計畫書陸Q2',
+q:'計畫導入前做過哪些評估（人力、經費、設備、風險）？',
+a:`需求評估採三種資料源，一是2022至2024年訓練心得紀錄與院內急救事件報告回顧，二是訓練後質性回饋彙整，三是對實際急救現場以TEAM量表觀察；再以魚骨圖歸納六大類原因，鎖定場域、方法、人員、評量四大介入面向。風險面建立訓練前24小時場地安全評估表、備用急救設備、護理長通報機制，確保訓練不影響臨床運作。`,
+extra:'經費與人力具體投入（師資時數、資訊開發資源）書面未載，請備妥數字或口徑。'},
+{id:'A3',cat:'A',star:0,must:0,owners:['陳俊維','連君茹'],src:'成果報告書壹五、肆二、肆三、肆四',
+q:'四項核心目標多為質性描述，如何判斷達成與否？',
+a:`逐一對應可觀察指標。目標一技能勝任力，對應TEAM與STAR量化評量及模組勝任標準（STAR達4分以上）；目標二跨職類合作，對應T-ACLS五構面，總分d_z=2.32、25組全數進步；目標三環境安全，對應累計識別24項LST、12項完成改善並納入常規稽核；目標四永續體系，對應13名認證師資、SOP與腳本庫、3年再認證機制。質性目標搭配可觀察指標，正是CBME「行為可觀察、進步可追蹤、缺口可修補」的落實。`},
+{id:'A4',cat:'A',star:1,must:1,owners:['全體'],src:'成果報告書壹二、參二；準備計畫書陸Q4',
+q:'請說明你們運用的教育理論。（委員可能隨機點任何成員，全員必背）',
+a:`每位成員以2至3句話回答。Kolb體驗學習循環對應60分鐘課程：課前準備是抽象概念，情境演練是具體體驗，GAS匯報是反思觀察與概念化，精熟練習是主動驗證。GAS三步驟：Gather蒐集反應、Analyze分析表現差距、Summarize摘要關鍵學習點。CBME：從以出席率為核心，轉向以勝任能力為依歸，三軌評量即其落實。情境學習：知識習得須植根真實情境脈絡，原位模擬正是最佳體現。刻意練習：即時回饋下的目標導向重複練習，對應15分鐘精熟練習段。`},
+{id:'A5',cat:'A',star:1,must:0,owners:['蘇欣怡','范凱淇'],src:'成果報告書參六；準備計畫書陸Q5',
+q:'教師工作負荷實際改善多少？有無量化數據？',
+a:`誠實以機制與質性證據回答。急救面板卸除計時與節律監控，使引導師回歸純觀察者；急救APP自動產出時間戳記log，免除手動記錄與記憶負擔；TRM網站取代重複講授教材；ReSim使回饋可異地、異步進行。標準化面有情境腳本模板庫、場地備置標準清單與師資輪值制度，降低備課與排班負擔。教師時數節省的量化測量尚未系統執行，已列為後續評估項目。`,
+extra:'若有教師負荷相關數據（備課時間、教學意願調查）請備妥；否則守住質性口徑，不現場造數。'},
+{id:'A6',cat:'A',star:0,must:0,owners:['黃沛銓','陳俊維'],src:'成果報告書參五、參六、肆七；準備計畫書陸Q6',
+q:'本案與其他醫院的高擬真模擬訓練有何區隔？創新在哪裡？',
+a:`三點區隔。第一，場域：不是把擬真做得更逼真，而是把訓練搬進真實工作現場，訓練同時系統性產出LST安全改善，達成教學與病安雙重效果。第二，評量：由國際TEAM量表3年縱貫，進階至自主開發STAR-Resus技術量表與T-ACLS非技術技能量表，完成心理計量初步驗證並通過IRB，填補Boet 2019年指出的文獻缺口。第三，閉環：四項自製數位工具與評量、反思匯報、學術發表整合為完整閉環，獲Medical Teacher與JAHA雙期刊認證。`},
+{id:'A7',cat:'A',star:1,must:0,owners:['陳俊維','黃沛銓'],src:'成果報告書肆二、肆七、伍四；準備計畫書陸Q7',
+q:'為何不直接以院內心臟停止（IHCA）存活率作為成效指標？',
+a:`存活率受病人基礎疾病、收治單位與疾病嚴重度等多重干擾，且需長期累積足夠樣本。Theilen 2017年以每月原位模擬持續多年，才顯示兒科加護病房存活率由33%提升至50%。本案依證據層級逐級建立：反應層有幸福感與質性回饋，學習層有TEAM與T-ACLS前後測，行為層有JAHA 2026年論文，以本院真實急救資料證實非技術技能與領導力和機械式CPR部署效率相關，已觸及真實世界行為層級。存活率追蹤已列入2026至2028年目標。`},
+{id:'A8',cat:'A',star:0,must:0,owners:['黃沛銓','連君茹'],src:'成果報告書參三、參四、伍三；現場報告成員名單；準備計畫書陸Q8',
+q:'維護與持續改善機制為何？若計畫負責人異動怎麼辦？',
+a:`制度化設計使計畫不依賴個人。SOP與情境腳本庫已文件化；TTT三階段認證加3年再認證（2小時繼續教育、實地2場、量表評估1場）；師資輪值制度；評量結果常規上傳資料庫做長期趨勢分析；LST納入常規品質稽核；四項數位工具內建於標準流程。跨領域工作小組由急診醫學部主導，屬部門建制而非個人專案。黃副主任由急診醫學部主任轉任教學部副主任，反而有助計畫由單一科部推向全院教學體系。`},
+{id:'A9',cat:'A',star:0,must:0,owners:['黃沛銓'],src:'成果報告書壹五；注意事項第2點；準備計畫書陸Q9',
+q:'院方的具體支持有哪些？',
+a:`行政上，教學部協助認列教學時數，協調護理部、呼吸治療科等多單位參與；空間與流程上，核定原位模擬場地評估表，建立急救車與藥物配合機制；研究倫理上，支持取得IRB審查；並補助數位平台開發與國際會議發表。`,
+extra:'經費支持具體項目（設備採購、資訊開發、報名費）請備妥佐證列於造冊第一冊；院方代表若不克出席，本題必須有書面佐證可出示。'},
+{id:'A10',cat:'A',star:0,must:0,owners:['黃沛銓','連君茹'],src:'成果報告書伍三、參六；準備計畫書陸',
+q:'這套模式成本高嗎？其他醫院要複製，需要什麼條件？',
+a:`原位模擬使用現有臨床空間與設備，增量成本主要是師資時間與資訊開發；四項數位工具為院內自製，邊際成本低。複製條件有四：標準化SOP與場地安全評估機制、TTT師資培育制度、情境腳本模板庫、基礎錄影與計時工具。前三項已文件化，具備模組化輸出條件，這也是我們規劃鄰近醫院聯合培訓的基礎。`},
+{id:'A11',cat:'A',star:0,must:0,owners:['張毓倫','連君茹'],src:'成果報告書壹五、參一、肆四；準備計畫書陸Q13',
+q:'團隊如何形成？跨領域運作有實際例子嗎？',
+a:`團隊由急診醫學部與教學部共同組成跨領域工作小組，成員涵蓋醫師、專科護理師與護理師，依職類分工並定期會議。實際例子：2024年起由急診醫學部主導，系統性邀集兒科、婦產科、外科醫師與急重症、產兒護理師、呼吸治療師，於同一急救情境整合演練；LST改善案如兒科急救藥物劑量計算，即由醫師、護理師與藥師跨職類共同完成。`},
+{id:'A12',cat:'A',star:0,must:0,owners:['黃沛銓'],src:'附件1-9整體運作第1項、成果報告書壹一、壹三',
+q:'本案呼應哪些院內或國家重要議題？',
+a:`四個對應。病人安全：以原位模擬主動識別並改善潛在安全威脅，呼應醫院病人安全目標；團隊資源管理：落實TRM於急救教育，呼應醫策會長期推動方向；勝任力導向醫學教育：對應國內CBME政策與PGY訓練改革；教師負荷：以數位工具減輕臨床教師負擔，呼應教學人力留任議題。`},
+
+/* ── Ｂ、確實性：理論、課程與執行細節 ── */
+{id:'B1',cat:'B',star:0,must:0,owners:['陳俊維','連君茹'],src:'成果報告書參二、參五；準備計畫書陸Q10',
+q:'反思匯報為何選GAS，而非PEARLS或Good Judgment模式？',
+a:`GAS為美國心臟學會體系廣泛採用的結構化匯報法，與本案ACLS訓練脈絡及師資既有認證最相容，導入成本低、跨師資一致性最佳。本案並對GAS做在地化增值，將T-ACLS的21個行為錨點嵌入Analyze階段，使「今天Call-Out為何沒做、共享心智模式為何未建立」等反思有可操作的討論框架。各匯報法核心本質相通，工具選擇服務於脈絡。`},
+{id:'B2',cat:'B',star:0,must:0,owners:['陳俊維','連君茹'],src:'成果報告書參二；準備計畫書陸Q11',
+q:'60分鐘課程中情境只有15分鐘、匯報25分鐘，比例依據為何？',
+a:`依模擬教育共識，匯報是學習真正發生之處，時間應不少於情境本身；Kolb循環中反思觀察與抽象概念化是深層學習關鍵，故配置25分鐘GAS。15分鐘情境足以完整執行數輪ACLS週期；其後15分鐘精熟練習針對匯報識別的前2至3項優先改善點刻意練習，完成體驗、反思、概念化、驗證的完整循環。60分鐘總長同時顧及臨床單位可承受的離線時間。`},
+{id:'B3',cat:'B',star:1,must:0,owners:['連君茹','蘇欣怡'],src:'成果報告書參四；準備計畫書陸Q12',
+q:'如何確保訓練不影響臨床運作與病人安全？曾經取消過嗎？',
+a:`訓練前24小時完成場地安全評估表，核查設備位置、急救車藥物、環境障礙，並通知單位護理長、準備備用急救設備；訓練用物與臨床用物明確區隔；情境執行中師資僅於安全疑慮時暫停；遇臨床需求，場地即時讓位，備有備用場地清單。文獻中原位模擬因臨床干擾的取消率約28%（Patterson 2013），本院亦有因臨床緊急狀況延期或取消的紀錄，臨床優先本身就是原位模擬的特性而非缺陷。`,
+extra:'本院實際取消或改期場次數，請自訓練紀錄統計備妥。'},
+{id:'B4',cat:'B',star:1,must:0,owners:['連君茹','張毓倫'],src:'成果報告書參一、肆一；準備計畫書陸Q13',
+q:'跨職類合作是每場都有，還是部分場次？各職類參與比例？',
+a:`據實區分演進階段。2022年於急診部啟動時以急診內部醫護為主；2024年起擴大為常態化跨職類整合訓練，每場依情境組成含醫師、護理師與呼吸治療師的值班團隊。累計220人次涵蓋PGY、住院醫師、急診與加護及產房護理師、呼吸治療師。`,
+extra:'各職類人次分布與跨職類場次比例，請自訓練紀錄統計備妥；誠實區分階段，避免被追問後顯得誇大。'},
+{id:'B5',cat:'B',star:0,must:0,owners:['連君茹','蘇欣怡'],src:'成果報告書參三；準備計畫書陸Q14',
+q:'13名師資如何認證？如何確保匯報品質一致？',
+a:`TTT三階段。第一階段知識培訓，學習TRM、LST識別、CBME、GAS與三量表操作；第二階段技能實習，至少擔任2場協同引導者並接受資深師資回饋；第三階段獨立執行認證，經2名資深師資以教學觀察評核表通過，認證效期3年，屆期需繼續教育再認證。每場配置雙師資，一人主導、一人觀察記錄，互為品質監督；師資均另具ACLS或BLS教師資格。`},
+{id:'B6',cat:'B',star:0,must:0,owners:['連君茹','蘇欣怡'],src:'成果報告書參二、貳一；準備計畫書陸Q15',
+q:'情境腳本如何開發與更新？效度由誰把關？',
+a:`腳本由跨領域工作小組共同撰寫，涵蓋成人心跳停止、急性心肌梗塞、創傷大出血、兒科心跳停止與產科急救5類，依場域臨床特性調整。腳本含情境設定、病人基本資料、觸發點與教學目標，訓練前24小時完成最終確認。內容依AHA急救指引更新同步修訂，並依臨床通報的LST回饋調整；已建立標準化腳本模板庫，由資深師資審核後入庫，確保效度並降低新進師資撰寫負擔。`},
+{id:'B7',cat:'B',star:0,must:0,owners:['張毓倫','蘇欣怡'],src:'成果報告書參一、參六；準備計畫書陸Q16',
+q:'學員如何安排？輪調頻繁的住院醫師與PGY如何涵蓋？',
+a:`採常態化每月開課，住院醫師與PGY於輪訓期間均會被排入至少一次原位模擬訓練。對新調進單位的學員，提供TRM教學網站於訓前自主預習，建立Call-Out、Check-Back等共通語彙，降低學習曲線。`,
+extra:'學員排入機制與排班、教學時數整合之細節口徑。'},
+{id:'B8',cat:'B',star:1,must:1,owners:['全體'],src:'成果報告書參二、參五、肆三；準備計畫書陸Q17',
+q:'快答抽問：GAS三字母各是什麼？T-ACLS五構面？STAR四構念？（全員必背）',
+a:`GAS為Gather蒐集反應、Analyze分析表現差距、Summarize摘要關鍵學習點。T-ACLS五構面源自TeamSTEPPS：團隊結構、情境監控、溝通、領導力、互助支持，另加整體合作表現Global題，共22題。STAR-Resus四構念：Time時間、Quality品質、Technical技術執行、Process流程整合。`},
+{id:'B9',cat:'B',star:1,must:0,owners:['黃沛銓','張毓倫'],src:'準備計畫書貳三、陸Q18',
+q:'書面資料與現場說法若有出入怎麼辦？報告書有無需要勘誤之處？',
+a:`主動準備、誠信面對。附件九獎項一覽與正文兩處之獎牌記載不一致，報告前已完成勘誤並於現場報告資料附勘誤頁；若委員問及，坦承為繕打疏漏並出示獎狀正本。其餘所有數字（43場、220人次、24項LST、25配對統計等）均與報告書一致，簡報製作時逐一核對。`},
+{id:'B10',cat:'B',star:0,must:0,owners:['蘇欣怡','陳俊維'],src:'成果報告書參六、肆三；準備計畫書捌第七冊',
+q:'訓練錄影的知情同意與個資保護如何處理？',
+a:`訓練錄影僅供教學回饋與研究使用，學員於訓前說明中知情同意；檔案於院內加密儲存，ReSim平台設權限管理；用於研究之資料均去識別化，並通過IRB審查（T-ACLS案號202508095RIND）。數位工具開發亦備有資訊安全與個資保護說明文件。`,
+extra:'確認院內錄影同意書版本與ReSim帳號權限管理現況，統一口徑。'},
+{id:'B11',cat:'B',star:0,must:0,owners:['連君茹','陳勤策'],src:'成果報告書參二、參四、肆五；準備計畫書陸Q33',
+q:'若學員在模擬中犯下嚴重錯誤，師資如何處理？',
+a:`課前宣讀心理安全聲明，明示錯誤是學習素材而非評判依據；演練中師資僅於立即安全疑慮時介入；匯報時聚焦行為與系統因素而非個人，以GAS結構引導學員自行發現差距；必要時課後個別輔導。學員心得中「在模擬中犯錯感到安全」正是此機制的佐證。`},
+{id:'B12',cat:'B',star:0,must:0,owners:['張毓倫','連君茹'],src:'成果報告書參三、參四、肆一',
+q:'43場220人次，平均每場約5名學員，師生比與觀察品質如何？',
+a:`小班設計是刻意的。原位模擬在真實單位進行，每場以值班團隊規模為上限；每場配置雙師資，一人主導情境與匯報、一人專責觀察與評量，搭配急救面板與APP分擔計時記錄，確保每位學員的行為都被看見與回饋。`},
+{id:'B13',cat:'B',star:0,must:0,owners:['蘇欣怡','張毓倫'],src:'成果報告書參二、參四、肆四',
+q:'60分鐘訓練如何嵌入忙碌的臨床排班？單位配合意願如何維持？',
+a:`課程長度60分鐘本身就是配合臨床的設計，含課前準備、情境、匯報與精熟練習各段壓縮至單位可承受的離線時間；訓前24小時場地評估與護理長協調機制，避開單位高峰時段；訓練直接產出與該單位相關的LST改善，讓單位看見自身受益，配合意願由被動轉為主動。`},
+{id:'B14',cat:'B',star:0,must:0,owners:['陳俊維'],src:'成果報告書參五、肆三；準備計畫書陸Q23',
+q:'不同評分者之間的一致性如何維持？',
+a:`15位評分者均具ALS認證並接受統一評分訓練；每場採雙評分者設計；STAR時間類指標由急救APP客觀產出，減少主觀判斷；T-ACLS與國際TEAM量表的聚合效度達0.84至0.89，顯示評分趨勢一致；評分者間信度ICC(2,k)驗證進行中，完成後會補強最後一塊證據。`},
+{id:'B15',cat:'B',star:0,must:0,owners:['連君茹','蘇欣怡'],src:'成果報告書參四；準備計畫書陸Q12',
+q:'訓練用物與臨床用物如何區隔？會動用到真實藥物嗎？',
+a:`訓練用物與臨床用物明確區隔，另備訓練專用耗材與備用急救箱；不使用臨床現用藥物，模擬用藥以訓練耗材替代；訓練結束後場地復原並點交，確保臨床急救系統隨時處於備戰狀態。`,
+extra:'依SOP確認用物區隔與點交細節口徑。'},
+
+/* ── Ｃ、成果表現：量化證據與方法學 ── */
+{id:'C1',cat:'C',star:1,must:0,owners:['陳俊維'],src:'成果報告書肆三、伍二；準備計畫書陸Q19',
+q:'25組配對樣本會不會太小？d_z=2.32的效果量大得不尋常，如何解釋？',
+a:`承認這是導入新量表初期的驗證規模；但配對設計下統計證據內部一致：Wilcoxon檢定p<0.0001、25組全數進步、21個單項經Holm-Bonferroni校正後均達顯著。效果量大反映的是「單場GAS匯報後立即重測」的近端教學效應，我們不將其解讀為長期保留效果；長期保留與盲評驗證已列為下一步。同時有TEAM三年縱貫趨勢與質性心得軌跡交叉支持，非單一證據源。`},
+{id:'C2',cat:'C',star:1,must:0,owners:['陳俊維'],src:'成果報告書肆五、伍二；準備計畫書陸Q20',
+q:'同一情境練第二次的進步，會不會只是練習效應，而非匯報的效果？',
+a:`三層回答。第一，承認無法完全排除練習效應，報告書已明載此限制。第二，反證：若僅是重複練習，難以解釋Call-Out、Two-Challenge、Huddle啟動等非技術行為的結構性出現，此類行為通常需在匯報中被具體點出才會改變，且學員心得的行為語言同步改變。第三，下一步：規劃納入「重複演練但無結構化匯報」的比較設計與盲評驗證。`},
+{id:'C3',cat:'C',star:0,must:0,owners:['陳俊維'],src:'成果報告書參五、伍二；準備計畫書陸Q21',
+q:'為什麼沒有對照組？',
+a:`基於教育倫理與臨床可行性。結構化匯報的效益已有國際實證，ILCOR 2025年亦建議將原位模擬納入CPR訓練選項，對第一線值班同仁設置「不給匯報」的對照組有教育倫理疑慮。本案採自身配對設計使每團隊自為對照，並以TEAM縱貫、質性心得、真實場域資料（JAHA論文）多源三角驗證；2027年多中心驗證將提供跨機構比較基礎。`},
+{id:'C4',cat:'C',star:1,must:0,owners:['陳俊維'],src:'成果報告書肆二、肆五；準備計畫書陸Q22',
+q:'TEAM三年縱貫資料是不同團隊、不同學員，怎能說是進步？',
+a:`精確定位評估維度。TEAM縱貫呈現的是系統層級的團隊表現趨勢，反映訓練體系整體成熟度與共通語彙建立，而非同一學員的個人成長曲線；我們刻意區分這兩層，避免生態謬誤。個人層級證據來自T-ACLS配對資料、模組勝任標準（STAR達4分）與質性心得軌跡，三者互為補充。`},
+{id:'C5',cat:'C',star:1,must:0,owners:['陳俊維'],src:'成果報告書參五、肆三；準備計畫書陸Q23',
+q:'T-ACLS的ICC還在驗證中，現在的分數可信嗎？',
+a:`已完成的心理計量證據包括內容效度（I-CVI與S-CVI達標）、內部一致性Cronbach's α=0.978、反應性（總分d_z=2.32）、與國際TEAM量表的聚合效度（總分Spearman ρ=0.84至0.89，Bland-Altman分析無系統性偏差）。ICC絕對一致性驗證進行中；過渡期以15位ALS認證評分者、統一評分訓練與雙評分者設計控制信度風險，時間類硬性指標由急救APP客觀產出。`},
+{id:'C6',cat:'C',star:1,must:0,owners:['陳俊維','連君茹'],src:'成果報告書參五、肆三；準備計畫書陸Q24',
+q:'STAR-Resus沒有送IRB，資料可以用來評量學員或發表嗎？',
+a:`區分用途回答。STAR目前定位為常規教學品質監測與即時回饋工具，屬臨床教育常規活動，資料去識別化管理，不屬人體研究範疇；涉及研究產出的T-ACLS已通過IRB審查。STAR後續若要進行系統性信效度研究與學術發表，會在投稿前完成人體試驗委員會送審或豁免程序。`,
+extra:'先與IRB確認STAR信效度研究的送審或豁免路徑，全員統一口徑。'},
+{id:'C7',cat:'C',star:1,must:0,owners:['陳勤策'],src:'成果報告書肆六；準備計畫書陸Q25',
+q:'幸福感問卷N=44、單次橫斷面，工具從哪來？能歸因於本計畫嗎？',
+a:`據實說明。2024年5至7月以5點李克特量表六題工作幸福感題組，對參與原位模擬訓練的急救相關職類同仁施測，回收有效樣本44份，六題平均4.30至4.41，「尚可以上」比例均達97.7%以上。定位為組織氛圍的正向水準描述，不做因果宣稱；與質性心得中反覆出現的認可感、安全感主題相互呼應。`,
+extra:'備妥原始問卷與施測說明，確認題組出處與施測脈絡；若題組源自其他調查之一部分，應如實說明，口徑與原始資料完全一致，此題失分風險在於說法前後不一。'},
+{id:'C8',cat:'C',star:0,must:0,owners:['張毓倫','連君茹'],src:'成果報告書肆四、附件四；準備計畫書陸Q26',
+q:'24項LST只完成12項改善（50%），其餘為何未完成？',
+a:`LST改善常涉及跨部門協調與資源配置。已完成的12項均屬高風險且可即時介入者，例如喉鏡電力確認納入急救車每班稽核、兒科藥物劑量建置於急救APP自動計算。其餘項目如TCP決策樹、院內外場域急救動線圖更新，因涉及院級空間調整與跨科部共識，目前標示「進行中」，均登錄於追蹤系統並有主責人。識別、通報、追蹤、稽核的完整閉環，正是本案對病安體系的制度貢獻。`,
+extra:'進行中項目之現況與預定時程一覽表。'},
+{id:'C9',cat:'C',star:0,must:0,owners:['連君茹','張毓倫'],src:'成果報告書肆四；準備計畫書陸Q27',
+q:'改善後有無再驗證？如何確認問題未再發生？',
+a:`兩軌再驗證。第一軌，改善措施併入日常臨床稽核，如114年急救流程稽核表定期監測合規率。第二軌，原位模擬本身即為再驗證機制，後續在相同單位的演練場次中，同類LST若再現會被系統重新標記並啟動檢討，直到完全排除。`,
+extra:'若有稽核合格率或未再發生之紀錄，請備妥數據。'},
+{id:'C10',cat:'C',star:0,must:0,owners:['蘇欣怡','范凱淇'],src:'成果報告書參五、參六；準備計畫書陸Q28',
+q:'單場訓練同時使用三個量表，觀察教師負荷會不會太重？',
+a:`並非每場全上。依訓練模組與對象分流，例如基礎技術模組以STAR為主，跨職類資深團隊模組以T-ACLS與TEAM為主；每場雙師資中由輔助師資專責量表填寫；急救面板卸除計時監控、急救APP自動產出時間資料，使觀察人力聚焦於行為觀察本身，這正是數位工具改善教師負荷的直接體現。`},
+{id:'C11',cat:'C',star:0,must:0,owners:['陳俊維'],src:'成果報告書肆二、肆三、參五',
+q:'TEAM總分28.84進步至38.00，代表什麼意義？有無天花板效應？',
+a:`此為25組配對前後測結果，效果量d_z=1.72，顯示單場訓練對團隊表現有明確的近端效益；三年縱貫資料亦呈現上升趨勢，反映體系成熟。後期場次平均分雖已偏高，但個別構面如溝通與領導力仍有進步空間，因此我們進階開發T-ACLS做更細緻的非技術技能評量，避免單一工具的天花板限制。`},
+{id:'C12',cat:'C',star:0,must:0,owners:['陳勤策'],src:'成果報告書肆五；準備計畫書陸',
+q:'質性心得是如何分析的？分析的可信度如何確保？',
+a:`學員心得依年度彙整，歸納主題後呈現三階段軌跡：早期聚焦技術操作層次的反思，中期出現TRM系統性反思，近期進展至臨床應用與深層概念化；報告書以學員原文摘錄佐證各階段，並與量化結果、LST改善相互三角驗證。`,
+extra:'編碼者人數、共識程序等分析細節口徑，若委員深問可如實說明。'},
+{id:'C13',cat:'C',star:0,must:0,owners:['張毓倫','連君茹'],src:'成果報告書參三、參四、肆四、附件七；附件1-9成果表現第5項',
+q:'制度化構面問「制度與標準的改變及新版落實程度」，具體例子是什麼？',
+a:`四個實例。原位模擬SOP有歷次修訂版本可查，顯示制度隨執行回饋更新；場地安全評估表由無到有並正式納入訓練流程；LST改善項併入114年急救流程稽核表，成為常規監測；TTT辦法與3年再認證機制正式實施，13名師資完成認證。新版制度的落實以簽到紀錄、稽核表與認證紀錄佐證。`},
+{id:'C14',cat:'C',star:0,must:0,owners:['黃沛銓','陳俊維'],src:'成果報告書肆、伍一；附件1-9成果表現第1、3項',
+q:'「簡化、優化之綜效」與「整體成效之突破性」體現在哪裡？',
+a:`綜效在於一場訓練雙重產出：教學端提升團隊表現（25組全數進步），病安端同時識別24項LST並完成12項改善，訓練與安全查核不必分開辦理。突破性在於把原位模擬、結構化反思、本土化雙量表與自製數位工具整合為可複製的學習系統，並以雙國際期刊驗證，而非單點式的教學活動。`},
+{id:'C15',cat:'C',star:0,must:0,owners:['黃沛銓','陳俊維'],src:'成果報告書肆七、參六；準備計畫書陸Q35',
+q:'學術發表與教學成效之間的連結是什麼？',
+a:`研究問題都來自教學現場。Medical Teacher論文比較現場與影片評量的一致性，直接決定了ReSim平台定位為形成性回饋工具；JAHA論文以真實急救資料驗證非技術技能與CPR品質的關聯，回過頭強化課程對領導力與溝通行為的教學重點。教學產生問題、研究回答問題、答案回到課程，形成完整循環。`},
+
+/* ── Ｄ、檢討與未來 ── */
+{id:'D1',cat:'D',star:1,must:0,owners:['黃沛銓','陳俊維'],src:'成果報告書伍二；準備計畫書陸Q32',
+q:'你們自己認為本案最大的弱點是什麼？',
+a:`主動、具體、有對策，共三點。第一，成效證據集中於近端學習成果，病人層級成效與長期保留尚待建立，對策為2026至2028長期追蹤與多中心驗證。第二，自製量表心理計量驗證未全部完成，ICC與因素分析進行中，對策為擴大樣本與盲評設計。第三，跨職類涵蓋率與病房推廣仍有空間，對策為病房試點與跨機構聯合訓練。誠實的自我檢討正是檢討構面的得分點，切勿回答沒有弱點。`},
+{id:'D2',cat:'D',star:0,must:0,owners:['陳勤策','蘇欣怡'],src:'成果報告書參二、參六；準備計畫書陸Q33',
+q:'設計思考與使用者經驗設計如何體現？',
+a:`每項工具都由使用者痛點驅動。引導師「監控者與觀察者角色衝突」的痛點，催生自動計時的急救面板；記錄與記憶負荷，催生自動產出時序log的急救APP；學員預習與共通語彙不足，催生TRM教學網站；回饋受限於在場、即時、單次，催生支援時間軸標記的ReSim回饋網站；學員怕被評判，於課前宣讀心理安全聲明。課程本身亦經「蒐集學員回饋與師資反思日誌、課程迭代」持續改版。`},
+{id:'D3',cat:'D',star:0,must:0,owners:['連君茹','陳俊維'],src:'成果報告書伍二、伍四；準備計畫書陸',
+q:'如果重新開始，你們會改變什麼？',
+a:`三件事會更早做。第一，在導入初期即設計比較性研究架構與盲評機制，讓匯報效益的因果證據更完整；第二，STAR量表的倫理審查文件與信效度研究會更早啟動；第三，教師工作負荷的量化指標會從第一年即開始系統性記錄，而非僅以機制與質性證據呈現。這些均已納入未來三年行動計畫。`},
+{id:'D4',cat:'D',star:0,must:0,owners:['黃沛銓','張毓倫'],src:'成果報告書伍四、肆四；準備計畫書陸Q34',
+q:'未來三年最重要的目標是什麼？目前未解問題的進度？',
+a:`依2026至2028路線圖：2026年啟動跨機構聯合訓練與病房快速反應小組試點；2027年進行STAR與T-ACLS多中心信效度驗證，完成ICC與因素分析；2028年建立長期行為保留與病人層級成效追蹤。未解問題如12項進行中LST，均有主責人與追蹤時程，按季檢討。`},
+
+/* ── Ｅ、加分項與學術 ── */
+{id:'E1',cat:'E',star:0,must:0,owners:['張毓倫','連君茹'],src:'成果報告書肆七、伍四；準備計畫書陸Q34',
+q:'區域性合作的具體內容與進度？',
+a:`已有跨機構交流實績。2024年2月赴台北榮總進行雙向學術分享並獲回饋，2024年9月接待北榮團隊來訪實地交流。規劃面：與鄰近教學醫院共享師資、情境腳本庫與LST改善資料庫，鄰近醫院已表達合作意願；2026年啟動跨機構聯合訓練，2027年進行多中心驗證。`,
+extra:'合作院名、公文或會議紀錄，列入造冊第八冊；有簽署文件者優先出示。'},
+{id:'E2',cat:'E',star:0,must:0,owners:['陳俊維'],src:'成果報告書肆七；準備計畫書陸Q35',
+q:'Medical Teacher論文指出現場與影片評量一致性僅屬中等，影片評量真的可行？AMEE 2026的LLM評分者定位為何？',
+a:`論文結論的精確版本是：兩種評量模式於群體層級的一致性可接受（ICC 0.59至0.75，Bland-Altman無比例性偏差），且一致性受評分者經驗影響；因此影片評量適用於群體層級的教學品質監測與形成性回饋，高利害的個人評核仍以現場評分為主。LLM定位為第二評分者的探索性研究，輔助人類評分者、提供一致性參考，而非取代。`},
+{id:'E3',cat:'E',star:0,must:0,owners:['連君茹','張毓倫'],src:'成果報告書參三、伍三、伍四；附件1-9加分項第1款',
+q:'加分項問「可跨團隊或跨領域使用」，實績是什麼？',
+a:`三個層次。職類面：師資庫已納入加護病房、產房與護理部種子教師，情境涵蓋成人、兒科與產科急救。單位面：啟動一般病房快速反應小組試點推廣，將SOP與數位工具複製至試點單位。機構面：與鄰近醫院共享腳本庫與改善資料庫，規劃聯合培育。模式本身不依賴特定科別，核心是可移植的流程與工具。`},
+{id:'E4',cat:'E',star:0,must:0,owners:['陳俊維','黃沛銓'],src:'成果報告書肆七；準備計畫書陸Q35',
+q:'本案是否使用人工智慧工具？如何定位與治理？',
+a:`目前探索性應用於評量研究，AMEE 2026發表的LLM第二評分者研究，定位為輔助人類評分者、提供一致性參考；涉及錄影與學員資料之處理，均依IRB審查與院內資安規範執行。若委員問及競賽文件是否使用AI輔助，如實說明使用範圍與用途，所有數據內容均由團隊核實。`},
+
+/* ── Ｆ、臨場應對與軟性題 ── */
+{id:'F1',cat:'F',star:0,must:1,owners:['全體'],src:'成果報告書摘要、伍一',
+q:'請用一分鐘說明你們的計畫。（電梯簡報，全員必備）',
+a:`我們把急救訓練搬回真實臨床場域。四年來辦理43場、220人次的原位模擬訓練，用Kolb循環與GAS反思匯報讓學習變成行為改變，25組團隊非技術技能全數顯著進步；訓練同時為醫院找出24項潛在安全威脅，已完成12項改善並納入常規稽核。模式已SOP化，並發表於Medical Teacher與JAHA。一句話：我們把每一次危機，變成整個團隊共同的課堂。（主講版本由黃沛銓定稿，全員各自演練）`},
+{id:'F2',cat:'F',star:0,must:0,owners:['黃沛銓','陳勤策'],src:'成果報告書肆四、肆五；準備計畫書陸附註',
+q:'印象最深刻的一場訓練是哪一場？',
+a:`由黃沛銓統一講述喉鏡電力事件：2023年1月某場原位模擬中，學員取用喉鏡時發現電力不足，團隊當場切換備案，匯報時追溯出設備檢核的制度缺口，此後喉鏡電力確認納入每班稽核。故事重點是「一場模擬攔截了一次可能失敗的插管」，呼應核心命題。可再準備一則兒科情境的團隊合作故事備用（陳勤策補充學員心得原文）。`},
+{id:'F3',cat:'F',star:0,must:1,owners:['全體'],src:'現場報告成員名單2026H2023；注意事項第2點',
+q:'委員指定任一成員：你在這個專案中實際負責什麼？',
+a:`每人以一句話回答，內容與現場報告成員名單「負責任務」欄完全一致，並對應工作分配表。例如張毓倫回答：我負責臨床跨領域協作調度與潛在安全威脅的登錄追蹤，今天也負責佐證資料的即時翻閱。（各成員版本見「必背卡：每人一句」）`},
+{id:'F4',cat:'F',star:0,must:0,owners:['黃沛銓'],src:'準備計畫書肆一',
+q:'今天的簡報與文件是誰做的？',
+a:`團隊共製。各領域主責成員提供內容與數據，由主講者統整，經三次彩排逐版修正；書面資料與簡報每個數字都回到成果報告書核對。這反映本案的日常運作方式，不是一人作品。（任何被指定成員都可回答）`},
+{id:'F5',cat:'F',star:0,must:0,owners:['黃沛銓','陳俊維'],src:'成果報告書伍三、肆七；準備計畫書陸Q6',
+q:'壓力題：這會不會只是把既有的模擬教學重新包裝？',
+a:`語氣平和，以三點回應。第一，既有的模擬教學多在模擬中心進行，本案把訓練搬進真實場域並系統性產出病安改善，24項LST與12項完成改善是具體事證。第二，本土化雙量表通過IRB並完成初步心理計量驗證，補上國際文獻缺口。第三，模式經雙國際期刊同儕審查，創新性已獲外部學術社群確認，而非自我宣稱。`},
+];
+
+/* ═══════════ 全體成員必背卡（快問快答）═══════════ */
+const MUSTCARDS=[
+{g:'四大教育理論',q:'情境學習（Situated Learning）一句話？',a:'知識必須在真實情境中習得，原位模擬把課堂搬回急救現場。'},
+{g:'四大教育理論',q:'刻意練習與精熟學習一句話？',a:'在即時回饋下針對缺口反覆練習，對應課程的15分鐘精熟練習段。'},
+{g:'四大教育理論',q:'CBME（勝任力導向醫學教育）一句話？',a:'以勝任能力為依歸，行為可觀察、進步可追蹤、缺口可修補，三軌評量即其落實。'},
+{g:'四大教育理論',q:'Kolb 體驗學習循環一句話？',a:'具體體驗、反思觀察、抽象概念化、主動驗證，對應60分鐘課程四段。'},
+{g:'工具與構面速記',q:'GAS 三步驟？',a:'Gather 蒐集反應、Analyze 分析表現差距、Summarize 摘要關鍵學習點。'},
+{g:'工具與構面速記',q:'T-ACLS 五構面？',a:'源自TeamSTEPPS：團隊結構、情境監控、溝通、領導力、互助支持；共21題行為錨點加1題整體表現。'},
+{g:'工具與構面速記',q:'STAR-Resus 四構念？',a:'Time 時間、Quality 品質、Technical 技術執行、Process 流程整合。'},
+{g:'工具與構面速記',q:'五類情境腳本？',a:'成人心跳停止、急性心肌梗塞（STEMI）、創傷大出血、兒科心跳停止、產科急救。'},
+{g:'工具與構面速記',q:'四項自製數位工具？',a:'急救面板、急救APP、TRM教學網站、ReSim擬思回饋網站。'},
+{g:'關鍵數字',q:'執行規模三個數字？',a:'2022年5月至2026年5月：43場、220人次、13名TTT認證師資。'},
+{g:'關鍵數字',q:'TEAM 與 T-ACLS 量化成效？',a:'TEAM總分28.84→38.00（d_z=1.72）；T-ACLS總分68.68→91.12（d_z=2.32），25組全數進步，α=0.978，與TEAM聚合效度ρ=0.84至0.89。'},
+{g:'關鍵數字',q:'安全成效（LST）？',a:'識別24項潛在安全威脅，12項完成改善並納入常規稽核。'},
+{g:'關鍵數字',q:'幸福感問卷數字？',a:'N=44，六題平均4.30至4.41。'},
+{g:'關鍵數字',q:'IRB 案號？',a:'T-ACLS通過IRB，案號 202508095RIND。'},
+{g:'每人一句．我的負責任務',q:'黃沛銓的一句話任務？',a:'專案總指揮，負責重點介紹主講與整體運作、機構支持、學術外推答詢。'},
+{g:'每人一句．我的負責任務',q:'陳俊維的一句話任務？',a:'原位模擬情境設計，負責教育理論、評量工具開發與信效度統計答詢。'},
+{g:'每人一句．我的負責任務',q:'連君茹的一句話任務？',a:'原位模擬情境開發，負責SOP與課程執行、師資TTT培訓與認證答詢。'},
+{g:'每人一句．我的負責任務',q:'張毓倫的一句話任務？',a:'臨床跨領域協作調度，負責LST通報追蹤與原始佐證資料保管翻閱。'},
+{g:'每人一句．我的負責任務',q:'蘇欣怡的一句話任務？',a:'場地排程與臨床安全評估，負責TRM網站與ReSim教學應用答詢。'},
+{g:'每人一句．我的負責任務',q:'陳勤策的一句話任務？',a:'課程執行，負責學員滿意度、質性心得與幸福感調查答詢。'},
+{g:'每人一句．我的負責任務',q:'范凱淇的一句話任務？',a:'課程行政與設備整備，負責現場數位工具展示操作與記錄計時。'},
+];
+/* ═══════════ 基本設定 ═══════════ */
+const TEAM_NO='2026H2023';
+const REPORT_AT=new Date('2026-08-17T15:30:00+08:00');   // 進場報告
+const CHECKIN_AT=new Date('2026-08-17T13:00:00+08:00');  // 建議抵達
+const PROXY_URL='https://patient-mkargc7maa-uc.a.run.app';
+const JITSI_ROOM='NCMEA2026H2023WarRoom';
+
+const MILESTONES=[
+ {id:'m_fee',  at:'2026-08-07T23:59:00+08:00', label:'審查費 5 萬繳納截止', emo:'💰'},
+ {id:'m_r1',   at:'2026-08-10T21:00:00+08:00', label:'第 1 次彩排（校時 11′30″）', emo:'🎬'},
+ {id:'m_r2',   at:'2026-08-13T21:00:00+08:00', label:'第 2 次彩排（模擬答詢）', emo:'🎤'},
+ {id:'m_r3',   at:'2026-08-16T21:00:00+08:00', label:'總彩排＋出發前檢查', emo:'🧳'},
+ {id:'m_go',   at:'2026-08-17T13:00:00+08:00', label:'8/17 會場報到', emo:'🏁'},
+];
+
+/* ═══════════ 團隊成員與分工（捌章）═══════════ */
+const MEMBERS=[
+{name:'黃沛銓',title:'副主任（教學部）',color:'#1d4ed8',
+ role:'團隊負責人・12分鐘重點介紹與3分鐘補充說明主講、A/B案現場決策',
+ dims:'整體運作30分、成果表現20分、加分項5分',
+ duty:'主答計畫重要性、院方支持、機構制度化、學術外推與未來發展',
+ docs:'簡報定稿與彩排總指揮；第一冊（計畫與制度）、第八冊（學術與肯定）審查；審查費繳納與院方代表邀請',
+ qids:['A1','A6','A8','A9','A12','C14','C15','D1','D4','E4','F1','F2','F4','F5'],
+ one:'專案總指揮，負責重點介紹主講與整體運作、機構支持、學術外推答詢。'},
+{name:'陳俊維',title:'主治醫師',color:'#0f766e',
+ role:'教育理論與評量統計主答',
+ dims:'確實性45分、成果表現20分',
+ duty:'主答Kolb、GAS、CBME等理論基礎，TEAM、STAR、T-ACLS信效度與統計、IRB倫理、學術論文',
+ docs:'第四冊（評量工具與統計）整編；統計輸出報表；必背卡製作',
+ qids:['A2','A3','A4','A7','B1','B2','B14','C1','C2','C3','C4','C5','C6','C11','D3','E2','E4'],
+ one:'原位模擬情境設計，負責教育理論、評量工具開發與信效度統計答詢。'},
+{name:'連君茹',title:'主治醫師',color:'#7c3aed',
+ role:'課程執行與師資培育主答',
+ dims:'確實性45分、加分項5分',
+ duty:'主答SOP與60分鐘流程、5類情境腳本、TTT認證與再認證、跨職類演練、跨機構合作',
+ docs:'第二冊（課程與執行）、第三冊（師資培育）整理；情境腳本庫與認證紀錄',
+ qids:['A3','A10','A11','B1','B2','B3','B4','B5','B6','B11','B15','C9','D3','E1','E3'],
+ one:'原位模擬情境開發，負責SOP與課程執行、師資TTT培訓與認證答詢。'},
+{name:'張毓倫',title:'專科護理師',color:'#b45309',
+ role:'跨領域協調與臨床安全主答・原始佐證資料總保管人（現場10秒翻頁支援）',
+ dims:'確實性45分、成果表現20分',
+ duty:'主答LST登錄追蹤改善、跨科部調度、團隊形成',
+ docs:'第五冊（安全與品質）整理；8冊造冊總整與索引標籤；成員名單與現場報告資料印製',
+ qids:['A2','A11','B4','B7','B12','B13','C8','C9','C13','D4','E1'],
+ one:'臨床跨領域協作調度，負責LST通報追蹤與原始佐證資料保管翻閱。'},
+{name:'蘇欣怡',title:'護理師',color:'#be185d',
+ role:'臨床安全運作與數位平台主答・方案A展示口導',
+ dims:'整體運作30分、確實性45分',
+ duty:'主答場地安全評估、臨床優先與取消延期機制、TRM教學網站與ReSim教學應用、教師負荷',
+ docs:'第七冊數位工具（TRM網站、ReSim）整理；場地安全評估表實例',
+ qids:['A5','B3','B5','B6','B7','B10','B13','B15','C10','D2'],
+ one:'場地排程與臨床安全評估，負責TRM網站與ReSim教學應用答詢。'},
+{name:'陳勤策',title:'護理師',color:'#047857',
+ role:'學員回饋與使用者經驗主答',
+ dims:'成果表現20分、檢討5分',
+ duty:'主答質性心得分析、幸福感問卷、設計思考與UX迭代、心理安全',
+ docs:'第六冊（學員回饋）整編；幸福感問卷原始卷與施測說明口徑確認',
+ qids:['B11','C7','C12','D2','F2'],
+ one:'課程執行，負責學員滿意度、質性心得與幸福感調查答詢。'},
+{name:'范凱淇',title:'護理師',color:'#4338ca',
+ role:'數位工具展示操作・記錄計時員（12分鐘手勢提醒、詢答問題登記、委員口頭回饋逐字記錄）',
+ dims:'整體運作30分、確實性45分',
+ duty:'操作急救面板與APP展示；詢答問題登記供A/B案決策',
+ docs:'第七冊數位工具（急救面板、APP）操作手冊與資安資料；USB正副碟、筆電與HDMI測試；預錄展示影片',
+ qids:['A5','B10','C10'],
+ one:'課程行政與設備整備，負責現場數位工具展示操作與記錄計時。'},
+];
+const COMMON_DUTIES=[
+'熟讀成果報告書全文與本手冊，完成必背卡快問快答（A4、B8、F1、F3 四題人人過關）',
+'出席 3 次彩排；第 2 次彩排配合模擬委員演練自己主答的題號',
+'回答內容不得與書面報告矛盾；不確定的數字交由張毓倫翻佐證冊，不臆測',
+];
+
+/* ═══════════ 壹、賽事資訊 ═══════════ */
+const INFO=[
+{k:'報告日期與順序',v:'115年8月17日（星期一）北區場，當日第6順位（該會議室最後一組），面談時間 15:30–16:15 共45分鐘。'},
+{k:'地點',v:'新北市板橋區三民路二段37號9樓（醫策會）。來文載 A棟9樓901會議室、排程表載902會議室，兩者不一致——出發前以電話向大會窗口確認，以最新通知為準。'},
+{k:'報到時間',v:'報告前30分鐘完成報到；下午場報到時段 12:30–13:00。建議全員 13:00 前抵達，預留繳件與設備測試時間。'},
+{k:'面談結構',v:'①專案重點介紹12分鐘（形式不拘）→ ②與3位委員面談答詢30分鐘 → ③團隊補充說明3分鐘（問題提問或特色成果展現）。'},
+{k:'出席人數',v:'3至8名成員（含專案負責人）；院方代表至多2名。非名單人員不得入場；現場禁止錄影、錄音。'},
+{k:'審查費',v:'第二階段審查費 NT$50,000，8月7日（五）截止，至活動平台線上繳款並留存繳費證明。'},
+{k:'大會聯絡窗口',v:'余佳純組員｜02-8964-3000 分機3385｜NCMEA@jct.org.tw｜當日公務手機 0911-998-874（僅報告當天開機）。'},
+{k:'成績權重',v:'第一階段書面20% ＋ 第二階段現場報告30% ＋ 第三階段實地評審50%。現場報告是晉級第三階段的關鍵。'},
+{k:'評審回饋',v:'僅於現場給予口頭綜合意見，不另提供書面回饋——當日由記錄員（范凱淇）逐字記錄委員口頭回饋，作為第三階段準備依據。'},
+{k:'颱風與應變',v:'依政府停班公告取消並擇期辦理；競賽前一天與當天，聯絡人及負責人手機保持暢通。'},
+{k:'現場庶務',v:'大會不提供茶水、午餐、交通、停車及住宿，團隊自理。'},
+];
+
+/* ═══════════ 貳、評分構面（105分）═══════════ */
+const SCORING=[
+{name:'整體運作',pts:30,items:'相關性（社會/臨床/教育理論/院內議題）；導入前評估完整性；預期目標合理性；維護管理與持續改善；未來發展性；貢獻及影響；改善教師臨床教學工作負荷；創造創新力；團隊成員瞭解教育理論及教學技巧'},
+{name:'確實性',pts:45,items:'創新教學導入過程適切性；專案合理化及時效性；書面資料與答詢內容之一致性；成員對所運用教育理論及教學技巧之瞭解程度'},
+{name:'成果表現',pts:20,items:'簡化優化綜效；教學成效優化/改進性/創新性（與普遍作法有區隔）；整體成效突破性；機構具體實施制度化；制度與標準之改變及新版落實程度'},
+{name:'檢討',pts:5,items:'運用設計思考與使用者經驗設計；預期改善目標之達成程度'},
+{name:'加分項',pts:5,items:'可跨團隊或跨領域使用；具有區域性合作'},
+];
+const STRATEGY=[
+'<b>確實性佔45分最高，30分鐘答詢才是決勝關鍵。</b>委員可能隨機指定任何一位成員回答教育理論——全員必須完成必背卡，Kolb、GAS、CBME、TeamSTEPPS五構面、情境學習、刻意練習，人人能以2至3句話說明。',
+'<b>所有數字以書面報告為準</b>：43場、220人次、24項LST、12項完成改善、25組配對、α=0.978、d_z=2.32、幸福感4.30至4.41。簡報與口答逐一核對，不講書面未載的數據。',
+'<b>獎項勘誤優先處理</b>：NHQA/慈濟獎項正文與附件九記載不一致（三處），以正本獎狀為準統一口徑，印製勘誤頁併入現場報告資料。',
+'<b>「改善教師臨床教學工作負荷」明列於整體運作構面</b>——四項自製數位工具（急救面板、急救APP、TRM教學網站、ReSim）是本案與其他團隊最大的區隔，爭取實機或影片展示。',
+'<b>當日為最後一組，委員已連續評審5組</b>：開場30秒內講出核心命題，投影片以圖表為主、文字極簡，嚴守時間。',
+'<b>加分項「區域性合作」佔5分</b>：北榮交流（2024/2分享、2024/9來訪）、鄰近醫院合作意願與2027多中心驗證規劃，於12分鐘與3分鐘補充明確呈現並備妥佐證。',
+'<b>今天說的每一項承諾，第三階段實地評審（佔50%）會到院逐項查核</b>——不誇大、不承諾做不到的事。',
+];
+
+/* ═══════════ 參、文件與物品 ═══════════ */
+const DOCS_SUBMIT=[
+'現場報告資料（一式5份）：12分鐘簡報講義（彩色）＋活動摘要＋原始佐證資料造冊索引頁＋獎項勘誤頁；報到時繳交，供3位委員問答時參考',
+'現場報告成員名單（一式5份）：活動附件3格式，填參賽編號2026H2023、機構、申請單位、主題、每位成員「負責任務」（須與分工表一致）',
+];
+const DOCS_EQUIP=[
+'簡報電子檔：USB正、副碟各1，檔案放第一層、檔名「2026H2023」，另存雲端備援（原則用會場電腦播放）',
+'自備筆電＋HDMI轉接線（展示急救面板/APP/TRM網站/ReSim；須事先告知工作小組並提早到場測試）＋離線預錄展示影片防網路不穩',
+'繳費證明：線上繳款收據或完成畫面截圖，隨身攜帶備查',
+'行政備品：簡報筆（先確認會場是否提供）、HDMI/USB-C轉接頭、延長線、計時器、名牌、團隊自用報告書數份',
+];
+const BINDERS=[
+{n:'第一冊 計畫與制度',c:'專案計畫書、院內提案簽呈、跨領域工作小組名單與會議紀錄、分工表與甘特圖、院方支持佐證（經費核定、公文；院方代表若不克出席必備）',o:'黃沛銓'},
+{n:'第二冊 課程與執行',c:'原位模擬SOP（含歷次修訂版）、場地安全評估表（空白＋已填實例）、5類情境腳本各1例、43場簽到表與訓練紀錄、訓練現場照片',o:'連君茹'},
+{n:'第三冊 師資培育',c:'TTT認證辦法與教學觀察評核表、13名認證師資清冊與認證紀錄、ACLS/BLS教師證書影本、師資教學反思日誌樣本',o:'連君茹'},
+{n:'第四冊 評量工具與統計',c:'TEAM量表中文版與歷年原始評分表、STAR-Resus量表與評分者手冊、T-ACLS問卷與IRB核准函（202508095RIND）、統計分析輸出（Wilcoxon、效果量、Bland-Altman）、25配對去識別化原始資料',o:'陳俊維'},
+{n:'第五冊 安全與品質',c:'24項LST登錄冊（完整清單與追蹤狀態）、改善佐證（修訂SOP、稽核表、改善前後照片）、納入常規稽核文件（114年急救流程稽核表）',o:'張毓倫'},
+{n:'第六冊 學員回饋',c:'學員心得原始檔彙整（2022–2026）、工作幸福感問卷原始卷、施測說明與統計表',o:'陳勤策'},
+{n:'第七冊 數位工具',c:'四項工具展示帳號與操作影片、系統畫面截圖冊與使用紀錄、開發維護說明（資訊安全、個資保護、錄影同意機制）',o:'蘇欣怡、范凱淇'},
+{n:'第八冊 學術與肯定',c:'Medical Teacher論文全文與DOI頁、JAHA接受函、AMEE三年發表證明、Annals of EM 2025論文首頁、獎狀影本（勘誤後正確版本）、北榮交流佐證',o:'黃沛銓'},
+];
+const BINDER_NOTE='活頁夾加貼索引標籤，詢答時 10 秒內可翻到任一頁；電子檔資料夾編號與造冊一致；造冊索引頁併入現場報告資料。';
+
+/* ═══════════ 伍、12分鐘簡報大綱 ═══════════ */
+const OUTLINE=[
+{t:'0:00–1:00',ttl:'開場：一場被攔截的危機（1張）',c:'以2023年1月「喉鏡電力未定期確認」LST為引：一場模擬，攔截了一次可能失敗的插管。點出核心命題「轉化臨床危機為教學契機」，一句話定位本案。',dim:'整體運作（相關性、創造力）'},
+{t:'1:00–3:00',ttl:'問題與理論基礎（2張）',c:'三大結構性不足：訓練碎片化、場域不符、忽略團隊動能（魚骨圖六大類分析）；四大理論一頁圖：情境學習、刻意練習與精熟學習、CBME、Kolb循環。',dim:'整體運作（導入前評估、理論理解）、確實性'},
+{t:'3:00–5:30',ttl:'創新模式與執行（3張）',c:'五大創新一圖總覽：原位模擬跨職類整合、Kolb結合GAS、三軌評量演進、四項數位工具、學術外推。三期演進＋執行規模：43場、220人次、5類情境、60分鐘Kolb標準流程、13名TTT師資。',dim:'確實性（導入過程適切性）、整體運作（師資培育）'},
+{t:'5:30–8:30',ttl:'成果（3張）',c:'TEAM 25配對：28.84→38.00（d_z=1.72）；T-ACLS：68.68→91.12（d_z=2.32）、25組全數進步、α=0.978、ρ=0.84–0.89。安全：24項LST、12項完成改善。組織：幸福感N=44、4.30–4.41。質性：心得軌跡三階段各引一句原文。',dim:'成果表現（突破性、多元評量）'},
+{t:'8:30–10:00',ttl:'教師負荷與制度化（2張）',c:'四項數位工具與三軌評量整合閉環圖：急救面板釋放認知負荷、急救APP時序log、TRM網站共通語彙、ReSim跨時空回饋。制度化：SOP、場地安全評估表、TTT與3年再認證、LST常規稽核。',dim:'整體運作（教師負荷、維護管理）、成果表現（制度化）'},
+{t:'10:00–11:30',ttl:'學術外推與未來（2張）',c:'Medical Teacher 2026刊登、JAHA 2026接受（SCI Q1）、AMEE 2024–2026連續發表、Annals of EM 2025共同作者；醫策會系列獲獎（勘誤後版本）。北榮雙向交流、鄰近醫院合作、2026–2028三年路線圖。',dim:'整體運作（未來發展）、加分項（區域合作）'},
+{t:'11:30–12:00',ttl:'結語（1張）',c:'三個帶走訊息：真實場域是最好的教室；反思讓行為改變可見；工具與制度讓模式可複製。金句收尾：急救的品質，不該取決於當天誰在班上；我們把每一次危機，變成整個團隊共同的課堂。',dim:'整體收束'},
+];
+const OUTLINE_NOTES=[
+'正式投影片約14張＋備援投影片（統計細節、量表完整題項、LST清冊、論文首頁、獎狀）置於簡報檔末，詢答時10秒內可調出',
+'所有數據直接取自成果報告書，不新增書面未載之數據',
+'彩排以 11分30秒 為目標，保留30秒緩衝；計時員（范凱淇）以手勢提示 8分、10分、11分',
+'前30秒切入主題：核心命題「轉化臨床危機為教學契機」＋喉鏡電力LST實例開場',
+];
+
+/* ═══════════ 答詢通則 ═══════════ */
+const QA_RULES=[
+'先講結論、後舉證據；每題回答 45–60 秒，避免單題超過 2 分鐘',
+'依分工表由各領域主答者回答；委員指定特定成員時由該員回答，其餘成員補充以 1 次為限，不搶話',
+'面對研究限制（無對照組、配對樣本數、ICC驗證中）採三段式：承認限制 → 說明已有保護措施 → 提出下一步計畫；切勿強辯或誇大',
+'遇到不確定的具體數字：「詳細數據已整理於佐證資料第X冊，我們為您翻到該頁」——由張毓倫即時翻頁，不現場臆測',
+'每題回答完可加一句與評分構面對應的收束句（如「這已納入我們的常規稽核」），自然帶過不堆砌',
+];
+
+/* ═══════════ 柒、3分鐘補充說明 A/B 案 ═══════════ */
+const PLAN_A=[
+{t:'0:00–1:30',c:'ReSim與急救APP展示：范凱淇操作筆電、蘇欣怡口導——呈現「演練錄影→時間軸TRM行為標記→學員課後回看→下一場進步」教學閉環＋急救APP自動時間戳記。簡報檔尾內嵌預錄影片備援，網路不穩立即切換。'},
+{t:'1:30–2:30',c:'三個帶走訊息（黃沛銓）：①真實場域是最好的教室（43場、24項LST）②反思讓行為改變可見（T-ACLS 25組全數進步）③工具與制度讓模式可複製（SOP、TTT、四項數位工具、國際發表）。'},
+{t:'2:30–3:00',c:'金句收尾＋感謝委員與主辦單位，不新增新資訊。'},
+];
+const PLAN_B=[
+{t:'0:00–1:30',c:'補充澄清1–2個關鍵問題：范凱淇於詢答中登記「未答完整或被質疑」清單，隊長圈選1–2題，調出備援投影片或佐證冊對應頁精準回應（量表信效度、IRB、LST進度等）。'},
+{t:'1:30–3:00',c:'濃縮版三訊息與結語，最後以核心命題收尾。'},
+];
+const PLAN_SWITCH='隊長黃沛銓於詢答結束前2分鐘向范凱淇確認問題清單，以手勢向全員示意A或B。詢答順利→A案（突顯數位工具）；有未盡事宜或委員疑慮→B案（精準補救）。無論哪案，最後30秒回到「轉化臨床危機為教學契機」。';
+
+/* ═══════════ 玖、倒數時程與任務（共享勾選）═══════════ */
+const TIMELINE=[
+{id:'P1',rng:'8/5（三）– 8/7（五）',label:'行政最急件',from:'2026-08-05',to:'2026-08-07',tasks:[
+ {id:'t1_fee',  t:'完成審查費 NT$50,000 線上繳納並留存證明（8/7 截止！）',o:'黃沛銓'},
+ {id:'t1_list', t:'定案出席名單與院方代表邀請',o:'黃沛銓'},
+ {id:'t1_fix',  t:'獎項紀錄勘誤定案（以正本獎狀為準，統一口徑）',o:'黃沛銓、張毓倫'},
+ {id:'t1_avreq',t:'向醫策會工作小組告知筆電＋HDMI展示需求',o:'張毓倫'},
+]},
+{id:'P2',rng:'8/8（六）– 8/10（一）',label:'簡報初稿與第1次彩排',from:'2026-08-08',to:'2026-08-10',tasks:[
+ {id:'t2_ppt',  t:'12分鐘簡報初稿完成（含備援投影片）',o:'黃沛銓'},
+ {id:'t2_bind', t:'8冊佐證彙整並與造冊索引勾稽（各冊主責回報張毓倫）',o:'各冊主責'},
+ {id:'t2_card', t:'發放必背卡（本站題庫＋必背卡）',o:'陳俊維'},
+ {id:'t2_rh1',  t:'第 1 次彩排：校正簡報時間於 11分30秒內',o:'全體'},
+]},
+{id:'P3',rng:'8/11（二）– 8/13（四）',label:'定稿與模擬答詢',from:'2026-08-11',to:'2026-08-13',tasks:[
+ {id:'t3_final',t:'簡報定稿',o:'黃沛銓'},
+ {id:'t3_video',t:'預錄展示影片完成（ReSim＋急救APP，內嵌簡報檔尾）',o:'范凱淇'},
+ {id:'t3_rh2',  t:'第 2 次彩排：邀非團隊資深師長扮演委員，用本站題庫進行30分鐘模擬答詢',o:'全體'},
+ {id:'t3_must', t:'必背卡快問快答全員過關（A4、B8、F1、F3）',o:'全體'},
+]},
+{id:'P4',rng:'8/14（五）– 8/16（日）',label:'總彩排與出發準備',from:'2026-08-14',to:'2026-08-16',tasks:[
+ {id:'t4_rh3',  t:'第 3 次全流程總彩排（45分鐘完整流程＋3分鐘A/B案切換＋設備展示）',o:'全體'},
+ {id:'t4_usb',  t:'USB正副碟製作（檔案置第一層、檔名2026H2023）＋雲端備援',o:'范凱淇'},
+ {id:'t4_print',t:'印製現場報告資料5份、成員名單5份、造冊索引',o:'張毓倫'},
+ {id:'t4_room', t:'電話向大會確認會議室 901 或 902（02-8964-3000#3385 余佳純）',o:'張毓倫'},
+ {id:'t4_go',   t:'交通與停車安排（大會不提供停車）',o:'范凱淇'},
+ {id:'t4_pack', t:'8/16 晚間攜帶清單逐項勾核（見下方清單）',o:'全體'},
+]},
+{id:'P5',rng:'8/17（一）決戰日',label:'現場面談',from:'2026-08-17',to:'2026-08-17',tasks:[
+ {id:'t5_arr',  t:'13:00 前抵達會場，完成報到與繳件（現場報告資料＋成員名單）',o:'全體'},
+ {id:'t5_test', t:'簡報存入會場電腦；自備筆電完成設備測試',o:'范凱淇'},
+ {id:'t5_meet', t:'15:00 前全員於會場外集合，最終默契確認',o:'全體'},
+ {id:'t5_go',   t:'15:30 準時進場；聯絡人與負責人手機全程暢通',o:'全體'},
+ {id:'t5_rec',  t:'詢答問題登記＋委員口頭回饋逐字記錄（第三階段準備依據）',o:'范凱淇'},
+]},
+];
+const CARRY=[
+ {id:'c_report',t:'現場報告資料 5 份（簡報講義＋摘要＋造冊索引＋勘誤頁）'},
+ {id:'c_list',  t:'現場報告成員名單 5 份（附件3格式）'},
+ {id:'c_usb',   t:'USB 正、副碟（第一層、檔名2026H2023）'},
+ {id:'c_nb',    t:'筆電＋HDMI／USB-C 轉接線（已測試）'},
+ {id:'c_bind',  t:'8 冊紙本佐證資料（活頁夾＋索引標籤）'},
+ {id:'c_fee',   t:'繳費證明（收據或截圖）'},
+ {id:'c_ptr',   t:'簡報筆'},
+ {id:'c_timer', t:'計時器'},
+ {id:'c_power', t:'延長線'},
+ {id:'c_tag',   t:'名牌'},
+];
+/* ═══════════ Firebase ═══════════ */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc, setDoc, addDoc, onSnapshot, serverTimestamp, query, orderBy, limit, where }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig={
+  apiKey:"AIzaSyBrs80vpFVe-iEh5ctzRWfYHUBb3KGvILo",
+  authDomain:"speech-to-text-2f776.firebaseapp.com",
+  projectId:"speech-to-text-2f776",
+  storageBucket:"speech-to-text-2f776.firebasestorage.app",
+  messagingSenderId:"283739023798",
+  appId:"1:283739023798:web:3091ec2bcf6262b5ecb917"
+};
+const fbApp=initializeApp(firebaseConfig);
+const db=getFirestore(fbApp);
+
+/* ═══════════ 小工具 ═══════════ */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const QMAP=Object.fromEntries(QUESTIONS.map(q=>[q.id,q]));
+const ALLTASKS=TIMELINE.flatMap(p=>p.tasks).concat(CARRY.map(c=>({id:c.id,t:c.t,o:'全體'})));
+const MNAMES=MEMBERS.map(m=>m.name);
+const MCOLOR=Object.fromEntries(MEMBERS.map(m=>[m.name,m.color]));
+const pad=n=>String(n).padStart(2,'0');
+const fmtT=ms=>{ if(!ms) return ''; const d=new Date(ms); return `${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const WD='日一二三四五六';
+let toastTimer=null;
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('on'),2600); }
+
+let ME=localStorage.getItem('ncmea_me')||'';
+let TC=localStorage.getItem('ncmea_tc')||'';
+
+/* 共享狀態 */
+let S={items:{}};                 // ncmea_state/main
+let NOTES={};                     // docId -> {member,key,text,up}
+let CARDS={};                     // member -> {qid:1|2|3}
+let CHATS=[];
+let MEETS=[];
+let LINES=[];
+let watchedMid=null, linesUnsub=null;
+let booted=false;
+
+function canWrite(){ if(!TC){ toast('目前為訪客唯讀模式，點右上角 👤 輸入通關碼'); return false; } return true; }
+function wfail(e){ console.warn(e); toast(String(e&&e.code)==='permission-denied'?'❌ 通關碼錯誤：點右上角 👤 重新輸入':'寫入失敗：'+(e&&e.message||e)); }
+
+async function saveState(patch){ if(!canWrite())return; try{ await setDoc(doc(db,'ncmea_state','main'),{...patch,tc:TC},{merge:true}); }catch(e){ wfail(e); } }
+async function toggleItem(id){ const cur=S.items&&S.items[id]&&S.items[id].d; await saveState({items:{[id]:{d:cur?0:1,by:ME||'訪客',at:Date.now()}}}); }
+function itemOn(id){ return !!(S.items&&S.items[id]&&S.items[id].d); }
+function itemMeta(id){ const it=S.items&&S.items[id]; if(!it||!it.d) return ''; return `<span class="ck-meta">✓ ${esc(it.by||'')}・${fmtT(it.at)}</span>`; }
+function ckHtml(id,text,extra=''){ const on=itemOn(id); return `<li><button class="ckbox ${on?'on':''}" data-ck="${id}">${on?'✓':''}</button><div style="flex:1"><span class="${on?'ck-done':''}">${text}</span>${extra}${itemMeta(id)}</div></li>`; }
+
+/* ═══════════ 通關閘門 ═══════════ */
+function showGate(){
+  const g=$('gateIds');
+  g.innerHTML=MNAMES.map(n=>`<button data-gid="${n}" class="${ME===n?'on':''}">${n}</button>`).join('')+`<button data-gid="張家豪" class="${ME==='張家豪'?'on':''}">張家豪（幕僚）</button><button data-gid="訪客" class="${ME==='訪客'?'on':''}">👀 訪客</button>`;
+  $('gateTc').value=TC;
+  $('gate').classList.add('on');
+  g.querySelectorAll('button').forEach(b=>b.onclick=()=>{ g.querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); });
+}
+$('gateGo').onclick=()=>{
+  const sel=$('gateIds').querySelector('button.on');
+  if(!sel){ toast('請先選擇你的身分'); return; }
+  ME=sel.dataset.gid; TC=$('gateTc').value.trim();
+  localStorage.setItem('ncmea_me',ME); localStorage.setItem('ncmea_tc',TC);
+  $('gate').classList.remove('on');
+  $('meChip').textContent='👤 '+ME;
+  if(!booted) boot(); else { renderTeam(); renderCardsList(); renderChat(); renderMeet(); renderExport(); }
+};
+$('meChip').onclick=showGate;
+
+/* ═══════════ 倒數計時 ═══════════ */
+function tick(){
+  const now=Date.now();
+  const diff=REPORT_AT-now;
+  const past=diff<0;
+  const ad=Math.abs(diff);
+  const d=Math.floor(ad/86400e3), h=Math.floor(ad%86400e3/3600e3), m=Math.floor(ad%3600e3/60e3), s=Math.floor(ad%60e3/1e3);
+  $('hdCount').innerHTML=past?'🏆 已完賽':`<b>D-${d}</b> ${pad(h)}:${pad(m)}:${pad(s)}<br>8/17 15:30 進場`;
+  const el=$('cdDays');
+  if(el){
+    el.innerHTML=past?'完賽！':`${d}<small> 天</small>`;
+    $('cdHms').textContent=past?'辛苦了，等待佳音 🙏':`${pad(h)} 時 ${pad(m)} 分 ${pad(s)} 秒`;
+  }
+}
+
+/* ═══════════ 總覽 ═══════════ */
+function renderHomeStatic(){
+  const infoRows=INFO.map(r=>`<tr><th>${esc(r.k)}</th><td>${esc(r.v)}</td></tr>`).join('');
+  const scoreRows=SCORING.map(r=>`<tr><td><b>${r.name}</b></td><td style="text-align:center"><b>${r.pts}</b></td><td>${esc(r.items)}</td></tr>`).join('');
+  const outRows=OUTLINE.map(r=>`<tr><td style="white-space:nowrap"><b>${r.t}</b></td><td><b>${esc(r.ttl)}</b><br>${esc(r.c)}<br><small style="color:#8494a5">▸ ${esc(r.dim)}</small></td></tr>`).join('');
+  const bindRows=BINDERS.map(b=>`<tr><td style="white-space:nowrap"><b>${esc(b.n)}</b><br><span class="chip" style="background:${MCOLOR[b.o.split('、')[0]]||'#888'};color:#fff">${esc(b.o)}</span></td><td>${esc(b.c)}</td></tr>`).join('');
+  $('tab-home').innerHTML=`
+  <div class="hero">
+    <div class="ttl">2026 NCMEA 國家臨床醫學教育獎・創新臨床教學組・第二階段現場報告</div>
+    <div class="theme">「轉化臨床危機為教學契機」— 原位模擬結合反思實踐建構 TRM 導向急救團隊學習模式</div>
+    <div class="cd-days" id="cdDays"></div>
+    <div class="cd-hms" id="cdHms"></div>
+    <div class="cd-when">🗓 115/8/17（一）15:30–16:15・板橋醫策會 9樓（901/902 出發前電話確認）・北區第 6 順位</div>
+    <div class="miles" id="mileRow"></div>
+  </div>
+  <div class="statrow" id="homeStats"></div>
+  <div class="card" id="homeFocus"></div>
+  <div class="secttl">📖 賽事完整資訊</div>
+  <details class="acc"><summary>📌 賽事資訊與行政檢核</summary><div class="bd tbwrap"><table class="tb">${infoRows}</table></div></details>
+  <details class="acc"><summary>🎯 評分構面（105分）與得分策略</summary><div class="bd">
+    <div class="tbwrap"><table class="tb"><tr><th>構面</th><th>配分</th><th>評分項目</th></tr>${scoreRows}</table></div>
+    <div class="secttl" style="margin-top:14px">七大得分策略</div>
+    <ol style="padding-left:20px;font-size:14px">${STRATEGY.map(s=>`<li style="margin-bottom:7px">${s}</li>`).join('')}</ol>
+  </div></details>
+  <details class="acc"><summary>🎞 12 分鐘重點介紹大綱（14張）</summary><div class="bd">
+    <div class="tbwrap"><table class="tb">${outRows}</table></div>
+    <ul style="font-size:13.5px;padding-left:20px;margin-top:10px">${OUTLINE_NOTES.map(n=>`<li>${esc(n)}</li>`).join('')}</ul>
+  </div></details>
+  <details class="acc"><summary>🗣 30 分鐘答詢通則</summary><div class="bd"><ol style="padding-left:20px;font-size:14.5px">${QA_RULES.map(r=>`<li style="margin-bottom:7px">${esc(r)}</li>`).join('')}</ol>
+    <div class="warnbox">彩排計畫：至少 3 次完整彩排（①校時 ②模擬詢答·資深師長扮委員 ③全流程45分鐘含A/B案切換）；必背卡快問快答全員至少一輪。</div></div></details>
+  <details class="acc"><summary>⏱ 3 分鐘補充說明：A／B 雙軌預備</summary><div class="bd">
+    <div class="secttl">方案 A｜特色成果展現（預設，詢答順利時）</div>
+    <div class="tbwrap"><table class="tb">${PLAN_A.map(r=>`<tr><td style="white-space:nowrap"><b>${r.t}</b></td><td>${esc(r.c)}</td></tr>`).join('')}</table></div>
+    <div class="secttl">方案 B｜補救型澄清（有未盡事宜時）</div>
+    <div class="tbwrap"><table class="tb">${PLAN_B.map(r=>`<tr><td style="white-space:nowrap"><b>${r.t}</b></td><td>${esc(r.c)}</td></tr>`).join('')}</table></div>
+    <div class="warnbox">🔀 切換機制：${esc(PLAN_SWITCH)}</div>
+  </div></details>
+  <details class="acc"><summary>📚 繳交文件、設備與 8 冊佐證造冊</summary><div class="bd">
+    <div class="secttl">報到時繳交（各一式五份）</div>
+    <ul style="font-size:14px;padding-left:20px">${DOCS_SUBMIT.map(d=>`<li style="margin-bottom:5px">${esc(d)}</li>`).join('')}</ul>
+    <div class="secttl">電子檔與設備</div>
+    <ul style="font-size:14px;padding-left:20px">${DOCS_EQUIP.map(d=>`<li style="margin-bottom:5px">${esc(d)}</li>`).join('')}</ul>
+    <div class="secttl">原始佐證資料造冊（紙本1套8冊＋電子檔USB）</div>
+    <div class="warnbox" style="margin-bottom:8px">${esc(BINDER_NOTE)}</div>
+    <div class="tbwrap"><table class="tb">${bindRows}</table></div>
+  </div></details>`;
+}
+function renderHomeDyn(){
+  const now=Date.now();
+  $('mileRow').innerHTML=MILESTONES.map(ms=>{
+    const t=new Date(ms.at)-now;
+    const done=t<0;
+    const dd=Math.floor(Math.abs(t)/86400e3), hh=Math.floor(Math.abs(t)%86400e3/3600e3);
+    const urgent=!done&&t<48*3600e3;
+    return `<div class="mile ${done?'done':''} ${urgent?'urgent':''}"><b>${ms.emo} ${done?'已過':(dd>0?`${dd}天${hh}時`:`${hh}小時`)}</b>${esc(ms.label)}</div>`;
+  }).join('');
+  // 統計
+  const total=ALLTASKS.length, done=ALLTASKS.filter(t=>itemOn(t.id)).length;
+  const deck=QUESTIONS.length+MUSTCARDS.length;
+  const myM=CARDS[ME]||{}; const my3=Object.values(myM).filter(v=>v===3).length;
+  let sum=0,cnt=0; MNAMES.forEach(n=>{ const m=CARDS[n]||{}; sum+=Object.values(m).filter(v=>v===3).length; cnt++; });
+  $('homeStats').innerHTML=`
+    <div class="stat"><b style="color:${done===total?'var(--ok)':'var(--navy)'}">${done}/${total}</b><span>團隊任務完成</span></div>
+    <div class="stat"><b>${Math.round(my3/deck*100)}%</b><span>我的閃卡熟練</span></div>
+    <div class="stat"><b>${Math.round(sum/cnt/deck*100)}%</b><span>全隊平均熟練</span></div>`;
+  // 今日焦點
+  const today=new Date(now+8*3600e3).toISOString().slice(0,10);
+  let focus=[],overdue=[];
+  TIMELINE.forEach(p=>{
+    p.tasks.forEach(t=>{
+      if(itemOn(t.id))return;
+      if(p.to<today) overdue.push({...t,p});
+      else if(p.from<=today&&today<=p.to) focus.push({...t,p});
+    });
+  });
+  const li=arr=>arr.map(t=>ckHtml(t.id,`${esc(t.t)} <span class="chip">${esc(t.o)}</span>`)).join('');
+  $('homeFocus').innerHTML=`<h3>🔥 今日焦點</h3>
+    ${overdue.length?`<div class="warnbox" style="margin-bottom:8px">⚠️ 有 ${overdue.length} 項逾期未完成：</div><ul class="tasklist">${li(overdue)}</ul>`:''}
+    ${focus.length?`<ul class="tasklist">${li(focus)}</ul>`:(overdue.length?'':'<div class="empty">本期任務全部完成 🎉</div>')}
+    <button class="btn sec sm" style="margin-top:8px" onclick="document.querySelector('[data-tab=plan]').click()">📅 查看完整時程</button>`;
+  bindCommon($('homeFocus'));
+}
+
+/* ═══════════ 分工 ═══════════ */
+function noteKey(member,key){ return `${member}__${key}`; }
+function noteEditor(member,key,label){
+  const k=noteKey(member,key); const n=NOTES[k];
+  const mine=(ME===member);
+  const others=MNAMES.filter(x=>x!==member).map(x=>NOTES[noteKey(x,key)]).filter(x=>x&&x.text);
+  let h='';
+  if(mine){
+    h+=`<textarea data-notekey="${k}" placeholder="${esc(label)}">${esc(n&&n.text||'')}</textarea>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:5px">
+      <button class="btn sm" data-notesave="${k}">💾 儲存筆記</button>
+      <span class="note-meta" data-notemeta="${k}">${n&&n.up?('上次儲存 '+fmtT(n.up)):''}</span></div>`;
+  }else if(n&&n.text){
+    h+=`<div style="background:#f8fafc;border:1px dashed var(--line);border-radius:9px;padding:8px 11px;font-size:13.5px;white-space:pre-wrap">${esc(n.text)}</div><div class="note-meta">${esc(member)}的筆記・${fmtT(n.up)}</div>`;
+  }else{
+    h+=`<div class="note-meta">（${esc(member)}尚未留筆記）</div>`;
+  }
+  return h;
+}
+function withNotePreserve(fn){
+  // 重新渲染前保住「打到一半、尚未儲存」的筆記
+  const dirty={};
+  document.querySelectorAll('[data-notekey]').forEach(ta=>{ if(ta.dataset.dirty==='1')dirty[ta.dataset.notekey]=ta.value; });
+  const focusKey=document.activeElement&&document.activeElement.dataset&&document.activeElement.dataset.notekey;
+  fn();
+  Object.entries(dirty).forEach(([k,v])=>{
+    const ta=document.querySelector(`[data-notekey="${k}"]`);
+    if(ta){ ta.value=v; ta.dataset.dirty='1'; }
+  });
+  if(focusKey){ const ta=document.querySelector(`[data-notekey="${focusKey}"]`); ta&&ta.focus(); }
+}
+function renderTeam(){ withNotePreserve(renderTeamInner); }
+function renderTeamInner(){
+  const memberTasks=n=>TIMELINE.flatMap(p=>p.tasks).filter(t=>t.o.includes(n));
+  $('tab-team').innerHTML=`
+  <div class="card"><h3>🤝 團隊分工合作表 <small style="font-weight:400">依評分構面與 7 位成員專業分配・與成員名單「負責任務」欄一致</small></h3>
+    <div style="font-size:13.5px"><b>共同任務（全體 7 人）：</b><ol style="padding-left:20px;margin:6px 0">${COMMON_DUTIES.map(d=>`<li>${esc(d)}</li>`).join('')}</ol>
+    <div class="warnbox">院方代表：建議邀請教學部或院級代表 1–2 名出席；若不克出席，由黃沛銓主答機構支持議題，並於造冊第一冊備妥院方支持佐證。</div></div>
+  </div>
+  ${MEMBERS.map(m=>{
+    const tasks=memberTasks(m.name);
+    const doneN=tasks.filter(t=>itemOn(t.id)).length;
+    const myM=CARDS[m.name]||{}; const mastered=m.qids.filter(q=>myM[q]===3).length;
+    return `<div class="card mem" style="--mc:${m.color}">
+    <div class="mhd"><div class="avatar">${m.name[0]}</div>
+      <div><h3>${m.name}<span class="jt">　${m.title}</span></h3>
+      <div style="font-size:13px;color:var(--sub)">${esc(m.role)}</div></div></div>
+    <dl>
+      <dt>對應評分構面</dt><dd>${esc(m.dims)}</dd>
+      <dt>主答領域</dt><dd>${esc(m.duty)}</dd>
+      <dt>主答題號（${m.qids.length} 題・熟練 ${mastered}/${m.qids.length}）</dt>
+      <dd>${m.qids.map(q=>`<span class="chip click" data-goq="${q}" style="border-color:${CATCOLOR[QMAP[q].cat]};color:${CATCOLOR[QMAP[q].cat]}">${q}${QMAP[q].star?'★':''}</span>`).join('')}
+      <button class="btn sm amber" data-drill="${m.name}" style="margin-left:4px">🎴 抽考</button></dd>
+      <dt>準備文件與佐證主責</dt><dd>${esc(m.docs)}</dd>
+      <dt>一句話任務（F3 必背）</dt><dd>「${esc(m.one)}」</dd>
+      ${tasks.length?`<dt>個人時程任務（${doneN}/${tasks.length}）</dt><dd><ul class="tasklist">${tasks.map(t=>ckHtml(t.id,esc(t.t)+` <span class="chip">${esc(t.o)}</span>`)).join('')}</ul></dd>`:''}
+      <dt>📝 ${m.name}的工作筆記</dt><dd>${noteEditor(m.name,'role','記錄自己分工的準備進度、口徑、待確認事項…（儲存後全隊可見）')}</dd>
+    </dl>
+  </div>`;}).join('')}`;
+  bindCommon($('tab-team'));
+}
+
+/* ═══════════ 題庫／閃卡 ═══════════ */
+let F={cat:'all',owner:'all',star:false,must:false,weak:false,search:''};
+function deckFilter(){
+  let list=[];
+  QUESTIONS.forEach(q=>{
+    if(F.cat!=='all'&&F.cat!=='M'&&q.cat!==F.cat)return;
+    if(F.cat==='M')return;
+    if(F.owner!=='all'&&!(q.owners.includes(F.owner)||q.owners.includes('全體')))return;
+    if(F.star&&!q.star)return;
+    if(F.must&&!q.must)return;
+    if(F.weak){ const lv=(CARDS[ME]||{})[q.id]||0; if(lv===3)return; }
+    if(F.search){ const s=F.search.toLowerCase(); if(!(q.q+q.a+(q.extra||'')+q.id).toLowerCase().includes(s))return; }
+    list.push({type:'q',...q});
+  });
+  if((F.cat==='all'||F.cat==='M')&&F.owner==='all'&&!F.star){
+    MUSTCARDS.forEach((c,i)=>{
+      const id='M'+i;
+      if(F.weak){ const lv=(CARDS[ME]||{})[id]||0; if(lv===3)return; }
+      if(F.search&&!((c.g+c.q+c.a).toLowerCase().includes(F.search.toLowerCase())))return;
+      list.push({type:'m',id,cat:'M',q:c.q,a:c.a,g:c.g,owners:['全體'],star:0,must:1,src:'附錄必背卡'});
+    });
+  }
+  return list;
+}
+function myLv(id){ return (CARDS[ME]||{})[id]||0; }
+const LVLABEL={1:'😰 不熟',2:'🙂 普通',3:'😎 熟練'};
+async function setLv(id,lv){
+  if(!canWrite())return;
+  if(!ME||ME==='訪客'){ toast('訪客無法記錄熟練度'); return; }
+  CARDS[ME]=CARDS[ME]||{}; CARDS[ME][id]=lv;
+  try{ await setDoc(doc(db,'ncmea_cards',ME),{m:{[id]:lv},tc:TC},{merge:true}); }catch(e){ wfail(e); }
+}
+function lvDot(id){ const lv=myLv(id); return lv?`<span class="badge" style="background:${lv===3?'#dcfce7':lv===2?'#fef9c3':'#fee2e2'};color:${lv===3?'#166534':lv===2?'#854d0e':'#991b1b'}">${LVLABEL[lv].split(' ')[0]}</span>`:'';
+}
+function renderCardsToolbar(){
+  $('tab-cards').innerHTML=`
+  <div class="card">
+    <h3>🃏 委員詢答題庫與必背卡 <small style="font-weight:400">55 題（委員觀點六大類）＋必背卡 21 張</small></h3>
+    <input type="text" id="qSearch" placeholder="🔍 搜尋題目、答案關鍵字…" style="margin-bottom:8px">
+    <div class="deckbar" id="fCats"></div>
+    <div class="deckbar" id="fOwners"></div>
+    <div class="deckbar">
+      <span class="chip click" id="fStar">★ 高風險題</span>
+      <span class="chip click" id="fMust">📍 全員必背</span>
+      <span class="chip click" id="fWeak">🔁 只看未熟練</span>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+      <button class="btn amber" id="fcStart">🎴 閃卡預演（目前篩選）</button>
+      <button class="btn" id="fcMine">🎯 抽考我的主答題</button>
+    </div>
+    <div id="deckStat" style="font-size:12.5px;color:var(--sub);margin-top:8px"></div>
+  </div>
+  <div id="qList"></div>`;
+  $('qSearch').oninput=e=>{ F.search=e.target.value.trim(); renderCardsList(); };
+  $('fcStart').onclick=()=>startFc(deckFilter());
+  $('fcMine').onclick=()=>{
+    const me=MEMBERS.find(m=>m.name===ME);
+    if(!me){ toast('請先以成員身分登入'); return; }
+    const deck=QUESTIONS.filter(q=>me.qids.includes(q.id)||q.owners.includes('全體')).map(q=>({type:'q',...q}));
+    startFc(deck,`${ME} 的主答題`);
+  };
+  ['fStar','fMust','fWeak'].forEach(id=>{
+    $(id).onclick=()=>{ const k=id==='fStar'?'star':id==='fMust'?'must':'weak'; F[k]=!F[k]; $(id).classList.toggle('on',F[k]); renderCardsList(); };
+  });
+  renderCardsList();
+}
+function renderCardsList(){ withNotePreserve(renderCardsListInner); }
+function renderCardsListInner(){
+  const cats=[['all','全部'],...Object.entries(CATS)];
+  $('fCats').innerHTML=cats.map(([k,v])=>`<span class="chip click ${F.cat===k?'on':''}" data-fcat="${k}">${k==='all'?'全部':k+'・'+v}</span>`).join('');
+  $('fOwners').innerHTML=[['all','所有主答人'],...MNAMES.map(n=>[n,n])].map(([k,v])=>`<span class="chip click ${F.owner===k?'on':''}" data-fown="${k}">${v}</span>`).join('');
+  $('fCats').querySelectorAll('[data-fcat]').forEach(c=>c.onclick=()=>{ F.cat=c.dataset.fcat; renderCardsList(); });
+  $('fOwners').querySelectorAll('[data-fown]').forEach(c=>c.onclick=()=>{ F.owner=c.dataset.fown; renderCardsList(); });
+  const list=deckFilter();
+  $('deckStat').textContent=`符合 ${list.length} 張・我已熟練 ${list.filter(x=>myLv(x.id)===3).length} 張`;
+  let html='',lastCat='';
+  list.forEach(x=>{
+    if(x.cat!==lastCat){ lastCat=x.cat; html+=`<div class="secttl" style="color:${CATCOLOR[x.cat]}">${x.cat==='M'?'📍':'Ｑ'} ${x.cat}・${CATS[x.cat]}</div>`; }
+    html+=qItemHtml(x);
+  });
+  $('qList').innerHTML=html||'<div class="empty">沒有符合的題目</div>';
+  bindCommon($('qList'));
+  $('qList').querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>{ const[id,lv]=b.dataset.lv.split('|'); setLv(id,+lv).then(()=>renderCardsList()); });
+}
+function qItemHtml(x){
+  const tag=`<span class="badge qtag" style="background:${CATCOLOR[x.cat]};color:#fff">${x.id}</span>`;
+  const marks=`${x.star?'<span class="star">★</span>':''}${x.must?'<span class="badge" style="background:#fef3c7;color:#92400e">必背</span>':''}`;
+  const lvBtns=[1,2,3].map(l=>`<button class="${myLv(x.id)===l?'on':''}" data-lv="${x.id}|${l}">${LVLABEL[l]}</button>`).join('');
+  const noteBlock=x.type==='q'&&ME&&ME!=='訪客'?`<div style="margin-top:10px"><b style="font-size:13px">📝 我的答題筆記</b>${noteEditor(ME,'q_'+x.id,'自己的補充口徑、關鍵字、順序提示…')}
+    ${MNAMES.filter(n=>n!==ME).map(n=>{const nn=NOTES[noteKey(n,'q_'+x.id)];return nn&&nn.text?`<div class="note-meta" style="margin-top:6px"><b style="color:${MCOLOR[n]}">${n}</b>：${esc(nn.text)}</div>`:''}).join('')}</div>`:'';
+  return `<details class="qitem" id="qi_${x.id}"><summary>${tag}<span style="flex:1">${marks}${esc(x.q)}${x.g?`<small style="color:var(--sub)">（${esc(x.g)}）</small>`:''}</span>${lvDot(x.id)}</summary>
+  <div class="qa">
+    <div style="white-space:pre-wrap"><b style="color:${CATCOLOR[x.cat]}">建議回答：</b>${esc(x.a)}</div>
+    ${x.extra?`<div class="warnbox">⚠️ 請團隊補充：${esc(x.extra)}</div>`:''}
+    <div style="margin-top:8px">${(x.owners||[]).map(o=>`<span class="chip" style="background:${MCOLOR[o]||'#64748b'};color:#fff">主答：${o}</span>`).join('')}</div>
+    <div class="lvl">${lvBtns}</div>
+    ${noteBlock}
+    <span class="src">出處：${esc(x.src||'')}</span>
+  </div></details>`;
+}
+function goQuestion(qid){
+  F={cat:'all',owner:'all',star:false,must:false,weak:false,search:''};
+  $('qSearch')&&($('qSearch').value='');
+  switchTab('cards'); renderCardsList();
+  const el=$('qi_'+qid);
+  if(el){ el.open=true; el.scrollIntoView({behavior:'smooth',block:'center'}); el.style.boxShadow='0 0 0 3px var(--accent)'; setTimeout(()=>el.style.boxShadow='',1800); }
+}
+
+/* ── 閃卡模式 ── */
+let fcDeck=[],fcIdx=0,fcFlip=false,fcTitle='';
+function startFc(deck,title){
+  if(!deck.length){ toast('目前篩選沒有題目'); return; }
+  fcDeck=[...deck].sort(()=>Math.random()-.5); fcIdx=0; fcFlip=false; fcTitle=title||'閃卡預演';
+  renderFc(); $('fcOverlay').classList.add('on');
+}
+function renderFc(){
+  const x=fcDeck[fcIdx];
+  const ov=$('fcOverlay');
+  ov.innerHTML=`
+  <div class="fc-top">
+    <button class="btn ghost sm" id="fcClose" style="color:#cdd9e4;border-color:#3d5570">✕ 結束</button>
+    <span>${esc(fcTitle)}・${fcIdx+1} / ${fcDeck.length}</span>
+    <span style="margin-left:auto">${x.star?'<span class="star">★高風險</span>':''}</span>
+  </div>
+  <div class="fc-card" id="fcCard">
+    <div><span class="badge" style="background:${CATCOLOR[x.cat]};color:#fff">${x.id}</span>
+    ${x.must?'<span class="badge" style="background:#fef3c7;color:#92400e">必背</span>':''}
+    ${(x.owners||[]).map(o=>`<span class="chip">${o}</span>`).join('')}</div>
+    <div class="fc-q">${esc(x.q)}</div>
+    ${fcFlip?`<div class="fc-a" style="white-space:pre-wrap"><b style="color:${CATCOLOR[x.cat]}">建議回答：</b>${esc(x.a)}${x.extra?`<div class="warnbox">⚠️ 請團隊補充：${esc(x.extra)}</div>`:''}<span class="src">出處：${esc(x.src||'')}</span></div>`
+      :`<div class="fc-hint">先在心中作答（45–60秒）→ 點卡片翻面對答案</div>`}
+  </div>
+  <div class="fc-btns">
+    ${fcFlip?[1,2,3].map(l=>`<button class="btn ${l===3?'amber':l===2?'sec':''}" style="${l===1?'background:#fee2e2;color:#991b1b':''}" data-fclv="${l}">${LVLABEL[l]}</button>`).join('')
+      :`<button class="btn ghost" id="fcPrev" style="color:#cdd9e4;border-color:#3d5570">◀ 上一張</button><button class="btn amber" id="fcFlipBtn">翻面看答案</button><button class="btn ghost" id="fcNext" style="color:#cdd9e4;border-color:#3d5570">跳過 ▶</button>`}
+  </div>`;
+  $('fcClose').onclick=()=>ov.classList.remove('on');
+  $('fcCard').onclick=()=>{ if(!fcFlip){ fcFlip=true; renderFc(); } };
+  if(fcFlip){
+    ov.querySelectorAll('[data-fclv]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); setLv(fcDeck[fcIdx].id,+b.dataset.fclv); fcNext(); });
+  }else{
+    $('fcFlipBtn').onclick=e=>{ e.stopPropagation(); fcFlip=true; renderFc(); };
+    $('fcNext').onclick=fcNext; $('fcPrev').onclick=()=>{ fcIdx=(fcIdx-1+fcDeck.length)%fcDeck.length; fcFlip=false; renderFc(); };
+  }
+}
+function fcNext(){ if(fcIdx>=fcDeck.length-1){ $('fcOverlay').classList.remove('on'); toast('🎉 本輪閃卡完成！'); renderCardsList(); return; } fcIdx++; fcFlip=false; renderFc(); }
+document.addEventListener('keydown',e=>{
+  if(!$('fcOverlay').classList.contains('on'))return;
+  if(e.key===' '){ e.preventDefault(); fcFlip=true; renderFc(); }
+  if(fcFlip&&['1','2','3'].includes(e.key)){ setLv(fcDeck[fcIdx].id,+e.key); fcNext(); }
+  if(e.key==='ArrowRight')fcNext();
+  if(e.key==='Escape')$('fcOverlay').classList.remove('on');
+});
+
+/* ═══════════ 時程 ═══════════ */
+function renderPlan(){
+  const today=new Date(Date.now()+8*3600e3).toISOString().slice(0,10);
+  const total=ALLTASKS.length, done=ALLTASKS.filter(t=>itemOn(t.id)).length;
+  $('tab-plan').innerHTML=`
+  <div class="card"><h3>📅 倒數時程檢核 <small style="font-weight:400">勾選即時同步全隊（顯示勾選人與時間）</small></h3>
+    <div style="display:flex;align-items:center;gap:10px"><div class="progress" style="flex:1"><i style="width:${Math.round(done/total*100)}%"></i></div><b style="font-size:14px">${done}/${total}</b></div>
+  </div>
+  ${TIMELINE.map(p=>{
+    const cls=p.to<today?'past':(p.from<=today&&today<=p.to?'now':'');
+    const pd=p.tasks.filter(t=>itemOn(t.id)).length;
+    return `<div class="card period ${cls}"><div class="dot"></div>
+    <h4>${esc(p.label)} ${cls==='now'?'<span class="badge" style="background:var(--accent);color:#3b2600">進行中</span>':''}</h4>
+    <div class="rng">${esc(p.rng)}・完成 ${pd}/${p.tasks.length}</div>
+    <ul class="tasklist">${p.tasks.map(t=>ckHtml(t.id,`${esc(t.t)} <span class="chip">${esc(t.o)}</span>`)).join('')}</ul></div>`;
+  }).join('')}
+  <div class="card"><h3>🧳 出發前攜帶清單 <small style="font-weight:400">8/16 晚間逐項勾核</small></h3>
+    <ul class="tasklist">${CARRY.map(c=>ckHtml(c.id,esc(c.t))).join('')}</ul></div>`;
+  bindCommon($('tab-plan'));
+}
+
+/* ═══════════ 討論 ═══════════ */
+function renderChat(){
+  const box=$('chatBox'); if(!box)return;
+  const atBottom=box.scrollHeight-box.scrollTop-box.clientHeight<80;
+  let html='',lastDay='';
+  CHATS.forEach(c=>{
+    const ms=c.at&&c.at.toMillis?c.at.toMillis():Date.now();
+    const d=new Date(ms); const day=`${d.getMonth()+1}/${d.getDate()}（${WD[d.getDay()]}）`;
+    if(day!==lastDay){ lastDay=day; html+=`<div class="daysep">— ${day} —</div>`; }
+    const mine=c.n===ME;
+    html+=`<div class="msg ${mine?'mine':''}"><div class="who"><b style="color:${MCOLOR[c.n]||'#64748b'}">${esc(c.n)}</b>・${pad(d.getHours())}:${pad(d.getMinutes())}</div><div class="bub">${esc(c.t)}</div></div>`;
+  });
+  box.innerHTML=html||'<div class="empty">還沒有訊息，開始討論吧！</div>';
+  if(atBottom)box.scrollTop=box.scrollHeight;
+}
+async function sendChat(){
+  const inp=$('chatInput'); const t=inp.value.trim();
+  if(!t||!canWrite())return;
+  inp.value='';
+  try{ await addDoc(collection(db,'ncmea_chat'),{n:ME||'訪客',t,at:serverTimestamp(),tc:TC}); }catch(e){ wfail(e); inp.value=t; }
+}
+$('chatSend').onclick=sendChat;
+$('chatInput').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.isComposing)sendChat(); });
+
+/* ═══════════ 會議 ═══════════ */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let rec=null,recOn=false,interimTxt='';
+function liveMeeting(){ return MEETS.find(m=>m.status==='live'); }
+function watchedMeeting(){ return MEETS.find(m=>m.id===watchedMid); }
+function watchLines(mid){
+  if(watchedMid===mid&&linesUnsub)return;
+  if(linesUnsub){ linesUnsub(); linesUnsub=null; }
+  watchedMid=mid; LINES=[];
+  if(!mid){ renderMeet(); return; }
+  linesUnsub=onSnapshot(query(collection(db,'ncmea_meet_lines'),where('mid','==',mid)),s=>{
+    LINES=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>{
+      const am=a.at&&a.at.toMillis?a.at.toMillis():9e15, bm=b.at&&b.at.toMillis?b.at.toMillis():9e15;
+      return am-bm;
+    });
+    renderLines(); renderMeetMinutes();
+  },e=>console.warn(e));
+  renderMeet();
+}
+function renderLines(){
+  const el=$('liveLines'); if(!el)return;
+  const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<60;
+  el.innerHTML=LINES.map(l=>{
+    const ms=l.at&&l.at.toMillis?l.at.toMillis():Date.now(); const d=new Date(ms);
+    return `<div class="ln"><b>${esc(l.n)}</b> <small style="opacity:.5">${pad(d.getHours())}:${pad(d.getMinutes())}</small>：${esc(l.t)}</div>`;
+  }).join('')+(interimTxt?`<div class="ln interim">${esc(ME)}（辨識中）：${esc(interimTxt)}</div>`:'')||'<div style="opacity:.5">（尚無逐字稿——開始收音或手動補充）</div>';
+  if(atBottom)el.scrollTop=el.scrollHeight;
+}
+async function startMeeting(){
+  if(!canWrite())return;
+  const title=($('newMeetTitle')&&$('newMeetTitle').value.trim())||defMeetTitle();
+  try{
+    const ref=await addDoc(collection(db,'ncmea_meetings'),{title,status:'live',startedAt:Date.now(),by:ME,tc:TC});
+    watchLines(ref.id);
+    toast('會議已開始！全隊都會看到 🔴');
+  }catch(e){ wfail(e); }
+}
+function defMeetTitle(){ const d=new Date(); return `${d.getMonth()+1}/${d.getDate()} 備賽會議`; }
+let endArm=false;
+async function endMeeting(){
+  const m=liveMeeting(); if(!m||!canWrite())return;
+  if(!endArm){ endArm=true; const b=$('btnEnd'); if(b)b.textContent='再按一次確認結束'; setTimeout(()=>{ endArm=false; const b2=$('btnEnd'); if(b2)b2.textContent='⏹ 結束會議'; },4000); return; }
+  endArm=false; stopRec();
+  try{ await setDoc(doc(db,'ncmea_meetings',m.id),{status:'ended',endedAt:Date.now(),tc:TC},{merge:true}); toast('會議已結束。可按「🧠 產生 AI 會議記錄」整理摘要'); }catch(e){ wfail(e); }
+}
+async function summarize(mid){
+  const m=MEETS.find(x=>x.id===mid); if(!m)return;
+  if(!LINES.length){ toast('沒有逐字稿可以摘要'); return; }
+  const btn=$('btnSum'); if(btn){ btn.disabled=true; btn.textContent='🧠 AI 整理中…'; }
+  let txt=LINES.map(l=>`[${l.n}] ${l.t}`).join('\n');
+  if(txt.length>24000)txt='（前段已截斷）…\n'+txt.slice(-24000);
+  const sys=`你是「NCMEA 備戰中心」的會議記錄祕書。團隊是新竹臺大分院急診醫學部 7 人（黃沛銓副主任、陳俊維醫師、連君茹醫師、張毓倫專科護理師、蘇欣怡護理師、陳勤策護理師、范凱淇護理師），正在準備 115/8/17 NCMEA 國家臨床醫學教育獎第二階段現場報告（12分鐘簡報＋30分鐘答詢＋3分鐘補充）。請把逐字稿整理成繁體中文會議記錄，格式：
+## 會議摘要
+（3-5句話）
+## 決議事項
+（條列；沒有就寫「無」）
+## 待辦事項
+（條列，格式：事項｜負責人｜期限；負責人盡量對應7位成員）
+## 待確認與風險
+（條列；沒有就寫「無」）
+逐字稿來自語音辨識可能有錯字，請依上下文合理還原。只輸出會議記錄本身。`;
+  try{
+    const r=await fetch(PROXY_URL,{method:'POST',headers:{'content-type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,system:sys,
+        messages:[{role:'user',content:`會議「${m.title}」（${fmtT(m.startedAt)}）逐字稿：\n${txt}`}]})});
+    const d=await r.json();
+    const out=d&&d.content&&d.content[0]&&d.content[0].text;
+    if(!out)throw new Error((d.error&&d.error.message)||'AI 無回應');
+    await setDoc(doc(db,'ncmea_meetings',mid),{minutes:out,minutesAt:Date.now(),tc:TC},{merge:true});
+    toast('✅ 會議記錄已產生並同步全隊');
+  }catch(e){ toast('摘要失敗：'+(e&&e.message||e)); }
+  if(btn){ btn.disabled=false; btn.textContent='🧠 產生 AI 會議記錄'; }
+}
+function mdToHtml(md){
+  const lines=String(md||'').split('\n'); let html='',inUl=false;
+  const closeUl=()=>{ if(inUl){ html+='</ul>'; inUl=false; } };
+  lines.forEach(l=>{
+    let t=esc(l.trim());
+    t=t.replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');
+    if(/^#{2,4}\s/.test(l.trim())){ closeUl(); html+=`<h4>${t.replace(/^#+\s*/,'')}</h4>`; }
+    else if(/^[-*]\s/.test(l.trim())){ if(!inUl){ html+='<ul>'; inUl=true; } html+=`<li>${t.replace(/^[-*]\s*(\[[ x]\]\s*)?/,'')}</li>`; }
+    else if(t){ closeUl(); html+=`<div style="margin:3px 0">${t}</div>`; }
+  });
+  closeUl(); return html;
+}
+function startRec(){
+  const live=liveMeeting();
+  if(!live||watchedMid!==live.id){ toast('請先開始或加入進行中的會議'); return; }
+  if(!canWrite())return;
+  if(!SR){ toast('此瀏覽器不支援語音辨識，請改用電腦版 Chrome／Edge，或用下方手動補充'); return; }
+  rec=new SR(); rec.lang='zh-TW'; rec.continuous=true; rec.interimResults=true;
+  rec.onresult=e=>{
+    let fin=''; interimTxt='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const r=e.results[i];
+      if(r.isFinal)fin+=r[0].transcript; else interimTxt+=r[0].transcript;
+    }
+    if(fin.trim())pushLine(fin.trim());
+    renderLines();
+  };
+  rec.onend=()=>{ if(recOn){ try{rec.start();}catch(e){} } };
+  rec.onerror=ev=>{ if(ev.error==='not-allowed'||ev.error==='service-not-allowed'){ recOn=false; toast('無法取得麥克風權限'); updRecBtn(); } };
+  try{ rec.start(); recOn=true; }catch(e){ toast('啟動失敗：'+e.message); }
+  updRecBtn();
+}
+function stopRec(){ recOn=false; interimTxt=''; try{rec&&rec.stop();}catch(e){} updRecBtn(); renderLines(); }
+function updRecBtn(){ const b=$('btnRec'); if(b)b.innerHTML=recOn?'<span class="recdot"></span>停止收音':'🎙 開始收音（我說話→文字）'; }
+async function pushLine(t){
+  if(!watchedMid)return;
+  try{ await addDoc(collection(db,'ncmea_meet_lines'),{mid:watchedMid,n:ME||'訪客',t,at:serverTimestamp(),tc:TC}); }catch(e){ wfail(e); }
+}
+function renderMeet(){
+  const live=liveMeeting();
+  const w=watchedMeeting();
+  const past=MEETS.filter(m=>m.status==='ended');
+  $('tab-meet').innerHTML=`
+  <div class="card"><h3>🎦 線上會議</h3>
+    ${live?`<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:11px;padding:10px 13px;margin-bottom:10px">
+      <span class="recdot"></span><b>進行中：${esc(live.title)}</b>　<small>${fmtT(live.startedAt)} 由 ${esc(live.by)} 發起</small>
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+        ${watchedMid===live.id?'':`<button class="btn sm" id="btnWatchLive">📡 加入這場會議</button>`}
+        <button class="btn sm sec" id="btnJitsi">📹 開啟視訊畫面</button>
+        <button class="btn sm danger" id="btnEnd">⏹ 結束會議</button>
+      </div></div>`
+    :`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+       <input type="text" id="newMeetTitle" placeholder="會議名稱" value="${esc(defMeetTitle())}" style="flex:1;min-width:150px;max-width:260px">
+       <button class="btn amber" id="btnNew">➕ 開始新會議（全隊即時可見）</button></div>`}
+    <div id="jitsiWrap"></div>
+    <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
+      <input type="text" id="meetUrl" placeholder="或貼上 Google Meet／院內會議連結，儲存供全隊使用" value="${esc(S.meetUrl||'')}" style="flex:1;min-width:200px">
+      <button class="btn sm sec" id="btnSaveUrl">儲存</button>
+      <button class="btn sm" id="btnOpenUrl">開啟連結</button>
+    </div>
+    <small style="display:block;margin-top:6px">內建視訊使用 meet.jit.si（免安裝；第一位進入者需以 Google 帳號啟動會議室）。院內慣用 Google Meet 也可貼連結共用。</small>
+  </div>
+  <div class="card"><h3>📝 即時逐字稿 ${w?`<small style="font-weight:400">${esc(w.title)}・${fmtT(w.startedAt)}</small>`:''}</h3>
+    ${w?`
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      ${w.status==='live'?`<button class="btn" id="btnRec"></button>`:''}
+      <button class="btn sec" id="btnSum">🧠 產生 AI 會議記錄</button>
+    </div>
+    <div id="liveLines"></div>
+    ${w.status==='live'?`<div class="chatline"><input type="text" id="manLine" placeholder="✍️ 手動補充一句（不方便開麥時）"><button class="btn sec" id="btnMan">補充</button></div>`:''}
+    <small style="display:block;margin-top:6px">每位成員在自己的裝置按「開始收音」，說話會自動變成文字並即時同步；面對面開會由一台手機收音即可。</small>`
+    :'<div class="empty">選擇進行中的會議，或從下方歷次會議點「查看」</div>'}
+  </div>
+  <div class="card" id="minutesCard" style="display:none"><h3>📋 會議記錄（AI 摘要）</h3><div class="minutes" id="minutesBody"></div>
+    <div style="margin-top:8px;display:flex;gap:8px"><button class="btn sm sec" id="btnCopyMin">📋 複製</button><button class="btn sm sec" id="btnDlMin">⬇️ 下載 .md</button></div></div>
+  <div class="card"><h3>🗂 歷次會議</h3>
+    ${past.length?past.map(m=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px dashed var(--line)">
+      <div style="flex:1"><b>${esc(m.title)}</b><br><small>${fmtT(m.startedAt)}–${m.endedAt?fmtT(m.endedAt).split(' ')[1]:''}　${m.minutes?'✅ 已有記錄':'（無記錄）'}</small></div>
+      <button class="btn sm sec" data-watch="${m.id}">查看</button></div>`).join(''):'<div class="empty">尚無歷史會議</div>'}
+  </div>`;
+  const q1=id=>$(id);
+  q1('btnNew')&&(q1('btnNew').onclick=startMeeting);
+  q1('btnEnd')&&(q1('btnEnd').onclick=endMeeting);
+  q1('btnWatchLive')&&(q1('btnWatchLive').onclick=()=>watchLines(live.id));
+  q1('btnJitsi')&&(q1('btnJitsi').onclick=()=>{
+    const w2=$('jitsiWrap');
+    if(w2.style.display==='block'){ w2.style.display='none'; w2.innerHTML=''; return; }
+    w2.style.display='block';
+    w2.innerHTML=`<iframe src="https://meet.jit.si/${JITSI_ROOM}#userInfo.displayName=%22${encodeURIComponent(ME)}%22" allow="camera; microphone; fullscreen; display-capture; autoplay; clipboard-write"></iframe>
+    <div style="padding:7px;text-align:center;background:#0f2033"><a href="https://meet.jit.si/${JITSI_ROOM}" target="_blank" style="color:#93c5fd;font-size:13px">🔗 在新視窗開啟視訊（手機建議）</a></div>`;
+  });
+  q1('btnSaveUrl')&&(q1('btnSaveUrl').onclick=()=>saveState({meetUrl:$('meetUrl').value.trim()}).then(()=>toast('已儲存會議連結')));
+  q1('btnOpenUrl')&&(q1('btnOpenUrl').onclick=()=>{ const u=$('meetUrl').value.trim()||S.meetUrl; if(u)window.open(u,'_blank'); else toast('尚未設定連結'); });
+  q1('btnRec')&&(q1('btnRec').onclick=()=>recOn?stopRec():startRec());
+  q1('btnSum')&&(q1('btnSum').onclick=()=>summarize(watchedMid));
+  q1('btnMan')&&(q1('btnMan').onclick=()=>{ const i=$('manLine'); if(i.value.trim()){ pushLine(i.value.trim()); i.value=''; } });
+  q1('manLine')&&q1('manLine').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.isComposing)q1('btnMan').click(); });
+  $('tab-meet').querySelectorAll('[data-watch]').forEach(b=>b.onclick=()=>watchLines(b.dataset.watch));
+  updRecBtn(); renderLines(); renderMeetMinutes();
+}
+function renderMeetMinutes(){
+  const w=watchedMeeting(); const card=$('minutesCard'); if(!card)return;
+  if(w&&w.minutes){
+    card.style.display='block';
+    $('minutesBody').innerHTML=mdToHtml(w.minutes);
+    $('btnCopyMin').onclick=()=>{ navigator.clipboard.writeText(w.minutes).then(()=>toast('已複製')); };
+    $('btnDlMin').onclick=()=>download(`會議記錄_${w.title}.md`,`# ${w.title}（${fmtT(w.startedAt)}）\n\n${w.minutes}`,'text/markdown');
+  }else card.style.display='none';
+}
+
+/* ═══════════ 匯出攜帶包 ═══════════ */
+function renderExport(){
+  const who=MEMBERS.find(m=>m.name===ME)?ME:MNAMES[0];
+  $('tab-export').innerHTML=`
+  <div class="card"><h3>📦 個人攜帶包 <small style="font-weight:400">把「我的任務＋主答題＋筆記＋必背卡＋清單」打包，8/17 帶著走</small></h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <select id="expWho" style="width:auto">${MNAMES.map(n=>`<option ${n===who?'selected':''}>${n}</option>`).join('')}</select>
+      <label style="font-size:13.5px"><input type="checkbox" id="expAns" checked> 含建議回答全文</label>
+      <label style="font-size:13.5px"><input type="checkbox" id="expNotes" checked> 含個人筆記</label>
+      <label style="font-size:13.5px"><input type="checkbox" id="expMust" checked> 含必背卡</label>
+      <label style="font-size:13.5px"><input type="checkbox" id="expMin"> 含最新會議記錄</label>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      <button class="btn" id="expPrev">👀 預覽</button>
+      <button class="btn amber" id="expHtml">⬇️ 下載手機檔（HTML）</button>
+      <button class="btn sec" id="expMd">⬇️ 下載 Markdown</button>
+      <button class="btn sec" id="expPrint">🖨 列印／存 PDF</button>
+      <button class="btn ghost" id="expAll">📚 全隊完整手冊（HTML）</button>
+    </div>
+    <small style="display:block;margin-top:8px">手機檔＝單一 HTML，離線可讀；傳到 LINE／存到手機「檔案」，當天沒網路也能看。</small>
+  </div>
+  <div class="card" style="display:none" id="packWrap"><h3>預覽</h3><div id="packPreview"></div></div>`;
+  const opts=()=>({ans:$('expAns').checked,notes:$('expNotes').checked,must:$('expMust').checked,min:$('expMin').checked});
+  $('expPrev').onclick=()=>{ $('packWrap').style.display='block'; $('packPreview').innerHTML=packBody($('expWho').value,opts()); };
+  $('expHtml').onclick=()=>{ const w2=$('expWho').value; download(`NCMEA攜帶包_${w2}.html`,packHtml(w2,opts()),'text/html'); };
+  $('expMd').onclick=()=>{ const w2=$('expWho').value; download(`NCMEA攜帶包_${w2}.md`,packMd(w2,opts()),'text/markdown'); };
+  $('expPrint').onclick=()=>{ const w2=$('expWho').value; const win=window.open('','_blank'); win.document.write(packHtml(w2,opts())); win.document.close(); setTimeout(()=>win.print(),500); };
+  $('expAll').onclick=()=>download(`NCMEA全隊手冊_2026H2023.html`,packHtml(null,{ans:true,notes:true,must:true,min:true}),'text/html');
+}
+function memberQs(name){ const m=MEMBERS.find(x=>x.name===name); return QUESTIONS.filter(q=>(m&&m.qids.includes(q.id))||q.owners.includes('全體')); }
+function latestMinutes(){ return MEETS.filter(m=>m.minutes).sort((a,b)=>(b.minutesAt||0)-(a.minutesAt||0))[0]; }
+function packBody(name,opt){
+  const forAll=!name;
+  const m=MEMBERS.find(x=>x.name===name);
+  const qs=forAll?QUESTIONS:memberQs(name);
+  const noteOf=k=>{ const n=NOTES[noteKey(name,k)]; return n&&n.text?n.text:''; };
+  let h=`<h2 style="margin:0">⚕️ NCMEA 現場報告攜帶包${forAll?'（全隊完整版）':'—'+esc(name)}</h2>
+  <div style="color:#667;font-size:13px">2026H2023・新竹臺大分院急診醫學部・產生於 ${fmtT(Date.now())}</div>
+  <div style="background:#0f2b46;color:#fff;border-radius:12px;padding:12px 15px;margin:12px 0">
+    <b>🗓 115/8/17（一）</b>　13:00 前抵達報到・15:00 集合・<b style="color:#fbbf24">15:30–16:15 進場面談</b><br>
+    <small>新北市板橋區三民路二段37號9樓（901/902 出發前確認）・大會窗口 余佳純 02-8964-3000#3385・當日 0911-998-874</small>
+  </div>`;
+  if(m){
+    h+=`<h3 style="border-left:4px solid ${m.color};padding-left:8px">👤 我的任務</h3>
+    <div><b>${esc(m.name)}</b>（${esc(m.title)}）｜${esc(m.role)}</div>
+    <div style="margin:4px 0"><b>主答領域：</b>${esc(m.duty)}</div>
+    <div style="margin:4px 0"><b>佐證主責：</b>${esc(m.docs)}</div>
+    <div style="margin:4px 0"><b>一句話任務（F3必背）：</b>「${esc(m.one)}」</div>
+    ${opt.notes&&noteOf('role')?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:9px;padding:8px 11px;margin-top:6px"><b>📝 我的工作筆記：</b><br><span style="white-space:pre-wrap">${esc(noteOf('role'))}</span></div>`:''}`;
+  }
+  h+=`<h3>🕐 面談結構與答詢通則</h3>
+  <div>12分鐘重點介紹（目標11′30″）→ 30分鐘答詢 → 3分鐘補充（A/B案）</div>
+  <ul>${QA_RULES.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>
+  <h3>✅ 我的時程任務</h3>
+  <ul>${TIMELINE.flatMap(p=>p.tasks).filter(t=>forAll||t.o==='全體'||t.o.includes(name)).map(t=>`<li>${itemOn(t.id)?'☑':'☐'} ${esc(t.t)}（${esc(t.o)}）</li>`).join('')}</ul>
+  <h3>🧳 攜帶清單（8/16 晚間勾核）</h3>
+  <ul>${CARRY.map(c=>`<li>${itemOn(c.id)?'☑':'☐'} ${esc(c.t)}</li>`).join('')}</ul>
+  <h3>🎯 ${forAll?'全部詢答題庫（55題）':'我的主答題（'+qs.length+'題，含全員必背）'}</h3>`;
+  let lastCat='';
+  qs.forEach(q=>{
+    if(q.cat!==lastCat){ lastCat=q.cat; h+=`<h4 style="background:#eef2f7;padding:5px 9px;border-radius:7px">${q.cat}・${CATS[q.cat]}</h4>`; }
+    const note=!forAll&&opt.notes?noteOf('q_'+q.id):'';
+    h+=`<div style="border:1px solid #e3e9f0;border-radius:10px;padding:10px 12px;margin-bottom:9px;page-break-inside:avoid">
+      <b>${q.id}${q.star?'★':''}${q.must?'（全員必背）':''}　${esc(q.q)}</b>
+      ${opt.ans?`<div style="margin-top:6px;white-space:pre-wrap">${esc(q.a)}</div>`:''}
+      ${q.extra?`<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:6px 9px;margin-top:6px;font-size:13px">⚠️ 請團隊補充：${esc(q.extra)}</div>`:''}
+      <div style="font-size:12px;color:#889;margin-top:5px">主答：${(q.owners||[]).join('、')}｜出處：${esc(q.src||'')}</div>
+      ${note?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:6px 9px;margin-top:6px;font-size:13.5px"><b>📝 我的筆記：</b><span style="white-space:pre-wrap">${esc(note)}</span></div>`:''}
+    </div>`;
+  });
+  if(opt.must){
+    h+=`<h3>📍 全體必背卡</h3>`;
+    let lg='';
+    MUSTCARDS.forEach(c=>{
+      if(c.g!==lg){ lg=c.g; h+=`<h4 style="background:#fef3c7;padding:5px 9px;border-radius:7px">${esc(c.g)}</h4>`; }
+      h+=`<div style="margin-bottom:6px"><b>Q：${esc(c.q)}</b><br>A：${esc(c.a)}</div>`;
+    });
+  }
+  if(opt.min){
+    const lm=latestMinutes();
+    if(lm)h+=`<h3>📋 最新會議記錄：${esc(lm.title)}（${fmtT(lm.startedAt)}）</h3><div style="border:1px solid #e3e9f0;border-radius:10px;padding:10px 13px">${mdToHtml(lm.minutes)}</div>`;
+  }
+  h+=`<div style="margin-top:16px;color:#99a;font-size:12px">— NCMEA 備戰中心・轉化臨床危機為教學契機 —</div>`;
+  return h;
+}
+function packHtml(name,opt){
+  return `<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NCMEA攜帶包${name?'_'+name:'_全隊'}</title>
+<style>body{font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;max-width:760px;margin:0 auto;padding:16px;line-height:1.7;color:#1e2a38;font-size:15.5px}h3{border-bottom:2px solid #0f2b46;padding-bottom:4px;margin-top:22px}ul{padding-left:22px}@media print{body{font-size:12.5px}}</style>
+</head><body>${packBody(name,opt)}</body></html>`;
+}
+function packMd(name,opt){
+  const m=MEMBERS.find(x=>x.name===name);
+  const qs=memberQs(name);
+  const noteOf=k=>{ const n=NOTES[noteKey(name,k)]; return n&&n.text?n.text:''; };
+  let s=`# NCMEA 現場報告攜帶包 — ${name}\n2026H2023・產生於 ${fmtT(Date.now())}\n\n`;
+  s+=`## 🗓 決戰日 115/8/17（一）\n- 13:00 前抵達報到（板橋三民路二段37號9樓，901/902出發前確認）\n- 15:00 集合｜**15:30–16:15 進場面談**\n- 大會窗口：余佳純 02-8964-3000#3385｜當日 0911-998-874\n\n`;
+  if(m)s+=`## 👤 我的任務\n- **${m.name}**（${m.title}）｜${m.role}\n- 主答領域：${m.duty}\n- 佐證主責：${m.docs}\n- 一句話任務：「${m.one}」\n${opt.notes&&noteOf('role')?'- 📝 我的筆記：'+noteOf('role').replace(/\n/g,' ')+'\n':''}\n`;
+  s+=`## ✅ 我的時程任務\n${TIMELINE.flatMap(p=>p.tasks).filter(t=>t.o==='全體'||t.o.includes(name)).map(t=>`- [${itemOn(t.id)?'x':' '}] ${t.t}（${t.o}）`).join('\n')}\n\n`;
+  s+=`## 🧳 攜帶清單\n${CARRY.map(c=>`- [${itemOn(c.id)?'x':' '}] ${c.t}`).join('\n')}\n\n`;
+  s+=`## 🎯 我的主答題（${qs.length}題）\n\n`;
+  qs.forEach(q=>{
+    s+=`### ${q.id}${q.star?'★':''} ${q.q}\n`;
+    if(opt.ans)s+=`${q.a}\n`;
+    if(q.extra)s+=`> ⚠️ 請團隊補充：${q.extra}\n`;
+    const note=opt.notes?noteOf('q_'+q.id):'';
+    if(note)s+=`> 📝 我的筆記：${note.replace(/\n/g,' ')}\n`;
+    s+=`（主答：${(q.owners||[]).join('、')}）\n\n`;
+  });
+  if(opt.must){ s+=`## 📍 全體必背卡\n`; MUSTCARDS.forEach(c=>{ s+=`- **${c.q}** ${c.a}\n`; }); }
+  if(opt.min){ const lm=latestMinutes(); if(lm)s+=`\n## 📋 最新會議記錄：${lm.title}\n${lm.minutes}\n`; }
+  return s;
+}
+function download(fn,content,mime){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['﻿'+content],{type:mime+';charset=utf-8'}));
+  a.download=fn; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+
+/* ═══════════ 共用綁定與分頁 ═══════════ */
+function bindCommon(root){
+  root.querySelectorAll('[data-ck]').forEach(b=>b.onclick=()=>toggleItem(b.dataset.ck));
+  root.querySelectorAll('[data-goq]').forEach(b=>b.onclick=()=>goQuestion(b.dataset.goq));
+  root.querySelectorAll('[data-drill]').forEach(b=>b.onclick=()=>{
+    const m=MEMBERS.find(x=>x.name===b.dataset.drill);
+    const deck=QUESTIONS.filter(q=>m.qids.includes(q.id)||q.owners.includes('全體')).map(q=>({type:'q',...q}));
+    startFc(deck,`${m.name} 的主答題`);
+  });
+  root.querySelectorAll('[data-notesave]').forEach(b=>b.onclick=async()=>{
+    if(!canWrite())return;
+    const k=b.dataset.notesave;
+    const ta=root.querySelector(`[data-notekey="${k}"]`);
+    const [member,...rest]=k.split('__');
+    try{
+      await setDoc(doc(db,'ncmea_notes',k),{member,key:rest.join('__'),text:ta.value,up:Date.now(),tc:TC});
+      delete ta.dataset.dirty; toast('✅ 筆記已儲存並同步');
+    }catch(e){ wfail(e); }
+  });
+  root.querySelectorAll('[data-notekey]').forEach(ta=>ta.addEventListener('input',()=>ta.dataset.dirty='1'));
+}
+function refreshNoteViews(){
+  document.querySelectorAll('[data-notekey]').forEach(ta=>{
+    if(ta.dataset.dirty==='1'||document.activeElement===ta)return;
+    const n=NOTES[ta.dataset.notekey];
+    ta.value=n&&n.text||'';
+    const meta=document.querySelector(`[data-notemeta="${ta.dataset.notekey}"]`);
+    if(meta&&n&&n.up)meta.textContent='上次儲存 '+fmtT(n.up);
+  });
+}
+let curTab='home';
+function switchTab(t){
+  curTab=t;
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  document.querySelectorAll('.tab').forEach(s=>s.classList.toggle('on',s.id==='tab-'+t));
+  if(t==='chat'){ localStorage.setItem('ncmea_chatseen',String(Date.now())); updChatDot(); const box=$('chatBox'); box&&(box.scrollTop=box.scrollHeight); }
+}
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
+function updChatDot(){
+  const seen=+(localStorage.getItem('ncmea_chatseen')||0);
+  const hasNew=CHATS.some(c=>{ const ms=c.at&&c.at.toMillis?c.at.toMillis():0; return ms>seen&&c.n!==ME; });
+  const btn=document.querySelector('#nav button[data-tab=chat] .ic');
+  btn.textContent=hasNew&&curTab!=='chat'?'💬🔴':'💬';
+}
+
+/* ═══════════ 啟動 ═══════════ */
+function boot(){
+  booted=true;
+  $('meChip').textContent='👤 '+ME;
+  renderHomeStatic(); renderHomeDyn(); renderTeam(); renderCardsToolbar(); renderPlan(); renderChat(); renderMeet(); renderExport();
+  tick(); setInterval(tick,1000); setInterval(renderHomeDyn,60000);
+  onSnapshot(doc(db,'ncmea_state','main'),s=>{
+    S=s.exists()?s.data():{items:{}}; S.items=S.items||{};
+    renderHomeDyn(); renderTeam(); renderPlan();
+    const mu=$('meetUrl'); if(mu&&document.activeElement!==mu)mu.value=S.meetUrl||'';
+  },e=>console.warn('state',e));
+  onSnapshot(collection(db,'ncmea_notes'),s=>{
+    NOTES={}; s.forEach(d=>NOTES[d.id]=d.data());
+    refreshNoteViews();
+  },e=>console.warn('notes',e));
+  onSnapshot(collection(db,'ncmea_cards'),s=>{
+    CARDS={}; s.forEach(d=>CARDS[d.id]=(d.data().m||{}));
+    renderHomeDyn();
+  },e=>console.warn('cards',e));
+  onSnapshot(query(collection(db,'ncmea_chat'),orderBy('at','desc'),limit(300)),s=>{
+    CHATS=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>{
+      const am=a.at&&a.at.toMillis?a.at.toMillis():9e15, bm=b.at&&b.at.toMillis?b.at.toMillis():9e15;
+      return am-bm;
+    });
+    renderChat(); updChatDot();
+  },e=>console.warn('chat',e));
+  onSnapshot(collection(db,'ncmea_meetings'),s=>{
+    MEETS=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.startedAt||0)-(a.startedAt||0));
+    const live=liveMeeting();
+    if(live&&!watchedMid)watchLines(live.id);
+    else renderMeet();
+  },e=>console.warn('meet',e));
+}
+if(ME){ $('meChip').textContent='👤 '+ME; boot(); } else showGate();
+</script>
+</body>
+</html>
