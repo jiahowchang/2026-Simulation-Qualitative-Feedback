@@ -538,6 +538,15 @@ const MEMBERS=[
  qids:['A5','B10','C10'],
  one:'課程行政與設備整備，負責現場數位工具展示操作與記錄計時。'},
 ];
+/* 幕僚與行政支援（非現場報告出席名單，協助備戰） */
+const STAFF=[
+{name:'張家豪',title:'幕僚',color:'#0e7490',
+ duty:'備戰統籌幕僚：準備手冊與題庫編製、備戰中心網站維護、彩排模擬委員與計時'},
+{name:'陳湘欣',title:'幕僚',color:'#9333ea',
+ duty:'幕僚支援：資料彙整、簡報與佐證冊校對、彩排支援'},
+{name:'鄭倩樺',title:'教學部行政',color:'#c2410c',
+ duty:'醫策會窗口聯繫主責（余佳純組員 02-8964-3000 分機3385・NCMEA@jct.org.tw・當日公務機 0911-998-874）：展示設備需求告知、會議室901/902確認、繳費證明與行政文件往來、當日對外聯絡'},
+];
 const COMMON_DUTIES=[
 '熟讀成果報告書全文與本手冊，完成必背卡快問快答（A4、B8、F1、F3 四題人人過關）',
 '出席 3 次彩排；第 2 次彩排配合模擬委員演練自己主答的題號',
@@ -552,7 +561,7 @@ const INFO=[
 {k:'面談結構',v:'①專案重點介紹12分鐘（形式不拘）→ ②與3位委員面談答詢30分鐘 → ③團隊補充說明3分鐘（問題提問或特色成果展現）。'},
 {k:'出席人數',v:'3至8名成員（含專案負責人）；院方代表至多2名。非名單人員不得入場；現場禁止錄影、錄音。'},
 {k:'審查費',v:'第二階段審查費 NT$50,000，8月7日（五）截止，至活動平台線上繳款並留存繳費證明。'},
-{k:'大會聯絡窗口',v:'余佳純組員｜02-8964-3000 分機3385｜NCMEA@jct.org.tw｜當日公務手機 0911-998-874（僅報告當天開機）。'},
+{k:'大會聯絡窗口',v:'余佳純組員｜02-8964-3000 分機3385｜NCMEA@jct.org.tw｜當日公務手機 0911-998-874（僅報告當天開機）。本團隊窗口聯繫由鄭倩樺（教學部行政）主責。'},
 {k:'成績權重',v:'第一階段書面20% ＋ 第二階段現場報告30% ＋ 第三階段實地評審50%。現場報告是晉級第三階段的關鍵。'},
 {k:'評審回饋',v:'僅於現場給予口頭綜合意見，不另提供書面回饋——當日由記錄員（范凱淇）逐字記錄委員口頭回饋，作為第三階段準備依據。'},
 {k:'颱風與應變',v:'依政府停班公告取消並擇期辦理；競賽前一天與當天，聯絡人及負責人手機保持暢通。'},
@@ -644,7 +653,7 @@ const TIMELINE=[
  {id:'t1_fee',  t:'完成審查費 NT$50,000 線上繳納並留存證明（8/7 截止！）',o:'黃沛銓'},
  {id:'t1_list', t:'定案出席名單與院方代表邀請',o:'黃沛銓'},
  {id:'t1_fix',  t:'獎項紀錄勘誤定案（以正本獎狀為準，統一口徑）',o:'黃沛銓、張毓倫'},
- {id:'t1_avreq',t:'向醫策會工作小組告知筆電＋HDMI展示需求',o:'張毓倫'},
+ {id:'t1_avreq',t:'向醫策會工作小組告知筆電＋HDMI展示需求',o:'鄭倩樺'},
 ]},
 {id:'P2',rng:'8/8（六）– 8/10（一）',label:'簡報初稿與第1次彩排',from:'2026-08-08',to:'2026-08-10',tasks:[
  {id:'t2_ppt',  t:'12分鐘簡報初稿完成（含備援投影片）',o:'黃沛銓'},
@@ -662,7 +671,7 @@ const TIMELINE=[
  {id:'t4_rh3',  t:'第 3 次全流程總彩排（45分鐘完整流程＋3分鐘A/B案切換＋設備展示）',o:'全體'},
  {id:'t4_usb',  t:'USB正副碟製作（檔案置第一層、檔名2026H2023）＋雲端備援',o:'范凱淇'},
  {id:'t4_print',t:'印製現場報告資料5份、成員名單5份、造冊索引',o:'張毓倫'},
- {id:'t4_room', t:'電話向大會確認會議室 901 或 902（02-8964-3000#3385 余佳純）',o:'張毓倫'},
+ {id:'t4_room', t:'電話向大會確認會議室 901 或 902（02-8964-3000#3385 余佳純）',o:'鄭倩樺'},
  {id:'t4_go',   t:'交通與停車安排（大會不提供停車）',o:'范凱淇'},
  {id:'t4_pack', t:'8/16 晚間攜帶清單逐項勾核（見下方清單）',o:'全體'},
 ]},
@@ -708,7 +717,8 @@ const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>
 const QMAP=Object.fromEntries(QUESTIONS.map(q=>[q.id,q]));
 const ALLTASKS=TIMELINE.flatMap(p=>p.tasks).concat(CARRY.map(c=>({id:c.id,t:c.t,o:'全體'})));
 const MNAMES=MEMBERS.map(m=>m.name);
-const MCOLOR=Object.fromEntries(MEMBERS.map(m=>[m.name,m.color]));
+const MCOLOR=Object.fromEntries(MEMBERS.concat(STAFF).map(m=>[m.name,m.color]));
+const ALLNAMES=MNAMES.concat(STAFF.map(s=>s.name));
 const pad=n=>String(n).padStart(2,'0');
 const fmtT=ms=>{ if(!ms) return ''; const d=new Date(ms); return `${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 const WD='日一二三四五六';
@@ -740,7 +750,9 @@ function ckHtml(id,text,extra=''){ const on=itemOn(id); return `<li><button clas
 /* ═══════════ 通關閘門 ═══════════ */
 function showGate(){
   const g=$('gateIds');
-  g.innerHTML=MNAMES.map(n=>`<button data-gid="${n}" class="${ME===n?'on':''}">${n}</button>`).join('')+`<button data-gid="張家豪" class="${ME==='張家豪'?'on':''}">張家豪（幕僚）</button><button data-gid="訪客" class="${ME==='訪客'?'on':''}">👀 訪客</button>`;
+  g.innerHTML=MNAMES.map(n=>`<button data-gid="${n}" class="${ME===n?'on':''}">${n}</button>`).join('')
+    +STAFF.map(s=>`<button data-gid="${s.name}" class="${ME===s.name?'on':''}">${s.name}<small style="display:block;font-weight:400;font-size:10.5px">${s.title}</small></button>`).join('')
+    +`<button data-gid="訪客" class="${ME==='訪客'?'on':''}">👀 訪客</button>`;
   $('gateTc').value=TC;
   $('gate').classList.add('on');
   g.querySelectorAll('button').forEach(b=>b.onclick=()=>{ g.querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); });
@@ -912,7 +924,17 @@ function renderTeamInner(){
       ${tasks.length?`<dt>個人時程任務（${doneN}/${tasks.length}）</dt><dd><ul class="tasklist">${tasks.map(t=>ckHtml(t.id,esc(t.t)+` <span class="chip">${esc(t.o)}</span>`)).join('')}</ul></dd>`:''}
       <dt>📝 ${m.name}的工作筆記</dt><dd>${noteEditor(m.name,'role','記錄自己分工的準備進度、口徑、待確認事項…（儲存後全隊可見）')}</dd>
     </dl>
-  </div>`;}).join('')}`;
+  </div>`;}).join('')}
+  <div class="card"><h3>🧑‍💼 幕僚與行政支援 <small style="font-weight:400">不在現場報告出席名單，協助備戰</small></h3>
+    ${STAFF.map(s=>{
+      const tasks=TIMELINE.flatMap(p=>p.tasks).filter(t=>t.o.includes(s.name));
+      return `<div style="border-left:4px solid ${s.color};padding:2px 0 2px 12px;margin:14px 0">
+      <b style="font-size:15.5px">${s.name}</b>　<span style="font-size:12.5px;color:var(--sub)">${s.title}</span>
+      <div style="font-size:13.8px;margin:4px 0">${esc(s.duty)}</div>
+      ${tasks.length?`<div style="font-weight:700;color:var(--navy2);font-size:12.5px;margin-top:8px">負責任務（${tasks.filter(t=>itemOn(t.id)).length}/${tasks.length}）</div><ul class="tasklist">${tasks.map(t=>ckHtml(t.id,esc(t.t)+` <span class="chip">${esc(t.o)}</span>`)).join('')}</ul>`:''}
+      <div style="font-weight:700;color:var(--navy2);font-size:12.5px;margin-top:8px">📝 ${s.name}的工作筆記</div>${noteEditor(s.name,'role','記錄聯繫進度、行政待辦…（儲存後全隊可見）')}
+      </div>`;}).join('')}
+  </div>`;
   bindCommon($('tab-team'));
 }
 
@@ -1300,11 +1322,11 @@ function renderMeetMinutes(){
 
 /* ═══════════ 匯出攜帶包 ═══════════ */
 function renderExport(){
-  const who=MEMBERS.find(m=>m.name===ME)?ME:MNAMES[0];
+  const who=ALLNAMES.includes(ME)?ME:MNAMES[0];
   $('tab-export').innerHTML=`
   <div class="card"><h3>📦 個人攜帶包 <small style="font-weight:400">把「我的任務＋主答題＋筆記＋必背卡＋清單」打包，8/17 帶著走</small></h3>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <select id="expWho" style="width:auto">${MNAMES.map(n=>`<option ${n===who?'selected':''}>${n}</option>`).join('')}</select>
+      <select id="expWho" style="width:auto">${ALLNAMES.map(n=>`<option ${n===who?'selected':''}>${n}</option>`).join('')}</select>
       <label style="font-size:13.5px"><input type="checkbox" id="expAns" checked> 含建議回答全文</label>
       <label style="font-size:13.5px"><input type="checkbox" id="expNotes" checked> 含個人筆記</label>
       <label style="font-size:13.5px"><input type="checkbox" id="expMust" checked> 含必背卡</label>
@@ -1346,6 +1368,13 @@ function packBody(name,opt){
     <div style="margin:4px 0"><b>主答領域：</b>${esc(m.duty)}</div>
     <div style="margin:4px 0"><b>佐證主責：</b>${esc(m.docs)}</div>
     <div style="margin:4px 0"><b>一句話任務（F3必背）：</b>「${esc(m.one)}」</div>
+    ${opt.notes&&noteOf('role')?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:9px;padding:8px 11px;margin-top:6px"><b>📝 我的工作筆記：</b><br><span style="white-space:pre-wrap">${esc(noteOf('role'))}</span></div>`:''}`;
+  }
+  const st=!forAll&&STAFF.find(x=>x.name===name);
+  if(st){
+    h+=`<h3 style="border-left:4px solid ${st.color};padding-left:8px">👤 我的任務</h3>
+    <div><b>${esc(st.name)}</b>（${esc(st.title)}）</div>
+    <div style="margin:4px 0">${esc(st.duty)}</div>
     ${opt.notes&&noteOf('role')?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:9px;padding:8px 11px;margin-top:6px"><b>📝 我的工作筆記：</b><br><span style="white-space:pre-wrap">${esc(noteOf('role'))}</span></div>`:''}`;
   }
   h+=`<h3>🕐 面談結構與答詢通則</h3>
@@ -1396,6 +1425,8 @@ function packMd(name,opt){
   let s=`# NCMEA 現場報告攜帶包 — ${name}\n2026H2023・產生於 ${fmtT(Date.now())}\n\n`;
   s+=`## 🗓 決戰日 115/8/17（一）\n- 13:00 前抵達報到（板橋三民路二段37號9樓，901/902出發前確認）\n- 15:00 集合｜**15:30–16:15 進場面談**\n- 大會窗口：余佳純 02-8964-3000#3385｜當日 0911-998-874\n\n`;
   if(m)s+=`## 👤 我的任務\n- **${m.name}**（${m.title}）｜${m.role}\n- 主答領域：${m.duty}\n- 佐證主責：${m.docs}\n- 一句話任務：「${m.one}」\n${opt.notes&&noteOf('role')?'- 📝 我的筆記：'+noteOf('role').replace(/\n/g,' ')+'\n':''}\n`;
+  const st=STAFF.find(x=>x.name===name);
+  if(st)s+=`## 👤 我的任務\n- **${st.name}**（${st.title}）\n- ${st.duty}\n${opt.notes&&noteOf('role')?'- 📝 我的筆記：'+noteOf('role').replace(/\n/g,' ')+'\n':''}\n`;
   s+=`## ✅ 我的時程任務\n${TIMELINE.flatMap(p=>p.tasks).filter(t=>t.o==='全體'||t.o.includes(name)).map(t=>`- [${itemOn(t.id)?'x':' '}] ${t.t}（${t.o}）`).join('\n')}\n\n`;
   s+=`## 🧳 攜帶清單\n${CARRY.map(c=>`- [${itemOn(c.id)?'x':' '}] ${c.t}`).join('\n')}\n\n`;
   s+=`## 🎯 我的主答題（${qs.length}題）\n\n`;
