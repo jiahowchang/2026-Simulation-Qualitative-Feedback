@@ -578,7 +578,27 @@ async function engTedTalk(slug) {
     duration: v.duration || 0,
     url: v.canonicalUrl || ("https://www.ted.com/talks/" + slug),
     video: "https://embed.ted.com/talks/" + slug,     // 沒有 YouTube 時的備援播放器
+    // TED 自家 HLS（CORS 開放、含純音訊軌）：手機背景播放用原生 <audio> 放真人原聲
+    hls: /^https:\/\/hls\.ted\.com\//.test(v.hlsUrl || "") ? v.hlsUrl : "",
+    audio: await engTedAudio(/^https:\/\/hls\.ted\.com\//.test(v.hlsUrl || "") ? v.hlsUrl : ""),
   };
+}
+
+// 從 TED HLS master 取「純音訊軌」播放清單網址（手機背景播放用）
+// - master 每個變體都掛 AUDIO group，EXT-X-MEDIA:TYPE=AUDIO 列出 low/medium/high，取 DEFAULT=YES
+// - 去掉 intro_master_id：帶它會在前面接 3.5 秒 TED 片頭，時間軸就跟字幕對不上
+async function engTedAudio(hlsUrl) {
+  if (!hlsUrl) return "";
+  try {
+    const master = await engFetchText(hlsUrl);
+    const lines = master.split("\n").filter(l => /^#EXT-X-MEDIA:.*TYPE=AUDIO/.test(l));
+    const pick = lines.find(l => /DEFAULT=YES/.test(l)) || lines[0];
+    const m = pick && pick.match(/URI="([^"]+)"/);
+    if (!m) return "";
+    const u = new URL(m[1], hlsUrl);
+    u.searchParams.delete("intro_master_id");
+    return u.toString();
+  } catch (e) { return ""; }
 }
 
 // YouTube 影片是否真的可嵌入（最新的 TED 演講常常還沒上架 YouTube → oEmbed 回 403）
@@ -591,22 +611,23 @@ async function engYoutubeEmbeddable(id) {
   } catch (e) { return false; }
 }
 
-// 依序試候選片，回傳第一支「有時間碼字幕 + YouTube 可嵌入」的
-// （要能逐句同步高亮，就必須拿得到播放時間，所以 YouTube 可嵌入是硬條件）
+// 依序試候選片，回傳第一支「有時間碼字幕 + TED 自家音訊軌」的
+// - 同步高亮需要播放時間：TED 音軌本身就有，所以 YouTube 不再是硬條件
+// - YouTube 可嵌入就一併帶上（前景看影片用），不行就留空，前端改走音訊模式
 async function engPickTed(prevUrls) {
   const slugs = await engTedSlugs();
   let tried = 0;
   for (const slug of slugs) {
     if (prevUrls.has("https://www.ted.com/talks/" + slug)) continue;
-    if (++tried > 10) break;                         // 最多試 10 支，避免拖太久
+    if (++tried > 20) break;                         // 最多試 20 支（新片常未上字幕）
     try {
       const t = await engTedTalk(slug);
-      if (!t || prevUrls.has(t.url)) continue;
-      if (!t.youtube || !(await engYoutubeEmbeddable(t.youtube))) continue;
+      if (!t || prevUrls.has(t.url) || !t.audio) continue;
+      if (t.youtube && !(await engYoutubeEmbeddable(t.youtube))) t.youtube = "";
       return t;
     } catch (e) { /* 換下一支 */ }
   }
-  throw new Error("ted: 找不到「有字幕且 YouTube 可嵌入」的新演講");
+  throw new Error("ted: 找不到「有字幕且有音訊軌」的新演講");
 }
 
 /* 字幕 cue → 完整句子（含起始時間與句內時間斷點，供逐字高亮內插）
@@ -739,6 +760,54 @@ async function engAskClaude(apiKey, title, paras, isTalk) {
   return out;
 }
 
+// 生成一篇 TED 教材（每日流程與「補生成 TED」都用這支）
+async function engBuildTed(apiKey, prevUrls) {
+  const t = await engPickTed(prevUrls);
+  const lines = engCuesToSentences(t.cues);
+  if (lines.length < 10) throw new Error("ted: 逐字稿切句過少");
+
+  // 單字/摘要/難度用開場片段即可；整份逐字稿另外全部翻譯
+  let excerpt = "", i = 0;
+  while (i < t.cues.length && excerpt.length < 7000) excerpt += t.cues[i++].text + " ";
+  const [out, zhs] = await Promise.all([
+    engAskClaude(apiKey, t.title, [excerpt.trim()], true),
+    engTranslateLines(apiKey, lines.map(l => l.en)),
+  ]);
+
+  return {
+    cat: "ted", catZh: "TED 演講", source: "TED", url: t.url,
+    video: t.video, youtube: t.youtube, audio: t.audio, presenter: t.presenter, duration: t.duration,
+    ...out,
+    // 用「整份逐字稿」取代 Claude 挑的節錄，每句帶時間碼
+    sentences: lines.map((l, i) => ({ en: l.en, zh: zhs[i] || "", t: l.t, marks: l.marks })),
+  };
+}
+
+// 只補生成 TED 並「追加」到當天已完成的文件末尾：
+// 既有文章索引不變 → 使用者當天的筆記／評分（以文章索引_句索引為 key）完全不受影響
+async function engAppendTed(dateStr) {
+  const db = admin.firestore();
+  const ref = db.collection("eng_daily").doc(dateStr);
+  const snap = await ref.get();
+  const d = snap.exists ? snap.data() : null;
+  if (!d || d.status !== "ready") throw new Error("當天文件不存在或尚未完成，無法追加");
+  if ((d.articles || []).some(a => a.cat === "ted")) return d;   // 已經有了就不重複
+
+  const prevUrls = new Set((d.articles || []).map(a => a.url));
+  try {
+    const y = new Date(new Date(dateStr + "T00:00:00Z").getTime() - 86400e3).toISOString().slice(0, 10);
+    const prev = await db.collection("eng_daily").doc(y).get();
+    if (prev.exists) (prev.data().articles || []).forEach(a => prevUrls.add(a.url));
+  } catch (e) { /* 忽略 */ }
+
+  const ted = await engBuildTed(ANTHROPIC_KEY.value(), prevUrls);
+  await ref.update({
+    articles: admin.firestore.FieldValue.arrayUnion(ted),
+    errors: (d.errors || []).filter(e => !/^ted:/.test(String(e))),
+  });
+  return (await ref.get()).data();
+}
+
 async function engGenerateDaily(dateStr) {
   const db = admin.firestore();
   const ref = db.collection("eng_daily").doc(dateStr);
@@ -785,27 +854,7 @@ async function engGenerateDaily(dateStr) {
   });
 
   // TED 演講（影片＋整份逐字稿逐句中英對照，附時間碼可跟著影片高亮）
-  const tedJob = (async () => {
-    const t = await engPickTed(prevUrls);
-    const lines = engCuesToSentences(t.cues);
-    if (lines.length < 10) throw new Error("ted: 逐字稿切句過少");
-
-    // 單字/摘要/難度用開場片段即可；整份逐字稿另外全部翻譯
-    let excerpt = "", i = 0;
-    while (i < t.cues.length && excerpt.length < 7000) excerpt += t.cues[i++].text + " ";
-    const [out, zhs] = await Promise.all([
-      engAskClaude(apiKey, t.title, [excerpt.trim()], true),
-      engTranslateLines(apiKey, lines.map(l => l.en)),
-    ]);
-
-    return {
-      cat: "ted", catZh: "TED 演講", source: "TED", url: t.url,
-      video: t.video, youtube: t.youtube, presenter: t.presenter, duration: t.duration,
-      ...out,
-      // 用「整份逐字稿」取代 Claude 挑的節錄，每句帶時間碼
-      sentences: lines.map((l, i) => ({ en: l.en, zh: zhs[i] || "", t: l.t, marks: l.marks })),
-    };
-  })();
+  const tedJob = engBuildTed(apiKey, prevUrls);
 
   const results = await Promise.allSettled(newsJobs.concat([tedJob]));
 
@@ -838,7 +887,8 @@ exports.engdaily = onRequest(
     let dateStr = typeof q.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(q.date) ? q.date : engTodayTW();
     if (dateStr > engTodayTW()) dateStr = engTodayTW();   // 不接受未來日期
     try {
-      const doc = await engGenerateDaily(dateStr);
+      // mode=ted：只補生成 TED 並追加到當天文件（不重生成其他文章）
+      const doc = q.mode === "ted" ? await engAppendTed(dateStr) : await engGenerateDaily(dateStr);
       res.json(doc);
     } catch (e) {
       res.status(500).json({ error: { message: String(e && e.message || e) } });

@@ -224,6 +224,8 @@ h2.sec{font-size:16px; margin:22px 0 8px; color:var(--gold)}
 </div>
 
 <div class="toast" id="toast"></div>
+<!-- 常駐音訊元素：放在會被重繪的內容區外面，手機鎖屏／切到背景才能持續播放並顯示鎖定畫面控制 -->
+<audio id="bgAudio" preload="metadata" playsinline webkit-playsinline></audio>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -379,8 +381,9 @@ function renderArticle(){
                          allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`
         }</div></div>
         ${a.presenter ? `<div class="speaker">🎤 講者：<b>${esc(a.presenter)}</b></div>` : ""}
-        ${a.youtube ? `<div class="syncbar">
+        ${(a.youtube || a.audio) ? `<div class="syncbar">
             <button class="tgl on" id="followTgl" title="影片播到哪，逐字稿就亮到哪並自動捲動">🎯 跟播</button>
+            ${a.audio ? `<button class="tgl" id="bgTgl" title="改用 TED 原聲音訊播放：手機鎖屏、切到別的 App 也會繼續播，鎖定畫面可控制">🎧 原聲背景聽</button>` : ""}
             <span title="字幕時間與影片可能差幾秒，可在這裡對準（會記住）">⏱ 對齊
               <button class="tgl" id="offMinus">−</button>
               <b id="offVal">0.0s</b>
@@ -453,9 +456,19 @@ function renderArticle(){
     const u = recordings[el.dataset.key];
     if (u) new Audio(u).play();
   });
-  // TED：初始化 YouTube 播放器與跟播控制
-  if (a.youtube){
-    initYt(a.youtube, a.sentences);
+  // TED：初始化 YouTube 播放器與跟播控制（沒有 YouTube 但有原聲音軌時，也要能同步）
+  if (a.youtube || a.audio){
+    if (tedAudioOn) stopTedAudio();                      // 切文章時先關掉上一篇的原聲
+    if (a.youtube) initYt(a.youtube, a.sentences);
+    else primeSync(a.sentences);
+    const bt = $("bgTgl");
+    if (bt) bt.onclick = () => {
+      if (tedAudioOn){ stopTedAudio(); return; }
+      // 從影片目前位置接著聽（影片時間 → 逐字稿時間，原聲音軌與字幕同軸）
+      let resume = 0;
+      try { if (ytPlayer && ytPlayer.getCurrentTime) resume = Math.max(0, ytPlayer.getCurrentTime() * 1000 - syncOffset); } catch(e){}
+      if (startTedAudio(a, resume)){ bt.classList.add("on"); bt.textContent = "🎧 原聲播放中（可鎖屏）"; }
+    };
     const ft = $("followTgl");
     if (ft) ft.onclick = () => { followOn = !followOn; ft.classList.toggle("on", followOn); };
     // 對齊微調：字幕早於聲音就按＋，晚了就按−
@@ -473,8 +486,14 @@ function renderArticle(){
     c.querySelectorAll(".ts").forEach(el => el.onclick = ev => {
       ev.stopPropagation();
       const sent = el.closest(".sent");
-      // seek 必須在點擊當下同步呼叫（iOS 手勢一旦被非同步吃掉就會被擋）
-      if (!seekTo(+el.dataset.seek, timed.indexOf(sent))) toast("影片還在載入中，請稍候再試");
+      const idx = timed.indexOf(sent), ms = +el.dataset.seek;
+      // 沒有 YouTube（新片常未上架）就直接用原聲音訊從這句開始播；
+      // 必須在點擊當下同步呼叫 play()（iOS 手勢一旦被非同步吃掉就會被擋）
+      if (!tedAudioOn && !ytPlayer && a.audio){
+        if (startTedAudio(a, ms)){ const bt = $("bgTgl"); if (bt){ bt.classList.add("on"); bt.textContent = "🎧 原聲播放中（可鎖屏）"; } curIdx = -1; setActive(idx, ms); seekGuardUntil = performance.now() + 800; }
+        return;
+      }
+      if (!seekTo(ms, idx)) toast("播放器還在載入中，請稍候再試");
     });
   } else {
     destroyYt();
@@ -568,13 +587,18 @@ function destroyYt(){
   curIdx = -1; syncEls = []; syncTimes = []; syncData = [];
 }
 
-function initYt(videoId, sentences){
-  destroyYt();
-  const gen = ytGen;
-  // 快取句子時間，之後每幀只做二分搜尋
+// 快取句子時間，之後每幀只做二分搜尋（YouTube 與原聲模式共用）
+function primeSync(sentences){
   syncEls = [...document.querySelectorAll(".sent[data-t]")];
   syncTimes = syncEls.map(el => +el.dataset.t);
   syncData = sentences || [];
+  curIdx = -1;
+}
+
+function initYt(videoId, sentences){
+  destroyYt();
+  const gen = ytGen;
+  primeSync(sentences);
   const resume = (videoId === ytLastVideo && ytLastTime > 1) ? ytLastTime : 0;
   ytLastVideo = videoId;
 
@@ -615,15 +639,30 @@ function startLoop(){
   ytRaf = requestAnimationFrame(loop);
 }
 
-function tick(force){
-  if (!ytPlayer || !ytPlayer.getCurrentTime) return;
+// 目前同步的來源：TED 原聲音訊（背景聽模式）或 YouTube 影片
+// 回傳 {playMs, ms}：playMs 是媒體本身時間；ms 是逐字稿時間軸
+// - TED 自家音軌與字幕同一條時間軸 → 不套偏移；YouTube 版才需要 syncOffset
+function getSyncTime(force){
+  if (tedAudioOn){
+    const a = getAudio();
+    if (!a || !a.src) return null;
+    const playMs = (a.currentTime || 0) * 1000;
+    return { playMs, ms: playMs };
+  }
+  if (!ytPlayer || !ytPlayer.getCurrentTime) return null;
   let sec = 0;
-  try { sec = ytPlayer.getCurrentTime() || 0; } catch(e){ return; }
+  try { sec = ytPlayer.getCurrentTime() || 0; } catch(e){ return null; }
   const state = (() => { try { return ytPlayer.getPlayerState(); } catch(e){ return -1; } })();
   // metadata 未載入前會回 0，別誤判成第一句
-  if (!sec && (state === -1 || state === 5) && !force) return;
+  if (!sec && (state === -1 || state === 5) && !force) return null;
   const playMs = sec * 1000;
-  const ms = Math.max(0, playMs - syncOffset);          // 換算成逐字稿的時間軸
+  return { playMs, ms: Math.max(0, playMs - syncOffset) };
+}
+
+function tick(force){
+  const t = getSyncTime(force);
+  if (!t) return;
+  const { playMs, ms } = t;
   const nowEl = $("nowTime");
   if (nowEl) nowEl.textContent = fmtTime(playMs);
   if (performance.now() < seekGuardUntil) return;       // 剛 seek，先信任樂觀高亮
@@ -675,23 +714,105 @@ function setActive(idx, ms){
 addEventListener("scroll", () => { userScrolledAt = Date.now(); }, { passive: true });
 // 分頁隱藏時停止跟播迴圈（省電；iOS 背景會凍結 rAF）
 document.addEventListener("visibilitychange", () => {
+  // 背景時停掉畫面更新迴圈（省電；音訊本身照播）；回到前景立刻重新對位
   if (document.hidden && ytRaf){ cancelAnimationFrame(ytRaf); ytRaf = null; }
-  else if (!document.hidden && ytPlayer){
-    try { if (ytPlayer.getPlayerState() === 1) startLoop(); } catch(e){}
+  else if (!document.hidden){
+    if (tedAudioOn){ const a = getAudio(); if (a && !a.paused) startLoop(); tick(true); }
+    else if (ytPlayer){ try { if (ytPlayer.getPlayerState() === 1) startLoop(); } catch(e){} }
   }
 });
 
 function seekTo(ms, idx){
-  if (!ytPlayer || !ytPlayer.seekTo) return false;
-  // ms 是逐字稿時間 → 換回影片時間；seek 會落到前一個關鍵影格，再補一點點
-  ytPlayer.seekTo((ms + syncOffset) / 1000 + 0.05, true);
-  try { ytPlayer.playVideo(); } catch(e){}
+  if (tedAudioOn){
+    const a = getAudio();
+    if (!a || !a.src) return false;
+    try { a.currentTime = ms / 1000; a.play().catch(() => {}); } catch(e){ return false; }
+  } else {
+    if (!ytPlayer || !ytPlayer.seekTo) return false;
+    // ms 是逐字稿時間 → 換回影片時間；seek 會落到前一個關鍵影格，再補一點點
+    ytPlayer.seekTo((ms + syncOffset) / 1000 + 0.05, true);
+    try { ytPlayer.playVideo(); } catch(e){}
+  }
   if (typeof idx === "number"){                          // 樂觀高亮，避免先閃回上一句
     curIdx = -1;
     setActive(idx, ms);
     seekGuardUntil = performance.now() + 800;
   }
   return true;
+}
+
+/* ═══════════ TED 原聲背景聽：原生 <audio> 放 TED 自家 HLS 純音訊軌 ═══════════
+   - YouTube 內嵌播放器在手機鎖屏／切背景一定會停，這是平台與 YouTube 的限制
+   - 原生 <audio> + Media Session 才會繼續播，且鎖定畫面／耳機可控制
+   - iOS/Safari 原生支援 HLS；Android/Chrome 用 hls.js（cdnjs）             */
+let tedAudioOn = false, hlsInst = null, hlsLibP = null;
+function loadHlsLib(){
+  if (window.Hls) return Promise.resolve();
+  return hlsLibP || (hlsLibP = new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.20/hls.min.js";
+    s.onload = res; s.onerror = () => rej(new Error("hls.js load fail"));
+    document.head.appendChild(s);
+  }));
+}
+function bindTedAudioEvents(a, title, presenter){
+  a.onplay = () => { setMediaPlaybackState("playing"); startLoop(); };
+  a.onpause = () => { setMediaPlaybackState("paused"); if (ytRaf){ cancelAnimationFrame(ytRaf); ytRaf = null; } tick(true); };
+  a.onended = () => { setMediaPlaybackState("none"); if (ytRaf){ cancelAnimationFrame(ytRaf); ytRaf = null; } };
+  a.onerror = () => toast("原聲音訊載入失敗，已切回影片");
+  const jump = d => { try { a.currentTime = Math.max(0, a.currentTime + d); } catch(e){} tick(true); };
+  const stepSent = d => {                                  // 上一句／下一句
+    const i = Math.max(0, Math.min(syncTimes.length - 1, curIdx + d));
+    if (syncTimes.length) seekTo(syncTimes[i], i);
+  };
+  setMediaSession(title, presenter || "TED", {
+    play: () => a.play().catch(() => {}), pause: () => a.pause(),
+    previoustrack: () => stepSent(-1), nexttrack: () => stepSent(1),
+    seekbackward: () => jump(-10), seekforward: () => jump(10),
+    seekto: e => { if (e && typeof e.seekTime === "number"){ try { a.currentTime = e.seekTime; } catch(x){} tick(true); } },
+  });
+}
+// 必須在「使用者點擊的當下」同步呼叫 play()，不然 iOS 會把手勢吃掉而拒絕播放
+function startTedAudio(art, resumeMs){
+  const a = getAudio();
+  if (!a || !art.audio) return false;
+  const src = art.audio;
+  tedAudioOn = true;
+  // 影片先停（避免兩邊同時出聲）
+  try { if (ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo(); } catch(e){}
+  if (hlsInst){ try { hlsInst.destroy(); } catch(e){} hlsInst = null; }
+  bindTedAudioEvents(a, art.title_en, art.presenter);
+  const native = a.canPlayType("application/vnd.apple.mpegurl") || a.canPlayType("application/x-mpegURL");
+  if (native){
+    a.src = src;
+    if (resumeMs > 0) a.addEventListener("loadedmetadata", () => { try { a.currentTime = resumeMs / 1000; } catch(e){} }, { once: true });
+    a.play().catch(() => toast("請再按一次播放"));
+  } else {
+    // Android/Chrome：先在手勢內叫 play() 解鎖，再用 hls.js 掛上來源
+    a.play().catch(() => {});
+    loadHlsLib().then(() => {
+      if (!tedAudioOn) return;
+      if (!window.Hls || !window.Hls.isSupported()){ toast("此瀏覽器不支援原聲串流"); tedAudioOn = false; return; }
+      hlsInst = new window.Hls({ enableWorker: true });
+      hlsInst.attachMedia(a);
+      hlsInst.on(window.Hls.Events.MEDIA_ATTACHED, () => hlsInst.loadSource(src));
+      hlsInst.on(window.Hls.Events.MANIFEST_PARSED, () => {
+        if (resumeMs > 0) { try { a.currentTime = resumeMs / 1000; } catch(e){} }
+        a.play().catch(() => toast("請再按一次 🎧"));
+      });
+      hlsInst.on(window.Hls.Events.ERROR, (_, d) => { if (d && d.fatal){ toast("原聲串流錯誤"); stopTedAudio(); } });
+    }).catch(() => { toast("無法載入串流元件"); tedAudioOn = false; });
+  }
+  return true;
+}
+function stopTedAudio(){
+  const a = getAudio();
+  tedAudioOn = false;
+  if (hlsInst){ try { hlsInst.destroy(); } catch(e){} hlsInst = null; }
+  if (a){ try { a.pause(); } catch(e){} a.onplay = a.onpause = a.onended = a.onerror = null; a.removeAttribute("src"); try { a.load(); } catch(e){} }
+  setMediaPlaybackState("none");
+  if (ytRaf){ cancelAnimationFrame(ytRaf); ytRaf = null; }
+  const b = $("bgTgl"); if (b){ b.classList.remove("on"); b.textContent = "🎧 原聲背景聽"; }
 }
 
 /* ═══════════ TTS 朗讀 ═══════════ */
@@ -751,9 +872,25 @@ async function fetchTTS(cloudVoice, rate, text){
   audioCache.set(key, url);
   return url;
 }
-// 重複使用同一個 <audio>（iOS 首次手勢後即解鎖，後續程式化播放才不被擋）
-let sharedAudio = null;
-function getAudio(){ if (!sharedAudio) sharedAudio = new Audio(); return sharedAudio; }
+// 一律用頁面上的常駐 <audio>：iOS 首次手勢後即解鎖，後續程式化播放才不被擋；
+// 而且是原生媒體元素，鎖屏／切背景會繼續播（speechSynthesis 與 YouTube 內嵌都不會）
+function getAudio(){ return $("bgAudio"); }
+
+/* ═══════════ Media Session：鎖定畫面 / 耳機按鍵控制 ═══════════ */
+function setMediaSession(title, artist, handlers){
+  if (!("mediaSession" in navigator)) return;
+  try {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: title || "每日英語", artist: artist || "Daily English", album: "每日英語",
+      artwork: [{ src: new URL("icons/english-512.png", location.href).href, sizes: "512x512", type: "image/png" }],
+    });
+    const all = ["play","pause","previoustrack","nexttrack","seekbackward","seekforward","seekto","stop"];
+    for (const k of all){
+      try { navigator.mediaSession.setActionHandler(k, handlers && handlers[k] ? handlers[k] : null); } catch(e){}
+    }
+  } catch(e){}
+}
+function setMediaPlaybackState(s){ try { if ("mediaSession" in navigator) navigator.mediaSession.playbackState = s; } catch(e){} }
 
 let speakingEl = null;
 let curAudio = null;
@@ -807,36 +944,49 @@ function speak(text, el, onend){
   }
 }
 
-/* 全文連續朗讀 */
-let playingAll = false;
-$("playAllBtn").onclick = () => {
-  if (playingAll){ stopAll(); return; }
+/* 全文連續朗讀：一句接一句透過常駐 <audio> 播雲端語音，手機鎖屏也繼續；
+   鎖定畫面／耳機的 ⏮ ⏭ 是上一句／下一句 */
+let playingAll = false, playAllIdx = 0;
+function startPlayAll(fromIdx){
   const a = dayDoc && dayDoc.status === "ready" && dayDoc.articles[curArt];
   if (!a) return;
+  if (tedAudioOn) stopTedAudio();                        // 同一個 <audio>，不能兩者同時
   playingAll = true;
+  playAllIdx = Math.max(0, Math.min(a.sentences.length - 1, fromIdx || 0));
   $("playAllBtn").textContent = "⏹ 停止";
   $("playAllBtn").classList.add("on");
-  let i = 0;
+  setMediaSession(a.title_en, a.presenter || a.source, {
+    play: () => { if (!playingAll) startPlayAll(playAllIdx); },
+    pause: () => stopAll(true),
+    previoustrack: () => startPlayAll(playAllIdx - 1),
+    nexttrack: () => startPlayAll(playAllIdx + 1),
+  });
+  setMediaPlaybackState("playing");
   const next = () => {
-    if (!playingAll || i >= a.sentences.length){ stopAll(); return; }
+    if (!playingAll || playAllIdx >= a.sentences.length){ stopAll(); return; }
+    const i = playAllIdx;
     const key = curArt + "_" + i;
     const el = document.querySelector(`#sent-${CSS.escape(key)} .en`);
-    if (el) el.scrollIntoView({block:"center", behavior:"smooth"});
+    if (el && !document.hidden) el.scrollIntoView({block:"center", behavior:"smooth"});
     // 雲端語音：先預抓下一句，播放才不會卡頓
     const sel = $("voiceSel").value;
     if (sel.startsWith("cloud:") && i + 1 < a.sentences.length){
       fetchTTS(sel.slice(6), parseFloat($("rateSel").value) || 1, a.sentences[i + 1].en).catch(() => {});
     }
-    speak(a.sentences[i].en, el, () => { i++; setTimeout(next, 300); });
+    speak(a.sentences[i].en, el, () => { if (playingAll && playAllIdx === i){ playAllIdx = i + 1; setTimeout(next, 300); } });
   };
   next();
-};
-function stopAll(){
+}
+$("playAllBtn").onclick = () => { if (playingAll) stopAll(); else startPlayAll(0); };
+// keepIdx=true 表示是「暫停」（鎖定畫面按 ⏸），之後按 ▶ 從同一句接著播
+function stopAll(keepIdx){
   playingAll = false;
   speakSeq++;                       // 讓進行中的非同步朗讀失效
   speechSynthesis.cancel();
   if (curAudio){ curAudio.pause(); curAudio = null; }
   if (speakingEl){ speakingEl.classList.remove("speaking"); speakingEl = null; }
+  if (!keepIdx) playAllIdx = 0;
+  setMediaPlaybackState(keepIdx ? "paused" : "none");
   $("playAllBtn").textContent = "▶ 全文朗讀";
   $("playAllBtn").classList.remove("on");
 }
