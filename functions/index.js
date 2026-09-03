@@ -42,7 +42,7 @@ exports.patient = onRequest(
     region: "us-central1",
     secrets: [ANTHROPIC_KEY],
     maxInstances: 10,          // 同時最多 10 個實例，避免暴衝
-    timeoutSeconds: 60,
+    timeoutSeconds: 300,       // 教學歷程匯入解析可能生成長回應（max_tokens 8000），60 秒會逾時斷線
     memory: "256MiB",
   },
   async (req, res) => {
