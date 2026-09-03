@@ -1612,7 +1612,8 @@ async function scanCalendar() {
     $("impCals").innerHTML = "";
     cals.forEach(c => {
       const chip = document.createElement("button");
-      chip.type = "button"; chip.className = "chip on"; chip.textContent = "📅 " + c.name; chip.dataset.id = c.id;
+      chip.type = "button"; chip.textContent = "📅 " + c.name; chip.dataset.id = c.id;
+      chip.className = "chip" + (c.id === ALLOWED[0] ? " on" : "");   // 預設只勾主日曆（跟婆的共用日曆）
       chip.onclick = () => chip.classList.toggle("on");
       $("impCals").appendChild(chip);
     });
@@ -1673,7 +1674,7 @@ async function scanCalendar() {
   });
   renderImpList();
   const fresh = impCandidates.filter(c => !c.dup).length;
-  impStatus(`解析出 ${impCandidates.length} 筆課程行程${fresh < impCandidates.length ? `（${impCandidates.length - fresh} 筆看起來已存在，預設不勾）` : ""}，確認後按「加入勾選的行程」。`);
+  impStatus(`解析出 ${impCandidates.length} 筆課程行程${fresh < impCandidates.length ? `（${impCandidates.length - fresh} 筆標示「可能已存在」）` : ""}，預設皆未勾選，勾選要加入的後按「加入勾選的行程」。`);
 }
 
 $("impScan").onclick = async () => {
@@ -1746,7 +1747,7 @@ $("impScan").onclick = async () => {
     });
     renderImpList();
     const fresh = impCandidates.filter(c => !c.dup).length;
-    impStatus(`解析出 ${impCandidates.length} 筆教學行程${fresh < impCandidates.length ? `（${impCandidates.length - fresh} 筆看起來已存在，預設不勾）` : ""}，確認後按「加入勾選的行程」。`);
+    impStatus(`解析出 ${impCandidates.length} 筆教學行程${fresh < impCandidates.length ? `（${impCandidates.length - fresh} 筆標示「可能已存在」）` : ""}，預設皆未勾選，勾選要加入的後按「加入勾選的行程」。`);
   } catch (e) {
     console.error(e);
     impStatus("匯入失敗：" + (e.auth ? "Gmail 授權失敗，請重試" : e.message), true);
@@ -1759,9 +1760,9 @@ function renderImpList() {
   const box = $("impList"); box.innerHTML = "";
   impCandidates.forEach((c, i) => {
     const el = document.createElement("div");
-    el.className = "imp-card" + (c.dup ? " dup" : " on");
+    el.className = "imp-card" + (c.dup ? " dup" : "");
     el.innerHTML = `
-      <input type="checkbox" ${c.dup ? "" : "checked"}>
+      <input type="checkbox">
       <div class="b">
         <div class="t">${esc(c.title)}</div>
         <div class="m">
