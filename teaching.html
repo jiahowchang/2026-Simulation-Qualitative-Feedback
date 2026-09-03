@@ -1558,17 +1558,33 @@ async function gcalFetch(path, token) {
   return r.json();
 }
 
-/* AI 解析共用：把來源清單丟給 patient 代理，回傳事件陣列 */
+/* AI 解析共用：把來源清單丟給 patient 代理，回傳事件陣列。
+   回應若因 max_tokens 被截斷，自動修剪到最後一個完整物件搶救解析。 */
 async function aiExtract(system, userText) {
   const r = await fetch(PROXY_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 3000, system, messages: [{ role: "user", content: userText }] })
+    body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 8000, system, messages: [{ role: "user", content: userText }] })
   });
   const data = await r.json();
   if (!r.ok) throw new Error(data?.error?.message || ("HTTP " + r.status));
-  const raw = (data.content?.[0]?.text || "").trim().replace(/^```(json)?/i, "").replace(/```$/, "").trim();
-  return JSON.parse(raw);
+  let raw = (data.content?.[0]?.text || "").trim().replace(/^```(json)?/i, "").replace(/```$/, "").trim();
+  const a = raw.indexOf("["), b = raw.lastIndexOf("]");
+  if (a >= 0 && b > a) raw = raw.slice(a, b + 1);
+  else if (a >= 0) raw = raw.slice(a);
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    // 截斷搶救：修剪到最後一個完整的 "}" 再補 "]"
+    const cut = raw.lastIndexOf("}");
+    if (cut > 0) {
+      const fixed = raw.slice(0, cut + 1).replace(/,\s*$/, "") + "]";
+      const parsed = JSON.parse(fixed);   // 若仍失敗就讓錯誤往外拋
+      if (data.stop_reason === "max_tokens") toast("結果過多已截斷，僅顯示前面解析到的行程；可縮小範圍再掃一次");
+      return parsed;
+    }
+    throw e;
+  }
 }
 
 /* ── Google 日曆掃描 ── */
@@ -1640,6 +1656,7 @@ async function scanCalendar() {
 - 事件標題精簡也要盡力判讀（如「生醫原位模擬」＝他帶的原位模擬教學）；判斷不了是否課程就略過
 - 全天事件 timeStart/timeEnd 給空字串；跨日活動以第一天為 date
 - title 補成完整課程名稱；content 一句話摘要
+- 輸出壓縮的單行 JSON（不要換行與縮排）
 - 一筆都沒有就輸出 []`;
   const eventText = capped.map((e, i) =>
     `【事件 ${i}】日曆：${e.cal}｜標題：${e.summary}｜開始：${e.start}｜結束：${e.end}${e.location ? "｜地點：" + e.location : ""}${e.desc ? "｜說明：" + e.desc : ""}`).join("\n");
@@ -1714,21 +1731,11 @@ $("impScan").onclick = async () => {
 - 「育苗計畫」相關信件一律略過（那是研究計畫，不是課程）
 - 同一封信有多個場次就每場各列一筆；時間不明給空字串；人數不明給 0
 - content 用一兩句話摘要課程內容
+- 輸出壓縮的單行 JSON（不要換行與縮排）
 - 一筆都沒有就輸出 []`;
     const emailText = mails.map((m, i) =>
       `【信件 ${i}】主旨：${m.subject}\n寄件者：${m.from}\n日期：${m.date}\n內文：${m.body}`).join("\n\n---\n\n");
-    const r = await fetch(PROXY_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6", max_tokens: 3000, system,
-        messages: [{ role: "user", content: emailText }]
-      })
-    });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data?.error?.message || ("HTTP " + r.status));
-    const raw = (data.content?.[0]?.text || "").trim().replace(/^```(json)?/i, "").replace(/```$/, "").trim();
-    const events = JSON.parse(raw);
+    const events = await aiExtract(system, emailText);
     if (!Array.isArray(events) || !events.length) { impStatus("這些信裡沒有找到你授課的行程。"); return; }
 
     impCandidates = events.filter(ev => ev.title && /^\d{4}-\d{2}-\d{2}$/.test(ev.date || "")).map(ev => {

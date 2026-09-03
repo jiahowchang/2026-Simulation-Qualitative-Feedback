@@ -64,7 +64,7 @@ exports.patient = onRequest(
       return;
     }
     const model = ALLOWED_MODELS.includes(body.model) ? body.model : "claude-opus-4-8";
-    const maxTokens = Math.min(Math.max(parseInt(body.max_tokens, 10) || 700, 1), 1500);
+    const maxTokens = Math.min(Math.max(parseInt(body.max_tokens, 10) || 700, 1), 8000);
     const system = typeof body.system === "string" ? body.system : "";
 
     try {
