@@ -231,6 +231,10 @@ button { font-family: inherit; }
 .filter-note button { border: none; background: none; color: var(--amber); text-decoration: underline; cursor: pointer; font-size: .82rem; font-weight: 700; margin-left: 6px; }
 
 .month-h { font-size: .85rem; font-weight: 800; color: var(--gray); letter-spacing: .06em; margin: 18px 2px 8px; }
+.group-h { display: flex; align-items: center; gap: 9px; font-size: 1rem; font-weight: 800; color: var(--navy); margin: 4px 2px 2px; }
+.group-h .cnt { font-size: .72rem; font-weight: 700; color: var(--navy); background: var(--blue-l); border-radius: 8px; padding: 2px 9px; }
+.group-h.past { color: var(--gray); border-top: 1.5px dashed var(--line); margin-top: 26px; padding-top: 20px; }
+.group-h.past .cnt { color: var(--gray); background: #eef2f3; }
 .rec { background: var(--card); border-radius: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.08); padding: 14px 16px; margin-bottom: 10px; cursor: pointer; display: grid; grid-template-columns: 56px 1fr auto; gap: 14px; align-items: center; transition: box-shadow .15s, transform .15s; border-left: 4px solid transparent; }
 .rec:hover { box-shadow: 0 4px 14px rgba(26,82,118,.15); transform: translateY(-1px); }
 .rec.future { border-left-color: var(--amber); }
@@ -743,14 +747,36 @@ function renderList() {
     renderStats();
     return;
   }
-  let curMonth = "";
+  /* 排序：未來（含今天）由近到遠在前，已結束的移到最後（新→舊） */
+  const today0 = todayStr();
+  const upcoming = r => (r.date || "") >= today0;
+  const byTime = (a, b) => a.date.localeCompare(b.date) || (a.timeStart || "").localeCompare(b.timeStart || "");
+  list.sort((a, b) => {
+    const au = upcoming(a), bu = upcoming(b);
+    if (au !== bu) return au ? -1 : 1;
+    return au ? byTime(a, b) : byTime(b, a);
+  });
+  const upCount = list.filter(upcoming).length;
+
+  let curMonth = "", curGroup = null;
+  const seenMonths = new Set();
   list.forEach(r => {
+    const grp = upcoming(r) ? "up" : "past";
+    if (grp !== curGroup) {
+      curGroup = grp; curMonth = "";
+      const g = document.createElement("div");
+      g.className = "group-h" + (grp === "past" ? " past" : "");
+      g.innerHTML = grp === "up"
+        ? `📌 即將進行<span class="cnt">${upCount} 場</span>`
+        : `✅ 已完成<span class="cnt">${list.length - upCount} 場</span>`;
+      box.appendChild(g);
+    }
     const mKey = (r.date||"").slice(0,7);
     if (mKey !== curMonth) {
       curMonth = mKey;
       const h = document.createElement("div");
       h.className = "month-h";
-      h.id = "m-" + mKey;
+      if (!seenMonths.has(mKey)) { h.id = "m-" + mKey; seenMonths.add(mKey); }
       const [yy,mm] = mKey.split("-");
       h.textContent = `${yy} 年 ${Number(mm)} 月`;
       box.appendChild(h);
