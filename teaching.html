@@ -420,6 +420,7 @@ button { font-family: inherit; }
       <div class="f"><label>教學對象（可複選）</label><div class="chips" id="eAud"></div></div>
       <div class="grid2">
         <div class="f"><label>學員人數</label><input type="number" id="eCount" min="0" placeholder="0"></div>
+        <div class="f"><label>總時數（跨多日課程填，留空則依起訖時間計算）</label><input type="number" id="eHours" min="0" step="0.1" placeholder="例：48"></div>
         <div class="f"><label>地點</label><input type="text" id="eLoc" placeholder="例：急診部討論室、臨床技能中心"></div>
       </div>
       <div class="f"><label>教學內容摘要</label><textarea id="eContent" placeholder="課程大綱、教學目標、進行方式…"></textarea></div>
@@ -590,6 +591,8 @@ function toast(msg) {
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
 const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
 function durationHours(r) {
+  // 跨多日／多週的課程（整學期課、數日研討會）以 hours 欄位直接記總時數，優先採用
+  if (Number(r.hours) > 0) return Number(r.hours);
   if (!r.timeStart || !r.timeEnd) return 0;
   const [h1,m1] = r.timeStart.split(":").map(Number), [h2,m2] = r.timeEnd.split(":").map(Number);
   const mins = (h2*60+m2) - (h1*60+m1);
@@ -977,6 +980,7 @@ function renderDetail(id) {
   if (r.method) meta.push(`<span class="tag method">${esc(r.method)}</span>`);
   (r.audiences||[]).forEach(a => meta.push(`<span class="tag aud">${esc(a)}</span>`));
   if (r.audienceCount) meta.push(`<span class="tag aud">👥 ${Number(r.audienceCount)} 人</span>`);
+  if (Number(r.hours) > 0) meta.push(`<span class="tag method">⏱ 共 ${Number(r.hours)} 小時</span>`);
   if (r.location) meta.push(`<span class="tag method">📍 ${esc(r.location)}</span>`);
 
   const mats = (r.materials||[]).filter(m => m.name || m.url);
@@ -1237,6 +1241,7 @@ function openEdit(id) {
   $("eCat").value = r?.category || CATS[0];
   $("eMethod").value = r?.method || METHODS[0];
   $("eCount").value = r?.audienceCount ?? "";
+  $("eHours").value = r?.hours ?? "";
   $("eLoc").value = r?.location || "";
   $("eContent").value = r?.content || "";
   $("eRefl").value = r?.reflection || "";
@@ -1273,6 +1278,7 @@ $("saveBtn").onclick = async () => {
     method: $("eMethod").value,
     audiences: [...$("eAud").children].filter(c => c.classList.contains("on")).map(c => c.dataset.v),
     audienceCount: Number($("eCount").value) || 0,
+    hours: Number($("eHours").value) || 0,
     location: $("eLoc").value.trim(),
     content: $("eContent").value.trim(),
     materials: [...$("eMats").children].map(row => {
@@ -1391,7 +1397,8 @@ function buildReport(list) {
     const meta = [
       `${esc(r.timeStart || "")}${r.timeEnd ? "–" + esc(r.timeEnd) : ""}`,
       r.method, (r.audiences||[]).join("、"),
-      r.audienceCount ? r.audienceCount + " 人" : "", r.location
+      r.audienceCount ? r.audienceCount + " 人" : "",
+      Number(r.hours) > 0 ? "共 " + Number(r.hours) + " 小時" : "", r.location
     ].filter(Boolean).join("　|　");
     return `
     <div class="pr-rec${(imgs.length || fbs.length > 2) ? " allowbreak" : ""}">
