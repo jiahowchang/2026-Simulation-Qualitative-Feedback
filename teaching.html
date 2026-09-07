@@ -815,6 +815,9 @@ function renderMain() {
   }
 }
 window.addEventListener("hashchange", () => { renderMain(); window.scrollTo(0, 0); $("mainCol").scrollTop = 0; });
+/* 每次開啟／重新整理網頁一律回到列表首頁，不停在上次瀏覽的課程詳情頁
+   （replaceState 不寫入歷史、不觸發 hashchange，頁內的前進／返回仍照常運作）*/
+if (currentDetailId()) history.replaceState(null, "", location.pathname + location.search);
 
 function thumbCard(f) {
   const isImg = /\.(png|jpe?g|heic|gif|webp)$/i.test(f.name);
