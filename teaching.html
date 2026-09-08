@@ -251,7 +251,10 @@ button { font-family: inherit; }
 .tag.future-tag { background: var(--amber-l); color: var(--amber); }
 .tag.stud { background: var(--purple-l); color: var(--purple); }
 .rec.stud { border-left-color: var(--purple); }
+.tag.admin { background: var(--amber-l); color: var(--amber); }
+.rec.admin { border-left-color: var(--amber); }
 .learn-line { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: .78rem; color: var(--purple); font-weight: 700; }
+.admin-line { margin-top: 4px; font-size: .78rem; color: var(--amber); font-weight: 700; }
 .rec .marks { display: flex; gap: 8px; font-size: .95rem; }
 .rec .marks span { opacity: .35; }
 .rec .marks span.on { opacity: 1; }
@@ -385,7 +388,7 @@ button { font-family: inherit; }
       <div id="listView">
       <div class="toolbar">
         <input type="search" id="q" placeholder="搜尋課程名稱、內容、反思…">
-        <select id="fRole"><option value="">全部身分</option><option>講師</option><option>學生</option></select>
+        <select id="fRole"><option value="">全部身分</option><option>講師</option><option>學生</option><option>教學行政</option></select>
         <select id="fCat"><option value="">全部類別</option></select>
         <select id="fAud"><option value="">全部對象</option></select>
         <select id="fYear"><option value="">全部年份</option></select>
@@ -413,7 +416,7 @@ button { font-family: inherit; }
         <div class="f"><label>結束時間</label><input type="time" id="eEnd"></div>
       </div>
       <div class="grid3">
-        <div class="f"><label>身分</label><select id="eRole"><option>講師</option><option>學生</option></select></div>
+        <div class="f"><label>身分</label><select id="eRole"><option>講師</option><option>學生</option><option>教學行政</option></select></div>
         <div class="f"><label>教學類別</label><select id="eCat"></select></div>
         <div class="f"><label>教學形式</label><select id="eMethod"></select></div>
       </div>
@@ -535,7 +538,7 @@ const storage = getStorage(app);
 const $ = id => document.getElementById(id);
 
 const ALLOWED = ["jiahowchang@gmail.com"];
-const CATS = ["急救復甦", "TRM 團隊資源管理", "跨專業教育 IPE", "模擬醫學", "災難醫學", "臨床教學", "演講／課程", "其他"];
+const CATS = ["急救復甦", "TRM 團隊資源管理", "跨專業教育 IPE", "模擬醫學", "災難醫學", "臨床教學", "演講／課程", "教學會議", "其他"];
 const METHODS = ["工作坊", "模擬情境演練", "課堂講授", "床邊教學", "OSCE／技能考核", "線上課程", "小組討論", "其他"];
 const AUDS = ["臨床醫師", "PGY", "醫學生", "護理師", "專科護理師", "呼吸治療師", "醫事放射師", "藥師", "其他"];
 const FB_SOURCES = ["書面問卷", "口頭回饋", "線上表單", "課後訪談", "其他"];
@@ -695,8 +698,10 @@ function renderStats() {
   const yFilter = $("fYear").value || String(new Date().getFullYear());
   $("statsTitle").textContent = `📊 ${yFilter} 年統計`;
   const ysAll = records.filter(r => (r.date||"").startsWith(yFilter) && !isFuture(r));
-  const ys = ysAll.filter(r => (r.role || "講師") !== "學生");
-  const learn = ysAll.filter(r => (r.role || "講師") === "學生");
+  const roleOf = r => r.role || "講師";
+  const ys = ysAll.filter(r => roleOf(r) === "講師");
+  const learn = ysAll.filter(r => roleOf(r) === "學生");
+  const admin = ysAll.filter(r => roleOf(r) === "教學行政");
   $("stSessions").textContent = ys.length;
   $("stHours").textContent = Math.round(ys.reduce((s,r) => s + durationHours(r), 0) * 10) / 10;
   $("stLearners").textContent = ys.reduce((s,r) => s + (Number(r.audienceCount) || 0), 0);
@@ -715,6 +720,10 @@ function renderStats() {
   if (learn.length) {
     const lh = Math.round(learn.reduce((s,r) => s + durationHours(r), 0) * 10) / 10;
     box.insertAdjacentHTML("beforeend", `<div class="learn-line">🎓 進修課程：${learn.length} 場 · ${lh} 小時</div>`);
+  }
+  if (admin.length) {
+    const ah = Math.round(admin.reduce((s,r) => s + durationHours(r), 0) * 10) / 10;
+    box.insertAdjacentHTML("beforeend", `<div class="admin-line">🗂 教學行政：${admin.length} 場 · ${ah} 小時</div>`);
   }
 }
 
@@ -786,7 +795,8 @@ function renderList() {
     }
     const d = new Date(r.date + "T00:00:00");
     const el = document.createElement("div");
-    el.className = "rec" + (isFuture(r) ? " future" : "") + ((r.role||"講師") === "學生" ? " stud" : "");
+    const role = r.role || "講師";
+    el.className = "rec" + (isFuture(r) ? " future" : "") + (role === "學生" ? " stud" : role === "教學行政" ? " admin" : "");
     const audTags = (r.audiences||[]).slice(0,3).map(a => `<span class="tag aud">${esc(a)}</span>`).join("");
     el.innerHTML = `
       <div class="date"><b>${d.getDate()}</b><span>週${WD[d.getDay()]}</span></div>
@@ -794,7 +804,7 @@ function renderList() {
         <div class="title">${esc(r.title)}</div>
         <div class="meta">
           ${isFuture(r) ? '<span class="tag future-tag">即將進行</span>' : ""}
-          ${(r.role||"講師") === "學生" ? '<span class="tag stud">🎓 進修</span>' : ""}
+          ${role === "學生" ? '<span class="tag stud">🎓 進修</span>' : role === "教學行政" ? '<span class="tag admin">🗂 教學行政</span>' : ""}
           ${r.category ? `<span class="tag cat">${esc(r.category)}</span>` : ""}
           ${r.method ? `<span class="tag method">${esc(r.method)}</span>` : ""}
           ${audTags}
@@ -975,7 +985,10 @@ function renderDetail(id) {
   const meta = [];
   meta.push(`<span class="tag method">${r.date}（週${WD[d.getDay()]}）${r.timeStart ? " " + esc(r.timeStart) + (r.timeEnd ? "–" + esc(r.timeEnd) : "") : ""}</span>`);
   if (isFuture(r)) meta.push('<span class="tag future-tag">即將進行</span>');
-  meta.push((r.role||"講師") === "學生" ? '<span class="tag stud">🎓 學生（進修）</span>' : '<span class="tag aud">👨‍🏫 講師</span>');
+  const rRole = r.role || "講師";
+  meta.push(rRole === "學生" ? '<span class="tag stud">🎓 學生（進修）</span>'
+          : rRole === "教學行政" ? '<span class="tag admin">🗂 教學行政</span>'
+          : '<span class="tag aud">👨‍🏫 講師</span>');
   if (r.category) meta.push(`<span class="tag cat">${esc(r.category)}</span>`);
   if (r.method) meta.push(`<span class="tag method">${esc(r.method)}</span>`);
   (r.audiences||[]).forEach(a => meta.push(`<span class="tag aud">${esc(a)}</span>`));
@@ -1343,8 +1356,12 @@ const PROFILE = {
 };
 
 function buildReport(list) {
-  const teach = list.filter(r => (r.role || "講師") !== "學生");
-  const learn = list.filter(r => (r.role || "講師") === "學生");
+  const roleOf = r => r.role || "講師";
+  const teach = list.filter(r => roleOf(r) === "講師");
+  const learn = list.filter(r => roleOf(r) === "學生");
+  const admin = list.filter(r => roleOf(r) === "教學行政");
+  const adminDone = admin.filter(r => !isFuture(r));
+  const adminHours = Math.round(adminDone.reduce((s,r) => s + durationHours(r), 0) * 10) / 10;
   const done = teach.filter(r => !isFuture(r));
   const learnDone = learn.filter(r => !isFuture(r));
   const learnHours = Math.round(learnDone.reduce((s,r) => s + durationHours(r), 0) * 10) / 10;
@@ -1375,6 +1392,7 @@ function buildReport(list) {
   const byDateAsc = (a,b) => a.date.localeCompare(b.date) || (a.timeStart||"").localeCompare(b.timeStart||"");
   const asc = [...teach].sort(byDateAsc);
   const learnAsc = [...learn].sort(byDateAsc);
+  const adminAsc = [...admin].sort(byDateAsc);
   const idxRows = asc.map((r, i) => `
     <tr>
       <td style="text-align:right">${i+1}</td>
@@ -1439,6 +1457,7 @@ function buildReport(list) {
         <div class="pr-sumbox"><b>${totalLearners}</b><span>學員人次</span></div>
         <div class="pr-sumbox"><b>${totalFb}</b><span>回饋則數</span></div>
         <div class="pr-sumbox"><b>${learnHours}</b><span>進修時數</span></div>
+        ${admin.length ? `<div class="pr-sumbox"><b>${admin.length}</b><span>教學行政</span></div>` : ""}
       </div>
       <div class="pr-period">教學期間：${period}${filters ? `　（篩選：${esc(filters)}）` : ""}</div>
       <div class="pr-gen">報告產出日期：${today}</div>
@@ -1487,6 +1506,24 @@ function buildReport(list) {
     })()}
     ${learnAsc.filter(r => r.reflection).map(r =>
       `<div class="pr-refl" style="margin-top:2mm"><b style="font-size:9pt">${esc(r.title)}｜學習心得：</b>${esc(r.reflection)}</div>`).join("")}
+    ` : ""}
+    ${admin.length ? `
+    <h2 class="pr-sec">${learn.length ? "伍" : "肆"}、教學行政服務（共 ${admin.length} 場${adminHours ? `，${adminHours} 小時` : ""}）</h2>
+    <div class="pr-note" style="margin:0 0 4mm">參與院內外教學相關委員會、課程規劃與評核會議，投入教學制度建置與教學品質管理。</div>
+    <table class="pr-tbl">
+      <tr><th style="width:8mm;text-align:right">#</th><th style="width:22mm">日期</th><th>會議／任務名稱</th><th style="width:26mm">類別</th><th style="width:34mm">地點／形式</th><th style="width:14mm;text-align:right">時數</th></tr>
+      ${adminAsc.map((r, i) => `
+      <tr>
+        <td style="text-align:right">${i+1}</td>
+        <td style="white-space:nowrap">${r.date.replaceAll("-","/")}${isFuture(r) ? "<br><span style='font-size:8pt;color:#b9770e'>（預定）</span>" : ""}</td>
+        <td>${esc(r.title)}${r.content ? `<div style="font-size:8.5pt;color:#5d6d7e">${esc(r.content)}</div>` : ""}</td>
+        <td>${esc(r.category || "")}</td>
+        <td>${esc(r.location || r.method || "")}</td>
+        <td style="text-align:right">${durationHours(r) ? Math.round(durationHours(r)*10)/10 : "—"}</td>
+      </tr>`).join("")}
+    </table>
+    ${adminAsc.filter(r => r.reflection).map(r =>
+      `<div class="pr-refl" style="margin-top:2mm"><b style="font-size:9pt">${esc(r.title)}｜心得：</b>${esc(r.reflection)}</div>`).join("")}
     ` : ""}
     <div class="pr-foot">本報告由教學歷程檔案系統（Teaching Portfolio）自動彙整產出 · ${esc(PROFILE.name)} · ${today}</div>`;
 }
@@ -1684,6 +1721,7 @@ async function scanCalendar() {
 以下是他 Google 日曆中的事件。請挑出兩類課程行程，只輸出 JSON 陣列，不要任何其他文字：
 1. role="講師"：他授課／演講／帶模擬訓練／擔任競賽或團隊指導
 2. role="學生"：他以學員身分參加的課程、工作坊、研習、研討會、學會年會
+3. role="教學行政"：教學相關的委員會與會議（醫學教育委員會、PGY／住院醫師訓練計畫執行討論、CCC 臨床技能評估委員會、教學部師培規劃、競賽審題會議、教學成果發表與檢討會議等），category 用「教學會議」
 [{"eventIndex":0,"role":"講師","title":"","date":"YYYY-MM-DD","timeStart":"HH:MM","timeEnd":"HH:MM","location":"","category":"","audiences":[],"audienceCount":0,"content":""}]
 規則：
 - category 從 ${JSON.stringify(CATS)} 選一個；audiences 從 ${JSON.stringify(AUDS)} 挑（role="學生" 給空陣列）
@@ -1705,7 +1743,7 @@ async function scanCalendar() {
     const key = "gcal_" + (src.id || "");
     const dup = records.some(x => x.gmailMsgId === key) ||
                 records.some(x => x.date === ev.date && x.title === ev.title);
-    return { ...ev, role: ev.role === "學生" ? "學生" : "講師", src: "gcal",
+    return { ...ev, role: ["學生","教學行政"].includes(ev.role) ? ev.role : "講師", src: "gcal",
              gmailMsgId: key, gmailSubject: `日曆事件：${src.summary || ""}（${src.cal || ""}）`, dup };
   });
   renderImpList();
@@ -1757,6 +1795,7 @@ $("impScan").onclick = async () => {
 以下是他信箱中的多封信件。請挑出兩類具體課程行程（有明確或可推算的日期），只輸出 JSON 陣列，不要任何其他文字：
 1. role="講師"：他本人要授課／演講／帶教學活動／擔任指導老師
 2. role="學生"：他本人報名或受邀「參加」的課程、工作坊、研習、師資培育（他是學員，用來精進教學）
+3. role="教學行政"：教學相關的委員會與會議（醫學教育委員會、PGY／住院醫師訓練計畫執行討論、CCC 臨床技能評估委員會、教學部師培規劃、競賽審題會議、教學成果發表與檢討會議等），category 用「教學會議」
 [{"emailIndex":0,"role":"講師","title":"","date":"YYYY-MM-DD","timeStart":"HH:MM","timeEnd":"HH:MM","location":"","category":"","audiences":[],"audienceCount":0,"content":""}]
 規則：
 - category 必須從這些選一個：${JSON.stringify(CATS)}
@@ -1779,7 +1818,7 @@ $("impScan").onclick = async () => {
       const mail = mails[ev.emailIndex] || {};
       const dup = records.some(x => x.gmailMsgId === mail.id && x.date === ev.date) ||
                   records.some(x => x.date === ev.date && x.title === ev.title);
-      return { ...ev, role: ev.role === "學生" ? "學生" : "講師", gmailMsgId: mail.id || "", gmailSubject: mail.subject || "", dup };
+      return { ...ev, role: ["學生","教學行政"].includes(ev.role) ? ev.role : "講師", gmailMsgId: mail.id || "", gmailSubject: mail.subject || "", dup };
     });
     renderImpList();
     const fresh = impCandidates.filter(c => !c.dup).length;
@@ -1802,7 +1841,7 @@ function renderImpList() {
       <div class="b">
         <div class="t">${esc(c.title)}</div>
         <div class="m">
-          ${c.role === "學生" ? '<span class="tag stud">🎓 學生</span>' : '<span class="tag aud">👨‍🏫 講師</span>'}
+          ${c.role === "學生" ? '<span class="tag stud">🎓 學生</span>' : c.role === "教學行政" ? '<span class="tag admin">🗂 教學行政</span>' : '<span class="tag aud">👨‍🏫 講師</span>'}
           <span class="tag method">${esc(c.date)}${c.timeStart ? " " + esc(c.timeStart) + (c.timeEnd ? "–" + esc(c.timeEnd) : "") : ""}</span>
           ${c.category ? `<span class="tag cat">${esc(c.category)}</span>` : ""}
           ${(c.audiences||[]).map(a => `<span class="tag aud">${esc(a)}</span>`).join("")}
@@ -1836,7 +1875,7 @@ $("impSave").onclick = async () => {
       const rec = {
         title: c.title, date: c.date,
         timeStart: c.timeStart || "", timeEnd: c.timeEnd || "",
-        role: c.role || "講師",
+        role: ["學生","教學行政"].includes(c.role) ? c.role : "講師",
         category: CATS.includes(c.category) ? c.category : "其他",
         method: "",
         audiences: (c.audiences || []).filter(a => AUDS.includes(a)),
