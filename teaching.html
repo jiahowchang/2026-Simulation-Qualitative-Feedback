@@ -429,9 +429,14 @@ button { font-family: inherit; }
       <div class="f"><label>教學內容摘要</label><textarea id="eContent" placeholder="課程大綱、教學目標、進行方式…"></textarea></div>
 
       <div class="sect">
-        <h4>📎 教材與投影片連結</h4>
+        <h4>📎 教材與投影片</h4>
         <div id="eMats"></div>
         <button class="mini-add" id="addMat">＋ 新增教材連結</button>
+        <div id="eMatFiles" style="margin-top:10px"></div>
+        <button class="mini-add" id="addMatFileBtn" type="button">＋ 上傳教材檔案</button>
+        <input type="file" id="matFileInput" multiple style="display:none"
+          accept=".pdf,.ppt,.pptx,.key,.doc,.docx,.png,.jpg,.jpeg,.heic,.zip,.mp4">
+        <div class="imp-status" id="matFileStatus"></div>
       </div>
 
       <div class="sect">
@@ -738,7 +743,9 @@ function filteredRecords() {
     if (fc && r.category !== fc) return false;
     if (fa && !(r.audiences || []).includes(fa)) return false;
     if (q) {
-      const hay = [r.title, r.content, r.reflection, r.rosterText, r.location, (r.feedbacks||[]).map(f=>f.text).join(" ")].join(" ").toLowerCase();
+      const hay = [r.title, r.content, r.reflection, r.rosterText, r.location,
+        (r.materials||[]).map(m=>m.name).join(" "), (r.matFiles||[]).map(f=>f.name).join(" "),
+        (r.feedbacks||[]).map(f=>f.text).join(" ")].join(" ").toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -813,7 +820,7 @@ function renderList() {
         </div>
       </div>
       <div class="marks" title="教材／回饋／反思">
-        <span class="${(r.materials?.length || r.files?.length || r.certs?.length || r.photos?.length) ? "on" : ""}" title="教材 ${r.materials?.length||0}、附件 ${r.files?.length||0}、證明 ${r.certs?.length||0}、照片 ${r.photos?.length||0}">📎</span>
+        <span class="${(r.materials?.length || r.matFiles?.length || r.files?.length || r.certs?.length || r.photos?.length) ? "on" : ""}" title="教材連結 ${r.materials?.length||0}、教材檔案 ${r.matFiles?.length||0}、附件 ${r.files?.length||0}、證明 ${r.certs?.length||0}、照片 ${r.photos?.length||0}">📎</span>
         <span class="${r.feedbacks?.length ? "on" : ""}" title="回饋 ${r.feedbacks?.length||0} 則">💬</span>
         <span class="${r.reflection ? "on" : ""}" title="教學反思">🪞</span>
       </div>`;
@@ -888,8 +895,9 @@ const KIND_ACCEPT = {
   files: ["pdf","doc","docx","xls","xlsx","ppt","pptx","csv","txt","png","jpg","jpeg","heic","zip"],
   certs: ["pdf","png","jpg","jpeg","heic"],
   photos: ["png","jpg","jpeg","heic","pdf"],
+  matFiles: ["pdf","ppt","pptx","key","doc","docx","png","jpg","jpeg","heic","zip","mp4"],
 };
-const KIND_LABEL = { files: "附件", certs: "感謝狀／證明", photos: "活動照片" };
+const KIND_LABEL = { files: "附件", certs: "感謝狀／證明", photos: "活動照片", matFiles: "教材檔案" };
 
 async function uploadFilesToRecord(rec, kind, fileList) {
   const okFiles = [...fileList].filter(f => {
@@ -1000,6 +1008,7 @@ function renderDetail(id) {
   const files = r.files || [];
   const certs = r.certs || [];
   const photos = r.photos || [];
+  const matFiles = r.matFiles || [];
   const fbs = r.feedbacks || [];
   page.innerHTML = `
     <div class="detail-head">
@@ -1028,10 +1037,12 @@ function renderDetail(id) {
                       : '<div class="none">（尚無活動照片）</div>'}
       <div class="drop-hint">可直接把檔案拖曳到這個區塊上傳（PNG／JPG／PDF）</div>
     </div>
-    <div class="detail-sec"><h3>📎 教材與投影片<button class="sec-btn" id="dMatsEdit">✏️ 編輯連結</button></h3>
+    <div class="detail-sec" data-drop="matFiles"><h3>📎 教材與投影片<button class="sec-btn" id="dMatsEdit">✏️ 編輯連結</button><button class="sec-btn" data-upload="matFiles">＋ 上傳</button></h3>
       <div id="dMats">${mats.length ? mats.map(m =>
         m.url ? `<a class="mat-link" href="${esc(m.url)}" target="_blank" rel="noopener">🔗 ${esc(m.name || m.url)}</a>`
-              : `<span class="mat-link">📄 ${esc(m.name)}</span>`).join("") : '<div class="none">（尚無教材連結）</div>'}</div>
+              : `<span class="mat-link">📄 ${esc(m.name)}</span>`).join("") : (matFiles.length ? "" : '<div class="none">（尚無教材連結）</div>')}</div>
+      ${matFiles.length ? `<div class="thumb-grid" style="margin-top:${mats.length ? "12px" : "0"}">${matFiles.map(thumbCard).join("")}</div>` : ""}
+      <div class="drop-hint">投影片、講義檔案可直接拖曳到這個區塊上傳（PDF／PPT／Word／圖片）</div>
     </div>
     <div class="detail-sec"><h3>💬 學員回饋（${fbs.length}）<button class="sec-btn" id="dFbAdd">＋ 新增回饋</button></h3>
       ${fbs.length ? fbs.map((f, i) => `<div class="fb-card"><small>${esc(f.source || "回饋")}</small>${esc(f.text)}<button class="fb-del" data-delfb="${i}" title="刪除這則回饋">✕</button></div>`).join("")
@@ -1177,6 +1188,7 @@ $("addFb").onclick = () => $("eFbs").appendChild(fbRow());
 let editFiles = [];      // 課程表/學員名單附件 [{name,path,url,size}]
 let editCerts = [];      // 感謝狀/上課證明
 let editPhotos = [];     // 活動照片
+let editMatFiles = [];   // 教材檔案（投影片、講義本體）
 let newUploads = [];     // 本次編輯新上傳的 storage path（取消時要清掉）
 let removedFiles = [];   // 按了移除的 storage path（存檔成功後才真的刪）
 
@@ -1234,6 +1246,8 @@ $("addCertBtn").onclick = () => $("certInput").click();
 $("certInput").onchange = () => handleFileUpload(editCerts, "eCerts", "certStatus", $("certInput"));
 $("addPhotoBtn").onclick = () => $("photoInput").click();
 $("photoInput").onchange = () => handleFileUpload(editPhotos, "ePhotos", "photoStatus", $("photoInput"));
+$("addMatFileBtn").onclick = () => $("matFileInput").click();
+$("matFileInput").onchange = () => handleFileUpload(editMatFiles, "eMatFiles", "matFileStatus", $("matFileInput"));
 
 /* 取消／關閉編輯時，清掉這次新上傳但沒存檔的檔案 */
 function discardNewUploads() {
@@ -1266,13 +1280,16 @@ function openEdit(id) {
   editFiles = (r?.files || []).map(f => ({ ...f }));
   editCerts = (r?.certs || []).map(f => ({ ...f }));
   editPhotos = (r?.photos || []).map(f => ({ ...f }));
+  editMatFiles = (r?.matFiles || []).map(f => ({ ...f }));
   newUploads = []; removedFiles = [];
   renderFileArea(editFiles, "eFiles");
   renderFileArea(editCerts, "eCerts");
   renderFileArea(editPhotos, "ePhotos");
+  renderFileArea(editMatFiles, "eMatFiles");
   $("fileStatus").textContent = "";
   $("certStatus").textContent = "";
   $("photoStatus").textContent = "";
+  $("matFileStatus").textContent = "";
   $("editOverlay").classList.add("show");
   $("eTitle").focus();
 }
@@ -1305,6 +1322,7 @@ $("saveBtn").onclick = async () => {
     files: editFiles,
     certs: editCerts,
     photos: editPhotos,
+    matFiles: editMatFiles,
     reflection: $("eRefl").value.trim(),
     updatedAt: serverTimestamp()
   };
@@ -1338,7 +1356,7 @@ $("delBtn").onclick = async () => {
     else {
       const rec = records.find(r => r.id === editingId);
       await deleteDoc(doc(db, "teaching_records", editingId));
-      [...(rec?.files || []), ...(rec?.certs || []), ...(rec?.photos || [])].forEach(f => { if (f.path) deleteObject(sRef(storage, f.path)).catch(() => {}); });
+      [...(rec?.files || []), ...(rec?.certs || []), ...(rec?.photos || []), ...(rec?.matFiles || [])].forEach(f => { if (f.path) deleteObject(sRef(storage, f.path)).catch(() => {}); });
     }
     $("editOverlay").classList.remove("show");
     if (currentDetailId() === editingId) location.hash = "";   // 刪掉正在看的那筆 → 回列表
@@ -1410,6 +1428,7 @@ function buildReport(list) {
     const files = r.files || [];
     const certs = r.certs || [];
     const photos = r.photos || [];
+    const matFiles = r.matFiles || [];
     const imgs = [...files, ...certs, ...photos].filter(f => f.url && /\.(png|jpe?g|gif|webp)$/i.test(f.name));
     const fbs = r.feedbacks || [];
     const meta = [
@@ -1427,6 +1446,8 @@ function buildReport(list) {
       ${mats.length ? `<h4>教材與投影片</h4><ul>${mats.map(m =>
         `<li>${esc(m.name || m.url)}${m.url ? ` <span class="url">${esc(m.url)}</span>` : ""}</li>`).join("")}</ul>` : ""}
       ${r.rosterText ? `<h4>課程表與學員名單</h4><div class="pr-refl">${esc(r.rosterText)}</div>` : ""}
+      ${matFiles.length ? `<h4>教材檔案</h4><ul>${matFiles.map(f =>
+        `<li>${esc(f.name)}${f.size ? `（${fmtSize(f.size)}）` : ""}</li>`).join("")}</ul>` : ""}
       ${files.length ? `<h4>附件（課程表／學員名單）</h4><ul>${files.map(f =>
         `<li>${esc(f.name)}${f.size ? `（${fmtSize(f.size)}）` : ""}</li>`).join("")}</ul>` : ""}
       ${certs.length ? `<h4>感謝狀／證明</h4><ul>${certs.map(f =>
@@ -1882,7 +1903,7 @@ $("impSave").onclick = async () => {
         audienceCount: Number(c.audienceCount) || 0,
         location: c.location || "",
         content: c.content || "",
-        materials: [], files: [], certs: [], photos: [], feedbacks: [], reflection: "",
+        materials: [], files: [], certs: [], photos: [], matFiles: [], feedbacks: [], reflection: "",
         source: c.src === "gcal" ? "gcal" : "gmail", gmailMsgId: c.gmailMsgId, gmailSubject: c.gmailSubject,
         updatedAt: serverTimestamp(), createdAt: serverTimestamp()
       };
