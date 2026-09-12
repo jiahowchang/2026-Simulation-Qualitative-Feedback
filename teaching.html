@@ -900,6 +900,32 @@ const KIND_ACCEPT = {
 const KIND_LABEL = { files: "附件", certs: "感謝狀／證明", photos: "活動照片", matFiles: "教材檔案" };
 const MAX_UPLOAD_MB = 500;   // 教學投影片含影音常超過百 MB；Firebase Storage 單檔無此限制，這裡只擋離譜大小
 
+/* 上傳前自動壓縮照片：長邊縮到 2000px、JPEG 品質 82%，畫質肉眼無差但省 9 成空間。
+   只處理超過 1MB 的點陣圖；PDF/PPT 等文件與小圖原樣上傳。
+   createImageBitmap 的 from-image 會套用 EXIF 方向，手機直拍照片不會被轉倒。 */
+const IMG_MAX_EDGE = 2000, IMG_QUALITY = 0.82, IMG_MIN_BYTES = 1048576;
+async function compressImage(file) {
+  if (!/\.(jpe?g|png|heic|heif)$/i.test(file.name) || file.size < IMG_MIN_BYTES) return file;
+  let bmp;
+  try { bmp = await createImageBitmap(file, { imageOrientation: "from-image" }); }
+  catch { return file; }   // 瀏覽器無法解碼（如 Chrome 不支援 HEIC）→ 原檔上傳
+  const scale = Math.min(1, IMG_MAX_EDGE / Math.max(bmp.width, bmp.height));
+  const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
+  const canvas = document.createElement("canvas");
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  const keepPng = /\.png$/i.test(file.name);
+  if (!keepPng) { ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h); }   // JPEG 無透明度，先鋪白底
+  ctx.drawImage(bmp, 0, 0, w, h);
+  bmp.close?.();
+  const blob = await new Promise(res => canvas.toBlob(res, keepPng ? "image/png" : "image/jpeg", IMG_QUALITY));
+  if (!blob || blob.size >= file.size) return file;   // 壓不小就用原檔
+  const name = keepPng ? file.name : file.name.replace(/\.(jpe?g|heic|heif)$/i, ".jpg");
+  const out = new File([blob], name, { type: blob.type, lastModified: file.lastModified });
+  out.__from = file.size;   // 供訊息顯示壓縮前大小
+  return out;
+}
+
 /* 可回報進度的上傳：大檔（>8MB）走 resumable 並即時顯示百分比 */
 function uploadWithProgress(file, path, onProgress) {
   const ref = sRef(storage, path);
@@ -923,9 +949,11 @@ async function uploadFilesToRecord(rec, kind, fileList) {
   if (!okFiles.length) return;
   try {
     const added = [];
-    for (const file of okFiles) {
-      if (DEMO) { added.push({ name: file.name, path: "", url: "", size: file.size }); continue; }
-      toast(`上傳中：${file.name}（${fmtSize(file.size)}）…`);
+    for (const raw of okFiles) {
+      if (DEMO) { added.push({ name: raw.name, path: "", url: "", size: raw.size }); continue; }
+      toast(`處理中：${raw.name}（${fmtSize(raw.size)}）…`);
+      const file = await compressImage(raw);
+      if (file.__from) toast(`已壓縮 ${fmtSize(file.__from)} → ${fmtSize(file.size)}，上傳中…`);
       const path = `teaching_files/${Date.now()}_${file.name.replace(/[\\/#?%*:|"<>]/g, "_")}`;
       const ref = await uploadWithProgress(file, path,
         pct => toast(`上傳中：${file.name} ${pct}%`));
@@ -1235,11 +1263,13 @@ async function handleFileUpload(arr, boxId, statusId, input) {
   const files = [...input.files];
   input.value = "";
   if (!files.length) return;
-  for (const file of files) {
-    if (file.size > MAX_UPLOAD_MB * 1048576) { $(statusId).textContent = `${file.name}（${fmtSize(file.size)}）超過 ${MAX_UPLOAD_MB}MB，略過`; continue; }
-    if (DEMO) { arr.push({ name: file.name, path: "", url: "", size: file.size }); renderFileArea(arr, boxId); continue; }
-    $(statusId).innerHTML = `<span class="spin"></span>正在上傳 ${esc(file.name)}（${fmtSize(file.size)}）…`;
+  for (const raw of files) {
+    if (raw.size > MAX_UPLOAD_MB * 1048576) { $(statusId).textContent = `${raw.name}（${fmtSize(raw.size)}）超過 ${MAX_UPLOAD_MB}MB，略過`; continue; }
+    if (DEMO) { arr.push({ name: raw.name, path: "", url: "", size: raw.size }); renderFileArea(arr, boxId); continue; }
+    $(statusId).innerHTML = `<span class="spin"></span>處理中 ${esc(raw.name)}（${fmtSize(raw.size)}）…`;
     try {
+      const file = await compressImage(raw);
+      if (file.__from) $(statusId).innerHTML = `<span class="spin"></span>已壓縮 ${fmtSize(file.__from)} → ${fmtSize(file.size)}，上傳中…`;
       const path = `teaching_files/${Date.now()}_${file.name.replace(/[\\/#?%*:|"<>]/g, "_")}`;
       const ref = await uploadWithProgress(file, path,
         pct => { $(statusId).innerHTML = `<span class="spin"></span>正在上傳 ${esc(file.name)} ${pct}%`; });
@@ -1250,7 +1280,7 @@ async function handleFileUpload(arr, boxId, statusId, input) {
       $(statusId).textContent = "";
     } catch (e) {
       console.error(e);
-      $(statusId).textContent = `上傳失敗（${file.name}）：` + (e.code || e.message);
+      $(statusId).textContent = `上傳失敗（${raw.name}）：` + (e.code || e.message);
     }
   }
   if (DEMO && files.length) $(statusId).textContent = "示範模式：檔案僅暫存於畫面，不會真的上傳";
