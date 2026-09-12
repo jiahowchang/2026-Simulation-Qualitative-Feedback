@@ -525,7 +525,7 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChang
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, serverTimestamp, query, orderBy }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getStorage, ref as sRef, uploadBytes, getDownloadURL, deleteObject }
+import { getStorage, ref as sRef, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 const firebaseConfig = {
@@ -898,12 +898,26 @@ const KIND_ACCEPT = {
   matFiles: ["pdf","ppt","pptx","key","doc","docx","png","jpg","jpeg","heic","zip","mp4"],
 };
 const KIND_LABEL = { files: "附件", certs: "感謝狀／證明", photos: "活動照片", matFiles: "教材檔案" };
+const MAX_UPLOAD_MB = 500;   // 教學投影片含影音常超過百 MB；Firebase Storage 單檔無此限制，這裡只擋離譜大小
+
+/* 可回報進度的上傳：大檔（>8MB）走 resumable 並即時顯示百分比 */
+function uploadWithProgress(file, path, onProgress) {
+  const ref = sRef(storage, path);
+  if (file.size <= 8 * 1048576) return uploadBytes(ref, file).then(s => s.ref);
+  return new Promise((resolve, reject) => {
+    const task = uploadBytesResumable(ref, file);
+    task.on("state_changed",
+      s => onProgress && onProgress(Math.round(s.bytesTransferred / s.totalBytes * 100)),
+      reject,
+      () => resolve(task.snapshot.ref));
+  });
+}
 
 async function uploadFilesToRecord(rec, kind, fileList) {
   const okFiles = [...fileList].filter(f => {
     const ext = (f.name.split(".").pop() || "").toLowerCase();
     if (!KIND_ACCEPT[kind].includes(ext)) { toast(`${f.name}：格式不支援，已略過`); return false; }
-    if (f.size > 25 * 1048576) { toast(`${f.name} 超過 25MB，已略過`); return false; }
+    if (f.size > MAX_UPLOAD_MB * 1048576) { toast(`${f.name}（${fmtSize(f.size)}）超過 ${MAX_UPLOAD_MB}MB，已略過`); return false; }
     return true;
   });
   if (!okFiles.length) return;
@@ -911,10 +925,11 @@ async function uploadFilesToRecord(rec, kind, fileList) {
     const added = [];
     for (const file of okFiles) {
       if (DEMO) { added.push({ name: file.name, path: "", url: "", size: file.size }); continue; }
-      toast(`上傳中：${file.name}…`);
+      toast(`上傳中：${file.name}（${fmtSize(file.size)}）…`);
       const path = `teaching_files/${Date.now()}_${file.name.replace(/[\\/#?%*:|"<>]/g, "_")}`;
-      const snap = await uploadBytes(sRef(storage, path), file);
-      const url = await getDownloadURL(snap.ref);
+      const ref = await uploadWithProgress(file, path,
+        pct => toast(`上傳中：${file.name} ${pct}%`));
+      const url = await getDownloadURL(ref);
       added.push({ name: file.name, path, url, size: file.size });
     }
     await patchRecord(rec.id, { [kind]: [...(rec[kind] || []), ...added] });
@@ -1221,13 +1236,14 @@ async function handleFileUpload(arr, boxId, statusId, input) {
   input.value = "";
   if (!files.length) return;
   for (const file of files) {
-    if (file.size > 25 * 1048576) { $(statusId).textContent = `${file.name} 超過 25MB，略過`; continue; }
+    if (file.size > MAX_UPLOAD_MB * 1048576) { $(statusId).textContent = `${file.name}（${fmtSize(file.size)}）超過 ${MAX_UPLOAD_MB}MB，略過`; continue; }
     if (DEMO) { arr.push({ name: file.name, path: "", url: "", size: file.size }); renderFileArea(arr, boxId); continue; }
-    $(statusId).innerHTML = `<span class="spin"></span>正在上傳 ${esc(file.name)}…`;
+    $(statusId).innerHTML = `<span class="spin"></span>正在上傳 ${esc(file.name)}（${fmtSize(file.size)}）…`;
     try {
       const path = `teaching_files/${Date.now()}_${file.name.replace(/[\\/#?%*:|"<>]/g, "_")}`;
-      const snap = await uploadBytes(sRef(storage, path), file);
-      const url = await getDownloadURL(snap.ref);
+      const ref = await uploadWithProgress(file, path,
+        pct => { $(statusId).innerHTML = `<span class="spin"></span>正在上傳 ${esc(file.name)} ${pct}%`; });
+      const url = await getDownloadURL(ref);
       arr.push({ name: file.name, path, url, size: file.size });
       newUploads.push(path);
       renderFileArea(arr, boxId);
