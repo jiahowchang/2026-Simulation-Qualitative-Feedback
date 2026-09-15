@@ -871,48 +871,18 @@
     });
   }
 
-  /* ── Group Members（會從 GAS 動態覆蓋）── */
+  /* ── Group Members ──
+     成員名單（姓名＋信箱）一律由 GAS 後端在登入後載入，不寫在前端原始碼中。
+     2026-09-16 移除原本寫死的預設名單（網頁原始碼公開可見＝個資外洩）。
+     這裡只保留組別名稱，讓後端連不上時下拉選單仍有選項。 */
   var GROUP_MEMBERS = {
-    '新竹新人組': [
-      { name: '陳品卉', email: 'isemi891013@gmail.com' },
-      { name: '李奕儒', email: 'ortho06159@gmail.com' },
-      { name: '楊智宇', email: 'zhiyuy4@gmail.com' },
-      { name: '陳蕙瑜', email: 'ltjang1213@gmail.com' }
-    ],
-    '新竹急重症照護組': [
-      { name: '王梓學', email: 'wang831022@gmail.com' },
-      { name: '鄭治雲', email: 'james0124abc@gmail.com' },
-      { name: '蘇欣恰', email: 'jessies02221996@gmail.com' },
-      { name: '杜文志', email: 'v122763783@gmail.com' },
-      { name: '林育禎', email: 'g06136@hch.gov.tw' }
-    ],
-    '新竹新生兒組': [
-      { name: '張哲嘉', email: '' }
-    ],
-    '生醫急重症照護組': [
-      { name: '蔡于捷', email: 'th5118tw@hotmail.com' },
-      { name: '林志賢', email: '' },
-      { name: '闕早苗', email: '' },
-      { name: '宋馨妮', email: 'ni06160817@gmail.com' },
-      { name: '莊翔佯', email: 'lovely902548@gmail.com' }
-    ],
-    '生醫新生兒組': [
-      { name: '廖霙鳳', email: 'inphone6@gmail.com' },
-      { name: '李婉慈', email: '' },
-      { name: '羅秋玲', email: '' },
-      { name: '蕭翎竹', email: '' }
-    ],
-    '生醫醫事放射組': [
-      { name: '魏嘉妤', email: 'G62034@hch.gov.tw' },
-      { name: '陳惠芬', email: 'G08733@gmail.com' },
-      { name: '楊淑芳', email: 'G04159@hch.gov.tw' },
-      { name: '葉姵呈', email: 'G05835@hch.gov.tw' }
-    ],
-    '桃竹苗競賽生醫宋仙女組': [
-      { name: '鄭治雲', email: 'james0124abc@gmail.com' },
-      { name: '張院廷', email: 'j5131819@gmail.com' },
-      { name: '江立羽', email: 'lihyeu1992@gmail.com' }
-    ],
+    '新竹新人組': [],
+    '新竹急重症照護組': [],
+    '新竹新生兒組': [],
+    '生醫急重症照護組': [],
+    '生醫新生兒組': [],
+    '生醫醫事放射組': [],
+    '桃竹苗競賽生醫宋仙女組': [],
     '桃竹苗競賽生醫范特C組': [],
     '桃竹苗競賽院內其他團隊': [],
     '桃竹苗競賽院外其他團隊': []
@@ -920,7 +890,7 @@
 
   /* 從 GAS 載入最新的組別成員資料 */
   function refreshGroupMembers(cb) {
-    jsonp({ action: 'getGroupMembers' }, function(err, data) {
+    jsonp({ action: 'getGroupMembers', password: adminPassword }, function(err, data) {
       if (!err && data && data.groups) {
         GROUP_MEMBERS = data.groups;
       }
@@ -1198,7 +1168,7 @@
   function loadStaff() {
     var el = document.getElementById('staffList');
     el.innerHTML = '<div class="loading">載入中…</div>';
-    jsonp({ action: 'getStaffList' }, function(err, data) {
+    jsonp({ action: 'getStaffList', password: adminPassword }, function(err, data) {
       STAFF_LIST = (data && data.staff) || [];
       renderStaff();
     });
