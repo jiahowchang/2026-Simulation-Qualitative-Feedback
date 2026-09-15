@@ -367,7 +367,7 @@
     </div>
     <div class="modal-field">
       <label>日期 *</label>
-      <input type="date" id="pDate">
+      <input type="date" id="pDate" min="">
     </div>
     <div class="modal-field">
       <label>時間區間 *</label>
@@ -393,7 +393,7 @@
     </div>
 
     <div class="modal-field">
-      <label>隊員名單（姓名 ＋ Email）</label>
+      <label>隊員名單（名冊成員由系統自動通知）</label>
       <div id="pMemberRows"></div>
       <button class="btn-add-member" onclick="addPMemberRow()">＋ 新增隊員</button>
     </div>
@@ -404,7 +404,7 @@
     </div>
     <div class="modal-field">
       <label>你的 Email *</label>
-      <input type="email" id="pSubmitterEmail" placeholder="填寫者 Email（也會收到通知）">
+      <input type="email" id="pSubmitterEmail" placeholder="聯絡用 Email（名冊內成員會以登記信箱收到通知）">
     </div>
 
     <div class="modal-actions">
@@ -710,7 +710,7 @@
         row.className = 'member-input-row';
         row.innerHTML =
           '<input type="text" placeholder="姓名" value="' + esc(m.name||'') + '">' +
-          '<input type="email" placeholder="Email" value="' + esc(m.email||'') + '">' +
+          '<input type="email" placeholder="已在名冊，系統自動通知" readonly style="background:#f7fafc;" value="' + esc(m.email||'') + '">' +
           '<button class="btn-remove-member" onclick="this.parentNode.remove()">✕</button>';
         container.appendChild(row);
       });
@@ -740,7 +740,7 @@
     row.className = 'member-input-row';
     row.innerHTML =
       '<input type="text" placeholder="姓名">' +
-      '<input type="email" placeholder="Email">' +
+      '<input type="email" placeholder="Email（選填，交由管理員聯繫）">' +
       '<button class="btn-remove-member" onclick="this.parentNode.remove()">✕</button>';
     document.getElementById('pStaffRows').appendChild(row);
   }
@@ -750,10 +750,13 @@
     row.className = 'member-input-row';
     row.innerHTML =
       '<input type="text" placeholder="姓名">' +
-      '<input type="email" placeholder="Email">' +
+      '<input type="email" placeholder="Email（選填，交由管理員聯繫）">' +
       '<button class="btn-remove-member" onclick="this.parentNode.remove()">✕</button>';
     document.getElementById('pMemberRows').appendChild(row);
   }
+
+  /* 日期下限＝今天（後端也會拒絕過去日期） */
+  (function(){ var d=document.getElementById('pDate'); if (d) d.min = new Date().toLocaleDateString('sv-SE'); })();
 
   function submitPropose() {
     var group   = document.getElementById('pGroup').value.trim();
@@ -801,10 +804,16 @@
     }, function(err, data) {
       btn.disabled = false; btn.textContent = '送出預約 →';
       if (err || (data && data.error)) {
-        showToast('送出失敗，請稍後再試', 'error');
+        var em = (data && data.error === 'rate_limited') ? '目前預約次數過多，請稍後再試'
+               : (data && data.error === 'invalid_date') ? '日期不可早於今天'
+               : '送出失敗，請稍後再試';
+        showToast(em, 'error');
       } else {
         closeProposeModal();
-        showToast('✅ 預約完成！通知信已發送給所有隊員', 'success');
+        var msg = '✅ 預約完成！';
+        if (data && data.sent_to > 0) msg += '已寄出 ' + data.sent_to + ' 封通知信';
+        if (data && data.unresolved > 0) msg += '（' + data.unresolved + ' 位不在名冊，未寄信，已交由管理員確認）';
+        showToast(msg, 'success');
         loadAll();
       }
     });
@@ -846,7 +855,7 @@
     row.className = 'member-input-row';
     row.innerHTML =
       '<input type="text" placeholder="姓名" value="' + esc(s.name||'') + '">' +
-      '<input type="email" placeholder="Email" value="' + esc(s.email||'') + '">' +
+      '<input type="email" placeholder="已在名冊，系統自動通知" readonly style="background:#f7fafc;" value="' + esc(s.email||'') + '">' +
       '<button class="btn-remove-member" onclick="this.parentNode.remove()">✕</button>';
     document.getElementById('pStaffRows').appendChild(row);
     select.value = '';

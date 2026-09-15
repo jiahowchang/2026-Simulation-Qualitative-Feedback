@@ -624,7 +624,9 @@
     stopIdleTimer();
     stopAutoRefresh();
     document.getElementById('loginPw').value = '';
-    document.getElementById('loginHint').textContent = reason === 'idle' ? '閒置超過 1 小時，已自動登出' : '';
+    document.getElementById('loginHint').textContent =
+      reason === 'idle'  ? '閒置超過 1 小時，已自動登出' :
+      reason === 'stale' ? '登入已失效（密碼可能已變更），請重新登入' : '';
     document.getElementById('appShell').classList.remove('show');
     document.getElementById('loginScreen').style.display = 'flex';
   }
@@ -720,7 +722,7 @@
             membersHtml += '<div class="member-row">' +
               '<span class="member-status">' + (m.filled ? '✅' : '❌') + '</span>' +
               '<span class="member-name">' + esc(m.name) + '</span>' +
-              '<span class="member-email">' + esc(m.email) + '</span>' +
+              '<span class="member-email">' + esc(m.email || m.proposed_email || '') + '</span>' + (m.unverified ? ' <span style="color:#c05621;font-size:0.85em">（未核對）</span>' : '') +
             '</div>';
           });
         } else {
@@ -814,7 +816,7 @@
         var memberListHtml = members.length ? members.map(function(m){
           return '<div class="member-row">' +
             '<span class="member-name">' + esc(m.name || '') + '</span>' +
-            '<span class="member-email">' + esc(m.email || '') + '</span>' +
+            '<span class="member-email">' + esc(m.email || m.proposed_email || '') + '</span>' + (m.unverified ? ' <span style="color:#c05621;font-size:0.85em">（未核對）</span>' : '') +
           '</div>';
         }).join('') : '';
 
@@ -891,6 +893,9 @@
   /* 從 GAS 載入最新的組別成員資料 */
   function refreshGroupMembers(cb) {
     jsonp({ action: 'getGroupMembers', password: adminPassword }, function(err, data) {
+      // 後端未通過密碼驗證時只回傳姓名並標 restricted；此時不可覆蓋名單，
+      // 否則之後按儲存會把少了信箱的名單寫回後端
+      if (data && data.restricted) { doLogout('stale'); return; }
       if (!err && data && data.groups) {
         GROUP_MEMBERS = data.groups;
       }
@@ -1169,6 +1174,7 @@
     var el = document.getElementById('staffList');
     el.innerHTML = '<div class="loading">載入中…</div>';
     jsonp({ action: 'getStaffList', password: adminPassword }, function(err, data) {
+      if (data && data.restricted) { doLogout('stale'); return; }
       STAFF_LIST = (data && data.staff) || [];
       renderStaff();
     });
@@ -1393,7 +1399,7 @@
         row.className = 'member-input-row';
         row.innerHTML =
           '<input type="text" placeholder="姓名" value="' + esc(m.name||'') + '">' +
-          '<input type="email" placeholder="Email" value="' + esc(m.email||'') + '">' +
+          '<input type="email" placeholder="Email" value="' + esc(m.email || m.proposed_email || '') + '">' +
           '<button class="btn-remove-member" onclick="this.parentNode.remove()">&#215;</button>';
         document.getElementById('memberRows').appendChild(row);
       });
@@ -1553,6 +1559,7 @@
   /* ── Tab 4: Settings ── */
   function loadNotifyEmails() {
     jsonp({ action: 'getNotifyEmails', password: adminPassword }, function(err, data) {
+      if (data && data.error === 'unauthorized') { doLogout('stale'); return; }
       if (!err && data && data.emails != null) {
         document.getElementById('notifyEmails').value = data.emails;
       }
@@ -1562,6 +1569,7 @@
   function saveNotifyEmails() {
     var emails = document.getElementById('notifyEmails').value.trim();
     jsonp({ action: 'setNotifyEmails', password: adminPassword, emails: emails }, function(err, data) {
+      if (data && data.error === 'unauthorized') { doLogout('stale'); return; }
       if (err || (data && data.error)) {
         showToast('儲存失敗，請重試', 'error');
       } else {
