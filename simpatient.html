@@ -220,8 +220,8 @@
     <div class="field"><label>Anthropic API Key（僅儲存在這台裝置的瀏覽器）</label><input id="setKey" type="password" placeholder="sk-ant-..."></div>
     <div class="field"><label>模型</label>
       <select id="setModel">
-        <option value="claude-opus-4-8">Claude Opus 4.8（最聰明，建議）</option>
-        <option value="claude-sonnet-4-6">Claude Sonnet 4.6（快速，省成本）</option>
+        <option value="claude-opus-4-8">Claude Opus 4.8（最聰明，最貴）</option>
+        <option value="claude-sonnet-4-6">Claude Sonnet 4.6（快速，省成本，建議）</option>
         <option value="claude-haiku-4-5">Claude Haiku 4.5（最便宜）</option>
       </select>
     </div>
@@ -833,7 +833,7 @@ async function callPatientAPI(userText){
   const key = localStorage.getItem("simpat_key");
   chat.messages.push({ role:"user", content:userText });
   const payload = {
-    model: localStorage.getItem("simpat_model") || "claude-opus-4-8",
+    model: localStorage.getItem("simpat_model") || "claude-sonnet-4-6",
     max_tokens: 700,
     system: buildSystemPrompt(playing),
     messages: chat.messages,
@@ -969,7 +969,7 @@ $("micBtn").onclick = ()=>{
 // ---------- 設定 ----------
 $("settingsBtn").onclick = ()=>{
   $("setKey").value = localStorage.getItem("simpat_key")||"";
-  $("setModel").value = localStorage.getItem("simpat_model")||"claude-opus-4-8";
+  $("setModel").value = localStorage.getItem("simpat_model")||"claude-sonnet-4-6";
   $("settingsModal").classList.add("open");
 };
 $("setSaveBtn").onclick = ()=>{

@@ -2280,7 +2280,7 @@ function extractJSON(txt){
   return JSON.parse(s);
 }
 async function callScnAI(text){
-  const payload = { model:"claude-opus-4-8", max_tokens:1500, system:SCN_SYS, messages:[{role:"user", content:text}] };
+  const payload = { model:"claude-sonnet-4-6", max_tokens:1500, system:SCN_SYS, messages:[{role:"user", content:text}] };
   let res=null;
   try{ const r = await fetch(SCN_PROXY, { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(payload) }); if (r.status!==404) res=r; }catch(e){}
   if (!res){

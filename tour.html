@@ -1232,7 +1232,7 @@ async function cpSend(){
   const wait = cpAddMsg("ai","…");
   try{
     const r = await fetch(PROXY_URL, { method:"POST", headers:{ "content-type":"application/json" },
-      body: JSON.stringify({ model:"claude-opus-4-8", max_tokens:600, system:chatState.sysPrompt, messages:chatState.messages }) });
+      body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:600, system:chatState.sysPrompt, messages:chatState.messages }) });
     const d = await r.json();
     const text = (d.content && d.content[0] && d.content[0].text) || (d.error && d.error.message) || "（沒有回應）";
     wait.textContent = text;

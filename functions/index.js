@@ -63,7 +63,7 @@ exports.patient = onRequest(
       res.status(400).json({ error: { message: "messages required" } });
       return;
     }
-    const model = ALLOWED_MODELS.includes(body.model) ? body.model : "claude-opus-4-8";
+    const model = ALLOWED_MODELS.includes(body.model) ? body.model : "claude-sonnet-4-6";
     const maxTokens = Math.min(Math.max(parseInt(body.max_tokens, 10) || 700, 1), 8000);
     const system = typeof body.system === "string" ? body.system : "";
 
