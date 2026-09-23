@@ -901,3 +901,65 @@ exports.engdailyCron = onSchedule(
     secrets: [ANTHROPIC_KEY], timeoutSeconds: 540, memory: "512MiB", retryCount: 2 },
   async () => { await engGenerateDaily(engTodayTW()); }
 );
+
+/* ================================================================
+   家庭手帳（jiahow-expense.web.app）專用 Claude 代理
+   - 使用獨立的 EXPENSE_ANTHROPIC_KEY（建議放在 Anthropic Console 的獨立 workspace，
+     有自己的花費上限），其他 app 用爆額度時不會影響記帳
+   - 只接受記帳網站來源、只允許 Haiku、限制 max_tokens
+   - Key 設定：firebase functions:secrets:set EXPENSE_ANTHROPIC_KEY
+   ================================================================ */
+const EXPENSE_ANTHROPIC_KEY = defineSecret("EXPENSE_ANTHROPIC_KEY");
+const EXPENSE_ORIGINS = [
+  "https://jiahow-expense.web.app",
+  "https://jiahow-expense.firebaseapp.com",
+  "http://localhost:5000",
+  "http://localhost:8080",
+];
+
+exports.expense = onRequest(
+  {
+    region: "us-central1",
+    secrets: [EXPENSE_ANTHROPIC_KEY],
+    maxInstances: 3,
+    timeoutSeconds: 60,
+    memory: "256MiB",
+  },
+  async (req, res) => {
+    const origin = req.headers.origin || "";
+    const originOk = EXPENSE_ORIGINS.includes(origin);
+    if (originOk) res.set("Access-Control-Allow-Origin", origin);
+    res.set("Vary", "Origin");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (req.method !== "POST") { res.status(405).json({ error: { message: "Method not allowed" } }); return; }
+    if (!originOk) { res.status(403).json({ error: { message: "Origin not allowed" } }); return; }
+
+    const body = req.body || {};
+    const messages = Array.isArray(body.messages) ? body.messages : null;
+    if (!messages || !messages.length) {
+      res.status(400).json({ error: { message: "messages required" } });
+      return;
+    }
+    const maxTokens = Math.min(Math.max(parseInt(body.max_tokens, 10) || 1000, 1), 1500);
+    const system = typeof body.system === "string" ? body.system : "";
+
+    try {
+      const upstream = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": EXPENSE_ANTHROPIC_KEY.value(),
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ model: "claude-haiku-4-5", max_tokens: maxTokens, system, messages }),
+      });
+      const data = await upstream.json();
+      res.status(upstream.status).json(data);
+    } catch (e) {
+      res.status(502).json({ error: { message: "proxy error: " + (e && e.message || e) } });
+    }
+  }
+);
