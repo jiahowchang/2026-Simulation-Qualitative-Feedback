@@ -178,6 +178,20 @@ button { font-family: inherit; }
 .tc-name small { display: block; color: var(--gray); font-weight: 400; font-size: .72rem; margin-top: 2px; }
 .addbtn.pdf { background: var(--purple); box-shadow: 0 3px 10px rgba(108,52,131,.3); }
 .addbtn.pdf:hover { background: #512e63; }
+.addbtn.pub { background: #0b6e4f; box-shadow: 0 3px 10px rgba(11,110,79,.3); }
+.addbtn.pub:hover { background: #075239; }
+
+/* ── 發布公開版 ── */
+.pub-note { background: var(--blue-l); border-radius: 12px; padding: 12px 14px; font-size: .85rem; line-height: 1.75; color: var(--navy); margin-bottom: 14px; }
+.pub-note b { color: var(--rose); }
+.pub-note a { color: var(--navy); }
+.pub-row { display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: start; border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+.pub-row.off { opacity: .5; background: #f7f9fa; }
+.pub-row input[type=checkbox] { width: 19px; height: 19px; accent-color: #0b6e4f; margin-top: 2px; }
+.pub-row .t { font-weight: 800; font-size: .92rem; margin-bottom: 3px; }
+.pub-row .m { font-size: .74rem; color: var(--gray); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.pub-row .refl { margin-top: 6px; background: var(--purple-l); color: var(--purple); border-radius: 8px; padding: 6px 10px; font-size: .78rem; line-height: 1.6; }
+.pub-row .cert { margin-top: 5px; font-size: .74rem; color: var(--teal); font-weight: 700; }
 
 /* ── PDF 報告（螢幕上隱藏，列印時只顯示這份） ── */
 #printReport { display: none; }
@@ -395,6 +409,7 @@ button { font-family: inherit; }
         <select id="jumpMonth"><option value="">跳至月份…</option></select>
         <button class="addbtn gmail" id="gmailBtn">📥 Gmail／日曆匯入</button>
         <button class="addbtn pdf" id="pdfBtn">📄 匯出 PDF</button>
+        <button class="addbtn pub" id="pubBtn">🌐 發布公開版</button>
         <button class="addbtn" id="addBtn">＋ 新增教學紀錄</button>
       </div>
       <div class="filter-note" id="filterNote"></div>
@@ -514,6 +529,27 @@ button { font-family: inherit; }
   </div>
 </div>
 
+<!-- 發布公開版 Modal -->
+<div class="overlay" id="pubOverlay">
+  <div class="modal">
+    <div class="modal-head"><h2>🌐 發布公開版</h2><button id="pubClose">✕ 關閉</button></div>
+    <div class="modal-body">
+      <div class="pub-note">
+        公開頁網址：<a id="pubUrl" href="teaching-public.html" target="_blank" rel="noopener">teaching-public.html</a>（免登入，任何人都能看）<br>
+        會複製過去的欄位：日期、課程名稱、身分、類別、形式、對象、人數、時數、地點、<b>教學反思</b>、<b>感謝狀圖片</b>。<br>
+        <b>不會</b>複製：學員名單、學員回饋原文、活動照片、教材檔案與連結、教學內容摘要。<br>
+        取消勾選的紀錄不會出現在公開頁；若之前發布過，這次會一併從公開頁移除。
+      </div>
+      <div class="imp-status" id="pubStatus"></div>
+      <div id="pubList"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" id="pubCancel">關閉</button>
+      <button class="btn primary" id="pubGo">確認發布</button>
+    </div>
+  </div>
+</div>
+
 <!-- PDF 報告（列印時才顯示） -->
 <div id="printReport"></div>
 
@@ -523,7 +559,7 @@ button { font-family: inherit; }
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, serverTimestamp, query, orderBy }
+import { getFirestore, collection, onSnapshot, addDoc, doc, setDoc, updateDoc, deleteDoc, getDocs, serverTimestamp, query, orderBy }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getStorage, ref as sRef, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
@@ -1408,6 +1444,104 @@ $("delBtn").onclick = async () => {
     if (currentDetailId() === editingId) location.hash = "";   // 刪掉正在看的那筆 → 回列表
     toast("已刪除");
   } catch (e) { console.error(e); toast("刪除失敗：" + (e.code || e.message)); }
+};
+
+/* ══════════ 發布公開版（teaching_public 集合 → teaching-public.html）══════════ */
+/* 只複製去識別化欄位；名單 rosterText/files、回饋 feedbacks、照片 photos、
+   教材 materials/matFiles、教學內容 content 一律不進公開集合。
+   規則：teaching_public 任何人可讀、只有本人可寫（見 firestore.rules）。 */
+const PUB_FIELDS = ["date","timeStart","timeEnd","title","role","category","method",
+                    "audiences","audienceCount","hours","location","reflection"];
+
+function publicDoc(r) {
+  const o = {};
+  PUB_FIELDS.forEach(k => {
+    const v = r[k];
+    if (v === undefined || v === null || v === "" || (Array.isArray(v) && !v.length)) return;
+    o[k] = v;
+  });
+  // 感謝狀只留檔名與下載網址（不含 Storage path，避免洩漏內部路徑）
+  const certs = (r.certs || []).filter(c => c.url).map(c => ({ name: c.name || "感謝狀", url: c.url }));
+  if (certs.length) o.certs = certs;
+  o.publishedAt = serverTimestamp();
+  return o;
+}
+
+let pubExisting = new Set();   // 目前公開頁上已有的 doc id
+
+$("pubBtn").onclick = async () => {
+  $("pubOverlay").classList.add("show");
+  $("pubList").innerHTML = "";
+  $("pubStatus").className = "imp-status";
+  $("pubStatus").innerHTML = '<span class="spin"></span>讀取目前公開頁內容…';
+  $("pubUrl").href = new URL("teaching-public.html", location.href).href;
+  $("pubGo").disabled = DEMO;
+  if (DEMO) { pubExisting = new Set(); renderPubList(); $("pubStatus").textContent = "示範模式：可以預覽要公開的內容，但不會真的發布。"; return; }
+  try {
+    const snap = await getDocs(collection(db, "teaching_public"));
+    pubExisting = new Set(snap.docs.map(d => d.id));
+  } catch (e) { console.error(e); pubExisting = new Set(); }
+  renderPubList();
+};
+$("pubClose").onclick = $("pubCancel").onclick = () => $("pubOverlay").classList.remove("show");
+
+function renderPubList() {
+  const list = [...records].sort((a,b) => (b.date||"").localeCompare(a.date||""));
+  const box = $("pubList"); box.innerHTML = "";
+  list.forEach(r => {
+    const on = !r.publicHide;
+    const row = document.createElement("label");
+    row.className = "pub-row" + (on ? "" : " off");
+    const role = r.role || "講師";
+    const certN = (r.certs || []).filter(c => c.url).length;
+    row.innerHTML = `
+      <input type="checkbox" data-id="${esc(r.id)}" ${on ? "checked" : ""}>
+      <div>
+        <div class="t">${esc(r.title)}</div>
+        <div class="m">
+          <span>${esc(r.date || "")}</span>
+          <span class="tag ${role === "學生" ? "stud" : role === "教學行政" ? "admin" : "aud"}">${esc(role)}</span>
+          ${r.category ? `<span class="tag cat">${esc(r.category)}</span>` : ""}
+          ${pubExisting.has(r.id) ? '<span style="color:#0b6e4f;font-weight:700">● 已在公開頁</span>' : ""}
+        </div>
+        ${r.reflection ? `<div class="refl">🪞 反思會一併公開：${esc(r.reflection.slice(0, 120))}${r.reflection.length > 120 ? "…" : ""}</div>` : ""}
+        ${certN ? `<div class="cert">🏆 感謝狀／證明 ${certN} 張會一併公開</div>` : ""}
+      </div>`;
+    row.querySelector("input").onchange = e => row.classList.toggle("off", !e.target.checked);
+    box.appendChild(row);
+  });
+  const onCount = list.filter(r => !r.publicHide).length;
+  $("pubStatus").className = "imp-status";
+  $("pubStatus").textContent = `共 ${list.length} 筆紀錄，預設公開 ${onCount} 筆；取消勾選即不公開。`;
+}
+
+$("pubGo").onclick = async () => {
+  const boxes = [...$("pubList").querySelectorAll("input[type=checkbox]")];
+  const want = new Map(boxes.map(b => [b.dataset.id, b.checked]));
+  $("pubGo").disabled = true;
+  let pushed = 0, removed = 0;
+  try {
+    for (const r of records) {
+      const on = want.get(r.id) !== false;
+      $("pubStatus").innerHTML = `<span class="spin"></span>發布中… ${pushed + removed + 1}/${records.length}`;
+      if (on) { await setDoc(doc(db, "teaching_public", r.id), publicDoc(r)); pushed++; }
+      else if (pubExisting.has(r.id)) { await deleteDoc(doc(db, "teaching_public", r.id)); removed++; }
+      if (!!r.publicHide === on) await updateDoc(doc(db, "teaching_records", r.id), { publicHide: !on });
+    }
+    // 來源已刪除、但公開頁還留著的，一併清掉
+    for (const id of pubExisting) {
+      if (!records.some(r => r.id === id)) { await deleteDoc(doc(db, "teaching_public", id)); removed++; }
+    }
+    const url = new URL("teaching-public.html", location.href).href;
+    $("pubStatus").className = "imp-status";
+    $("pubStatus").innerHTML = `✅ 已發布 ${pushed} 筆${removed ? `，移除 ${removed} 筆` : ""} · <a href="${esc(url)}" target="_blank" rel="noopener">開啟公開頁</a>`;
+    pubExisting = new Set(records.filter(r => want.get(r.id) !== false).map(r => r.id));
+    toast("已發布公開版 ✓");
+  } catch (e) {
+    console.error(e);
+    $("pubStatus").className = "imp-status err";
+    $("pubStatus").textContent = "發布失敗：" + (e.code || e.message);
+  } finally { $("pubGo").disabled = false; }
 };
 
 /* ══════════ PDF 報告匯出 ══════════ */

@@ -127,8 +127,19 @@ service cloud.firestore {
     }
 
     // 教學歷程檔案（teaching.html）：僅管理員本人可讀寫
+    // 內含學員名單（rosterText／files）、學員回饋原文（feedbacks）、
+    // 活動照片（photos）與教材檔案（matFiles），一律不對外開放
     match /teaching_records/{document} {
       allow read, write: if isAdmin();
+    }
+
+    // 教學歷程「公開版」（teaching-public.html）：任何人可讀，只有本人能寫
+    // 由 teaching.html 的「🌐 發布公開版」逐筆複製而來，且只複製去識別化欄位：
+    // 日期／時間／名稱／身分／類別／形式／對象／人數／時數／地點／教學反思／感謝狀
+    // 名單、回饋原文、活動照片、教材檔案與連結都不會寫進這個集合
+    match /teaching_public/{document} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     // ================================================================
