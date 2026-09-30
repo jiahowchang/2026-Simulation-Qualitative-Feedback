@@ -536,9 +536,11 @@ button { font-family: inherit; }
     <div class="modal-body">
       <div class="pub-note">
         公開頁網址：<a id="pubUrl" href="teaching-public.html" target="_blank" rel="noopener">teaching-public.html</a>（免登入，任何人都能看）<br>
-        會複製過去的欄位：日期、課程名稱、身分、類別、形式、對象、人數、時數、地點、<b>教學反思</b>、<b>感謝狀圖片</b>。<br>
-        <b>不會</b>複製：學員名單、學員回饋原文、活動照片、教材檔案與連結、教學內容摘要。<br>
-        取消勾選的紀錄不會出現在公開頁；若之前發布過，這次會一併從公開頁移除。
+        <b>紀錄新增／修改／刪除時會自動同步到公開頁</b>（Cloud Function teachingPublicSync），平常不必來按這裡；
+        這個視窗是用來決定<b>哪幾筆要公開</b>，以及需要時整批重新同步。<br>
+        會同步的欄位：日期、課程名稱、身分、類別、形式、對象、人數、時數、地點、<b>教學反思</b>、<b>感謝狀圖片</b>。<br>
+        <b>不會</b>同步：學員名單、學員回饋原文、活動照片、教材檔案與連結、教學內容摘要。<br>
+        取消勾選＝該筆從公開頁下架（狀態記在紀錄裡，之後自動同步也會一直略過它）。
       </div>
       <div class="imp-status" id="pubStatus"></div>
       <div id="pubList"></div>

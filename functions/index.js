@@ -963,3 +963,49 @@ exports.expense = onRequest(
     }
   }
 );
+
+/* ================================================================
+   教學歷程「公開版」自動同步（teaching_records → teaching_public）
+   - teaching.html 只要新增／編輯／刪除紀錄，公開頁 teaching-public.html
+     立即跟著更新，不必再手動按「發布公開版」
+   - 只鏡射去識別化欄位；學員名單 rosterText/files、學員回饋 feedbacks、
+     活動照片 photos、教材 materials/matFiles、教學內容 content 一律不複製
+   - publicHide = true 的紀錄視為不公開，會從公開集合移除
+   - Firestore 位置 nam5 → 觸發器必須在 us-central1
+   ================================================================ */
+const { onDocumentWritten } = require("firebase-functions/v2/firestore");
+
+const TEACHING_PUBLIC_FIELDS = [
+  "date", "timeStart", "timeEnd", "title", "role", "category", "method",
+  "audiences", "audienceCount", "hours", "location", "reflection",
+];
+
+exports.teachingPublicSync = onDocumentWritten(
+  { document: "teaching_records/{id}", region: "us-central1", memory: "256MiB", retry: false },
+  async (event) => {
+    const { db, admin } = getFirestore();
+    const pubRef = db.collection("teaching_public").doc(event.params.id);
+    const after = event.data && event.data.after;
+
+    // 來源被刪除 or 標記不公開 → 公開頁一併下架
+    if (!after || !after.exists) { await pubRef.delete(); return; }
+    const r = after.data() || {};
+    if (r.publicHide) { await pubRef.delete(); return; }
+
+    const out = {};
+    for (const k of TEACHING_PUBLIC_FIELDS) {
+      const v = r[k];
+      if (v === undefined || v === null || v === "" || (Array.isArray(v) && !v.length)) continue;
+      out[k] = v;
+    }
+    // 感謝狀只留檔名與下載網址，不含 Storage 內部路徑
+    const certs = (r.certs || [])
+      .filter((c) => c && c.url)
+      .map((c) => ({ name: c.name || "感謝狀", url: c.url }));
+    if (certs.length) out.certs = certs;
+    out.publishedAt = admin.firestore.FieldValue.serverTimestamp();
+
+    // set（不 merge）：來源刪掉的欄位，公開頁也要跟著消失
+    await pubRef.set(out);
+  }
+);
