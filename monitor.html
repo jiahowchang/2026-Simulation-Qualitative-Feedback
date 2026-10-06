@@ -330,7 +330,7 @@
         <div id="cImgMsg" style="font-size:13px;color:#ff9f0a;margin-top:8px;min-height:18px"></div>
         <div id="cImgCats" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px"></div>
         <div style="font-size:13px;color:#999;margin-top:8px">點選一個媒體後，按下方「傳送」才會送到監視器：</div>
-        <div id="cImgGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;margin-top:8px"></div>
+        <div id="cImgGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-top:8px"></div>
         <div id="cImgEmpty" style="font-size:13px;color:#777;padding:6px 0;display:none">這個分類還沒有檔案</div>
         <div id="cImgSel" style="display:none;align-items:center;gap:10px;margin-top:12px;padding:8px;background:#2c2c2e;border-radius:10px">
           <img id="cImgSelThumb" style="width:48px;height:48px;object-fit:cover;border-radius:6px;background:#000;flex:0 0 48px">
@@ -2129,9 +2129,12 @@ function selectConsoleMedia(m, el){
   $("cImgSelName").textContent = (m.name||"(未命名)") + (C_KIND_BADGE[m.kind]? "（"+C_KIND_BADGE[m.kind]+"）":"");
   const b = $("cImgSendBtn"); b.disabled = false; b.style.opacity = "1";
 }
-function addImgThumb(m, prepend){
-  const exist = $("cImgGrid").querySelector('[data-id="'+m.id+'"]');
-  if (exist) return exist;
+/* 媒體牆：本地快取 + 依分類排序重建（同類排在一起、各分類有段落標題、縮圖下方顯示標題） */
+let cMediaItems = [];
+const catRank = c => { const i = C_CATEGORIES.indexOf(c||"其他"); return i<0 ? C_CATEGORIES.length : i; };
+const tsMs = v => (v && typeof v.toMillis==="function") ? v.toMillis() : (+v || 0);
+const escTxt = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+function mediaThumbEl(m){
   const kind = m.kind || "image";
   const d = document.createElement("div");
   d.dataset.id = m.id;
@@ -2139,13 +2142,40 @@ function addImgThumb(m, prepend){
   d.style.cssText = "position:relative;border:1px solid #3a3a3c;border-radius:8px;overflow:hidden;cursor:pointer;background:#2c2c2e";
   const src = m.thumb || ((kind==="image"||kind==="gif") ? m.dataUrl : null);
   const icon = kind==="audio"?"\u{1F50A}":kind==="video"?"\u{1F3AC}":kind==="pdf"?"\u{1F4C4}":"\u{1F5BC}";
-  d.innerHTML = src
-    ? `<img src="${src}" style="width:100%;height:56px;object-fit:cover;display:block">`
-    : `<div style="height:56px;display:flex;align-items:center;justify-content:center;font-size:24px">${icon}</div>`;
+  d.innerHTML = (src
+    ? `<img src="${src}" style="width:100%;height:60px;object-fit:cover;display:block">`
+    : `<div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:24px">${icon}</div>`)
+    + `<div style="font-size:10.5px;line-height:1.25;color:#ddd;padding:3px 4px 4px;text-align:center;word-break:break-all;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:30px">${escTxt(m.name||"(未命名)")}</div>`;
   if (C_KIND_BADGE[kind]) d.innerHTML += `<span style="position:absolute;top:3px;left:3px;background:rgba(10,132,255,.92);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:5px">${C_KIND_BADGE[kind]}</span>`;
   d.onclick = ()=> selectConsoleMedia(m, d);
-  if (prepend) $("cImgGrid").prepend(d); else $("cImgGrid").appendChild(d);
   return d;
+}
+function rebuildImgGrid(){
+  const grid = $("cImgGrid"); grid.innerHTML = "";
+  const sorted = [...cMediaItems].sort((a,b)=>
+    catRank(a.category)-catRank(b.category) || tsMs(b.created)-tsMs(a.created));
+  let lastCat = null;
+  sorted.forEach(m=>{
+    const cat = m.category || "其他";
+    if (cat !== lastCat){
+      lastCat = cat;
+      const h = document.createElement("div");
+      h.dataset.cathdr = cat;
+      h.style.cssText = "grid-column:1/-1;font-size:12px;font-weight:700;color:#5ac8fa;padding:8px 2px 2px;border-bottom:1px solid #2c2c2e";
+      h.textContent = cat;
+      grid.appendChild(h);
+    }
+    grid.appendChild(mediaThumbEl(m));
+  });
+  applyMediaCatFilter();
+  if (cSelMedia){ const el = grid.querySelector('[data-id="'+cSelMedia.id+'"]'); if (el) el.style.outline = "3px solid #0a84ff"; }
+}
+function addImgThumb(m){
+  if (!m.created) m.created = Date.now();   // 剛上傳的項目排在該分類最前
+  const i = cMediaItems.findIndex(x=>x.id===m.id);
+  if (i >= 0) cMediaItems[i] = m; else cMediaItems.push(m);
+  rebuildImgGrid();
+  return $("cImgGrid").querySelector('[data-id="'+m.id+'"]');
 }
 function renderMediaCats(){
   const box = $("cImgCats"); box.innerHTML = "";
@@ -2161,6 +2191,11 @@ function renderMediaCats(){
 function applyMediaCatFilter(){
   let n = 0;
   document.querySelectorAll('#cImgGrid > div').forEach(d=>{
+    if ("cathdr" in d.dataset){
+      // 段落標題：看全部時顯示；篩選單一分類時整牆只剩一類，標題多餘
+      d.style.display = (cMediaCat==="全部") ? "" : "none";
+      return;
+    }
     const show = cMediaCat==="全部" || (d.dataset.cat||"其他")===cMediaCat;
     d.style.display = show ? "" : "none";
     if (show) n++;
@@ -2171,14 +2206,14 @@ async function loadImgGrid(){
   if (!db) return;
   try{
     const qs = await getDocs(query(collection(db,MEDIA_COLL), orderBy("created","desc")));
-    $("cImgGrid").innerHTML = "";
+    cMediaItems = [];
     qs.forEach(s=>{
       const m = Object.assign({id:s.id}, s.data());
       m.kind = m.kind || "image";
-      addImgThumb(m);
+      cMediaItems.push(m);
     });
     renderMediaCats();
-    applyMediaCatFilter();
+    rebuildImgGrid();
   }catch(e){ /* 忽略 */ }
 }
 renderMediaCats();
