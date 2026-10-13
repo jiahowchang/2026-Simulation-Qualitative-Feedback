@@ -431,6 +431,7 @@
           <option value="normal">正常 Normal</option>
           <option value="sharkfin">支氣管痙攣 Bronchospasm（鯊魚鰭）</option>
           <option value="emphysema">肺氣腫/低順應性 Emphysema</option>
+          <option value="lowamp">振幅縮小 Low amplitude（順應性差/阻力↑）</option>
           <option value="rebreathing">重複呼吸 Rebreathing（CO₂滯留）</option>
           <option value="curare">箭毒裂痕 Curare cleft</option>
           <option value="irregular">導管位置異常 Tube malposition</option>
@@ -640,6 +641,7 @@
             <option value="rebreathing">重複呼吸（基線未歸零）</option>
             <option value="sharkfin">支氣管痙攣（鯊魚鰭/氣喘）</option>
             <option value="emphysema">肺氣腫/低順應性</option>
+            <option value="lowamp">振幅縮小（順應性差/阻力↑）</option>
             <option value="curare">箭毒裂痕</option>
             <option value="irregular">導管位置異常（鋸齒）</option>
             <option value="flat">窒息/無波形</option>
@@ -931,6 +933,8 @@ function co2Shape(ph, morph){
       const down = 1/(1+Math.exp((ph-0.66)/0.018));
       return rise*down;
     }
+    case 'lowamp':                 // 振幅縮小：插管+呼吸器下順應性變差/阻力增加，潮氣量下降
+      return 0.45*co2Normal(ph);   //   → 波形整體明顯變矮（約設定值的 45%），形狀仍為方波
     case 'irregular': {            // 導管位置異常/漏氣：平台呈鋸齒不規則
       let f = co2Normal(ph);
       if (ph>0.10 && ph<0.55) f += 0.12*Math.sin((ph-0.10)*55);
@@ -2249,6 +2253,7 @@ PRESETS.forEach(p=>{
 const CO2_HINTS = {
   normal:      "正常方波：通氣與灌流良好的基準。EtCO₂ 35–45 mmHg。",
   sharkfin:    "鯊魚鰭（斜上、無平台）＝下呼吸道阻塞。氣喘急性發作 / COPD / 支氣管痙攣；處置：支氣管擴張劑，改善時斜坡回正。",
+  lowamp:      "波形整體變矮（振幅縮小）＝插管使用呼吸器下，肺順應性變差或呼吸道阻力增加，潮氣量下降、每口吐出的 CO₂ 變少。常見：ARDS 惡化、氣胸、管路部分阻塞、支氣管痙攣加重；處置：檢查呼吸機設定與管路、聽診兩側呼吸音、評估順應性。可同時調低 EtCO₂ 數值貼近實測。",
   emphysema:   "斜坡無平台＝肺氣腫 / COPD，或低肺順應性（肥胖、孕婦、限制性肺病、氣胸漏氣）。",
   rebreathing: "基線未歸零＝重複吸回 CO₂（CO₂滯留）。鈉石灰耗盡 / 吐氣閥故障 / 新鮮氣流不足 / 吐氣時間不夠；處置：換 CO₂ 吸收劑、檢查單向閥、加大氣流。",
   curare:      "平台中央裂隙＝肌肉鬆弛（癱瘓）中病人開始自主呼吸＝肌鬆劑藥效正在退；處置：追加肌鬆劑或調整鎮靜（裂隙越深、自主呼吸越強）。",
