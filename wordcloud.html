@@ -120,7 +120,7 @@
   </div>
   <div class="card">
     <div class="inrow">
-      <input id="wordInput" maxlength="12" placeholder="輸入一個詞(最多 12 字)" autocomplete="off">
+      <input id="wordInput" maxlength="20" placeholder="輸入一個詞或短語(最多 20 字)" autocomplete="off">
       <button id="sendBtn">送出</button>
     </div>
     <div class="hint" id="quotaHint">每題可送出 5 次,每次一個詞或短語</div>
@@ -239,7 +239,7 @@ if(!IS_BOARD){
   };
 
   async function send(){
-    const v=$("wordInput").value.trim().replace(/\s+/g," ").slice(0,12);
+    const v=$("wordInput").value.trim().replace(/\s+/g," ").slice(0,20);
     if(!v){ toast("請先輸入一個詞"); return; }
     if(sentCount()>=MAX_SEND){ updateQuota(); return; }
     $("sendBtn").disabled=true;
