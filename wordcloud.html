@@ -81,6 +81,15 @@
   }
   .s-qnum{ display:inline-block; background:rgba(255,255,255,.18); border-radius:999px;
     padding:1px 10px; margin-left:8px; font-size:.78rem; }
+  #sTabs{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  #sTabs .stab{
+    min-width:40px; height:40px; padding:0 14px; border-radius:999px;
+    background:#fff; border:1.5px solid var(--line); color:var(--navy);
+    font-size:1rem; font-weight:700; cursor:pointer; font-family:inherit;
+  }
+  #sTabs .stab.on{ background:var(--blue); border-color:var(--blue); color:#fff; }
+  #sTabs .stab .live{ color:#e8863a; margin-left:3px; }
+  #sTabs .stab.on .live{ color:#ffd166; }
   /* ===== 編輯題目 modal ===== */
   #qEditor{ display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:60;
     align-items:center; justify-content:center; }
@@ -105,6 +114,10 @@
     <div class="tag">課堂即時互動<span class="s-qnum" id="sQNum" style="display:none"></span></div>
     <h1 id="sQuestion">載入題目中…</h1>
   </header>
+  <div class="card" id="sTabsCard" style="display:none">
+    <div class="hint" style="margin:0">選擇要回答的題目(<span style="color:#e8863a">●</span>＝講者目前題目)</div>
+    <div id="sTabs"></div>
+  </div>
   <div class="card">
     <div class="inrow">
       <input id="wordInput" maxlength="12" placeholder="輸入一個詞(最多 12 字)" autocomplete="off">
@@ -203,17 +216,20 @@ function applyMeta(meta){
     QS=DEFAULT_QS; ACTIVE=0;
   }
 }
-const activeWords=()=>ALL.filter(w=>(w.qid||0)===ACTIVE);
+const wordsOf=q=>ALL.filter(w=>(w.qid||0)===q);
+const activeWords=()=>wordsOf(ACTIVE);
 
-function aggregate(){
+function aggregate(q=ACTIVE){
   const counts={};
-  activeWords().forEach(w=>{ const k=w.text; counts[k]=(counts[k]||0)+1; });
+  wordsOf(q).forEach(w=>{ const k=w.text; counts[k]=(counts[k]||0)+1; });
   return Object.entries(counts).sort((a,b)=>b[1]-a[1]);
 }
 
 /* ================= 學員模式 ================= */
 if(!IS_BOARD){
-  const sentKey=()=>"wc_sent_"+ROOM+"_q"+ACTIVE;   // 每題各自的額度
+  let MY=null;                                   // null=跟隨講者;數字=自己選的題
+  const viewQ=()=>(MY===null?ACTIVE:MY);
+  const sentKey=()=>"wc_sent_"+ROOM+"_q"+viewQ();   // 每題各自的額度
   const sentCount=()=>parseInt(localStorage.getItem(sentKey())||"0",10);
   const updateQuota=()=>{
     const left=MAX_SEND-sentCount();
@@ -228,7 +244,7 @@ if(!IS_BOARD){
     if(sentCount()>=MAX_SEND){ updateQuota(); return; }
     $("sendBtn").disabled=true;
     try{
-      await addDoc(collection(db,COLL), { room:ROOM, kind:"word", qid:ACTIVE, text:v, t:Date.now() });
+      await addDoc(collection(db,COLL), { room:ROOM, kind:"word", qid:viewQ(), text:v, t:Date.now() });
       localStorage.setItem(sentKey(), String(sentCount()+1));
       $("wordInput").value="";
       toast("已送出:"+v);
@@ -239,7 +255,7 @@ if(!IS_BOARD){
   $("wordInput").addEventListener("keydown", e=>{ if(e.key==="Enter") send(); });
 
   function renderMini(){
-    const entries=aggregate().slice(0,40);
+    const entries=aggregate(viewQ()).slice(0,40);
     const box=$("miniCloud");
     if(!entries.length){ box.innerHTML='<span class="empty">還沒有人回答,搶頭香!</span>'; return; }
     const mx=entries[0][1];
@@ -250,16 +266,37 @@ if(!IS_BOARD){
     }).join("");
   }
 
+  function renderStudentTabs(){
+    const card=$("sTabsCard"), tabs=$("sTabs");
+    if(QS.length<=1){ card.style.display="none"; return; }
+    card.style.display="block";
+    tabs.innerHTML=QS.map((q,i)=>{
+      const live=(i===ACTIVE)?'<span class="live">●</span>':'';
+      return `<button class="stab${i===viewQ()?" on":""}" data-i="${i}" title="${esc(q)}">${i+1}${live}</button>`;
+    }).join("");
+    tabs.querySelectorAll(".stab").forEach(el=>el.addEventListener("click",()=>{
+      const i=+el.dataset.i;
+      MY=(i===ACTIVE)?null:i;     // 點回講者題目=恢復自動跟隨
+      refresh();
+    }));
+  }
+
+  function refresh(){
+    if(MY!==null && MY>=QS.length) MY=null;
+    $("sQuestion").textContent=QS[viewQ()];
+    const n=$("sQNum");
+    if(QS.length>1){ n.style.display="inline-block"; n.textContent=`題目 ${viewQ()+1} / ${QS.length}`; }
+    else n.style.display="none";
+    renderStudentTabs();
+    renderMini();
+    updateQuota();
+  }
+
   onSnapshot(wordsQuery, snap=>{
     const rows=snap.docs.map(d=>d.data());
     applyMeta(rows.find(r=>r.kind==="meta"));
     ALL=rows.filter(r=>r.kind==="word");
-    $("sQuestion").textContent=QS[ACTIVE];
-    const n=$("sQNum");
-    if(QS.length>1){ n.style.display="inline-block"; n.textContent=`題目 ${ACTIVE+1} / ${QS.length}`; }
-    else n.style.display="none";
-    renderMini();
-    updateQuota();
+    refresh();
   }, e=>{ console.error(e); $("sQuestion").textContent="連線失敗,請重新整理"; });
 }
 
