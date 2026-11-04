@@ -61,12 +61,40 @@
     position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
     font-size:3vh; opacity:.45;
   }
-  #board .b-ctrl{ display:flex; gap:10px; justify-content:flex-end; }
+  #board .b-ctrl{ display:flex; gap:10px; justify-content:flex-end; align-items:center; }
   #board .b-ctrl button{
     background:rgba(255,255,255,.12); color:#fff; border:1px solid rgba(255,255,255,.25);
     border-radius:8px; padding:6px 14px; font-size:1.6vh; cursor:pointer; font-family:inherit;
   }
   #board .b-ctrl button:hover{ background:rgba(255,255,255,.22); }
+  /* ===== 題目分頁 ===== */
+  #qTabs{ display:flex; gap:8px; align-items:center; flex:1; flex-wrap:wrap; }
+  #qTabs .qtab{
+    min-width:4.2vh; height:4.2vh; padding:0 1.4vh; border-radius:999px;
+    background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.25);
+    color:#fff; font-size:1.9vh; font-weight:700; cursor:pointer; font-family:inherit;
+  }
+  #qTabs .qtab.on{ background:var(--blue); border-color:var(--blue); }
+  #qTabs .qnav{
+    background:none; border:none; color:#9fc3ff; font-size:2.6vh; cursor:pointer;
+    padding:0 .6vh; font-family:inherit;
+  }
+  .s-qnum{ display:inline-block; background:rgba(255,255,255,.18); border-radius:999px;
+    padding:1px 10px; margin-left:8px; font-size:.78rem; }
+  /* ===== 編輯題目 modal ===== */
+  #qEditor{ display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:60;
+    align-items:center; justify-content:center; }
+  #qEditor .panel{ background:#fff; color:var(--ink); border-radius:14px; padding:20px;
+    width:min(640px,92vw); }
+  #qEditor h3{ color:var(--navy); margin-bottom:6px; }
+  #qEditor .sub{ font-size:.85rem; color:#8b94a6; margin-bottom:10px; }
+  #qEditor textarea{ width:100%; height:180px; border:1.5px solid var(--line); border-radius:10px;
+    padding:12px; font-size:1rem; font-family:inherit; resize:vertical; }
+  #qEditor .row{ display:flex; gap:10px; justify-content:flex-end; margin-top:12px; }
+  #qEditor .row button{ border:none; border-radius:10px; padding:9px 20px; font-size:.95rem;
+    font-weight:700; cursor:pointer; font-family:inherit; }
+  #qEditor .ok{ background:var(--blue); color:#fff; }
+  #qEditor .cancel{ background:#eef1f6; color:var(--ink); }
 </style>
 </head>
 <body>
@@ -74,7 +102,7 @@
 <!-- ===== 學員填寫 ===== -->
 <div class="wrap" id="studentView">
   <header class="hero">
-    <div class="tag">課堂即時互動</div>
+    <div class="tag">課堂即時互動<span class="s-qnum" id="sQNum" style="display:none"></span></div>
     <h1 id="sQuestion">載入題目中…</h1>
   </header>
   <div class="card">
@@ -82,10 +110,10 @@
       <input id="wordInput" maxlength="12" placeholder="輸入一個詞(最多 12 字)" autocomplete="off">
       <button id="sendBtn">送出</button>
     </div>
-    <div class="hint" id="quotaHint">可送出 5 次,每次一個詞或短語</div>
+    <div class="hint" id="quotaHint">每題可送出 5 次,每次一個詞或短語</div>
   </div>
   <div class="card">
-    <div class="hint" style="margin:0 0 6px">大家目前的回答</div>
+    <div class="hint" style="margin:0 0 6px">這一題大家目前的回答</div>
     <div class="minicloud" id="miniCloud"><span class="empty">還沒有人回答,搶頭香!</span></div>
   </div>
 </div>
@@ -106,9 +134,23 @@
     <div class="b-empty" id="bEmpty">等待學員回覆中…掃右上角 QR code 加入</div>
   </div>
   <div class="b-ctrl">
-    <button id="btnQ">更換題目</button>
-    <button id="btnClear">清空重來</button>
+    <div id="qTabs"></div>
+    <button id="btnQ">編輯題目</button>
+    <button id="btnClear">清空本題</button>
     <button id="btnFull">全螢幕</button>
+  </div>
+</div>
+
+<!-- ===== 編輯題目 ===== -->
+<div id="qEditor">
+  <div class="panel">
+    <h3>編輯題目清單</h3>
+    <div class="sub">一行一題(最多 10 題,每題 60 字內)。切換分頁時,學員手機會自動跟著換題。</div>
+    <textarea id="qText"></textarea>
+    <div class="row">
+      <button class="cancel" id="qCancel">取消</button>
+      <button class="ok" id="qSave">儲存</button>
+    </div>
   </div>
 </div>
 
@@ -140,31 +182,45 @@ const COLL="wordcloud_words";
 const params=new URLSearchParams(location.search);
 const ROOM=(params.get("room")||"ai").replace(/[^A-Za-z0-9_-]/g,"").slice(0,20)||"ai";
 const IS_BOARD=params.has("board");
-const DEFAULT_Q="聽到「生成式 AI」,你第一個想到的詞是?";
+const DEFAULT_QS=["聽到「生成式 AI」,你第一個想到的詞是?"];
 const META_ID="meta_"+ROOM;
-const MAX_SEND=5;
+const MAX_SEND=5;      // 每題上限
+const MAX_Q=10;
 
 const wordsQuery=query(collection(db,COLL), where("room","==",ROOM));
-let WORDS=[];   // [{text,t}]
-let QTEXT=DEFAULT_Q;
+let ALL=[];            // 全部 word docs [{id,qid,text,t}]
+let QS=DEFAULT_QS;     // 題目清單
+let ACTIVE=0;          // 目前題號(0-based)
+
+// 舊資料相容:沒有 qid 的回答視為第 1 題;舊 meta 只有 question 字串時轉成清單
+function applyMeta(meta){
+  if(meta && Array.isArray(meta.questions) && meta.questions.length){
+    QS=meta.questions.slice(0,MAX_Q);
+    ACTIVE=Math.min(Math.max(meta.active||0,0), QS.length-1);
+  }else if(meta && meta.question){
+    QS=[meta.question]; ACTIVE=0;
+  }else{
+    QS=DEFAULT_QS; ACTIVE=0;
+  }
+}
+const activeWords=()=>ALL.filter(w=>(w.qid||0)===ACTIVE);
 
 function aggregate(){
   const counts={};
-  WORDS.forEach(w=>{ const k=w.text; counts[k]=(counts[k]||0)+1; });
+  activeWords().forEach(w=>{ const k=w.text; counts[k]=(counts[k]||0)+1; });
   return Object.entries(counts).sort((a,b)=>b[1]-a[1]);
 }
 
 /* ================= 學員模式 ================= */
 if(!IS_BOARD){
-  const sentKey="wc_sent_"+ROOM;
-  const sentCount=()=>parseInt(localStorage.getItem(sentKey)||"0",10);
+  const sentKey=()=>"wc_sent_"+ROOM+"_q"+ACTIVE;   // 每題各自的額度
+  const sentCount=()=>parseInt(localStorage.getItem(sentKey())||"0",10);
   const updateQuota=()=>{
     const left=MAX_SEND-sentCount();
-    $("quotaHint").textContent = left>0 ? `還可送出 ${left} 次,每次一個詞或短語` : "已達送出上限,謝謝你的參與!";
+    $("quotaHint").textContent = left>0 ? `這一題還可送出 ${left} 次,每次一個詞或短語` : "這一題已達送出上限,謝謝你的參與!";
     $("sendBtn").disabled = left<=0;
     $("wordInput").disabled = left<=0;
   };
-  updateQuota();
 
   async function send(){
     const v=$("wordInput").value.trim().replace(/\s+/g," ").slice(0,12);
@@ -172,8 +228,8 @@ if(!IS_BOARD){
     if(sentCount()>=MAX_SEND){ updateQuota(); return; }
     $("sendBtn").disabled=true;
     try{
-      await addDoc(collection(db,COLL), { room:ROOM, kind:"word", text:v, t:Date.now() });
-      localStorage.setItem(sentKey, String(sentCount()+1));
+      await addDoc(collection(db,COLL), { room:ROOM, kind:"word", qid:ACTIVE, text:v, t:Date.now() });
+      localStorage.setItem(sentKey(), String(sentCount()+1));
       $("wordInput").value="";
       toast("已送出:"+v);
     }catch(e){ console.error(e); toast("送出失敗,請再試一次"); }
@@ -196,10 +252,14 @@ if(!IS_BOARD){
 
   onSnapshot(wordsQuery, snap=>{
     const rows=snap.docs.map(d=>d.data());
-    QTEXT=(rows.find(r=>r.kind==="meta")||{}).question || DEFAULT_Q;
-    WORDS=rows.filter(r=>r.kind==="word");
-    $("sQuestion").textContent=QTEXT;
+    applyMeta(rows.find(r=>r.kind==="meta"));
+    ALL=rows.filter(r=>r.kind==="word");
+    $("sQuestion").textContent=QS[ACTIVE];
+    const n=$("sQNum");
+    if(QS.length>1){ n.style.display="inline-block"; n.textContent=`題目 ${ACTIVE+1} / ${QS.length}`; }
+    else n.style.display="none";
     renderMini();
+    updateQuota();
   }, e=>{ console.error(e); $("sQuestion").textContent="連線失敗,請重新整理"; });
 }
 
@@ -221,7 +281,7 @@ if(IS_BOARD){
 
   function renderCloud(){
     const entries=aggregate();
-    $("bCount").textContent=WORDS.length;
+    $("bCount").textContent=activeWords().length;
     $("bEmpty").style.display = entries.length? "none":"flex";
     const box=$("cloudBox"), cv=$("cloudCanvas");
     if(!entries.length){ const ctx=cv.getContext("2d"); ctx&&ctx.clearRect(0,0,cv.width,cv.height); $("tagCloud").innerHTML=""; return; }
@@ -251,28 +311,68 @@ if(IS_BOARD){
   }
   const scheduleRender=()=>{ clearTimeout(renderTimer); renderTimer=setTimeout(renderCloud, 700); };
 
+  function renderTabs(){
+    const tabs=$("qTabs");
+    if(QS.length<=1){ tabs.innerHTML=""; return; }
+    let html='<button class="qnav" id="qPrev" title="上一題">◀</button>';
+    QS.forEach((q,i)=>{
+      html+=`<button class="qtab${i===ACTIVE?" on":""}" data-i="${i}" title="${esc(q)}">${i+1}</button>`;
+    });
+    html+='<button class="qnav" id="qNext" title="下一題">▶</button>';
+    tabs.innerHTML=html;
+    tabs.querySelectorAll(".qtab").forEach(el=>el.addEventListener("click",()=>setActive(+el.dataset.i)));
+    $("qPrev").addEventListener("click",()=>setActive(ACTIVE-1));
+    $("qNext").addEventListener("click",()=>setActive(ACTIVE+1));
+  }
+
+  async function saveMeta(qs, act){
+    try{
+      await setDoc(doc(db,COLL,META_ID), { room:ROOM, kind:"meta", questions:qs, active:act, t:Date.now() });
+      return true;
+    }catch(e){ toast("儲存失敗:"+(e.message||e)); return false; }
+  }
+  async function setActive(i){
+    if(i<0||i>=QS.length||i===ACTIVE) return;
+    if(await saveMeta(QS,i)) toast(`已切到題目 ${i+1}`);
+  }
+
   onSnapshot(wordsQuery, snap=>{
     const rows=snap.docs.map(d=>({id:d.id, ...d.data()}));
-    QTEXT=(rows.find(r=>r.kind==="meta")||{}).question || DEFAULT_Q;
-    WORDS=rows.filter(r=>r.kind==="word");
-    $("bQuestion").textContent=QTEXT;
+    applyMeta(rows.find(r=>r.kind==="meta"));
+    ALL=rows.filter(r=>r.kind==="word");
+    $("bQuestion").textContent=(QS.length>1?`${ACTIVE+1}. `:"")+QS[ACTIVE];
+    $("bCount").textContent=activeWords().length;
+    renderTabs();
     scheduleRender();
   }, e=>{ console.error(e); $("bQuestion").textContent="連線失敗,請重新整理"; });
 
   window.addEventListener("resize", scheduleRender);
-
-  $("btnQ").addEventListener("click", async ()=>{
-    const q=prompt("輸入新的題目:", QTEXT);
-    if(q===null) return;
-    const nq=q.trim().slice(0,60)||DEFAULT_Q;
-    try{ await setDoc(doc(db,COLL,META_ID), { room:ROOM, kind:"meta", question:nq, t:Date.now() }); toast("題目已更新"); }
-    catch(e){ toast("更新失敗:"+(e.message||e)); }
+  window.addEventListener("keydown", e=>{
+    if($("qEditor").style.display==="flex") return;
+    if(e.key==="ArrowLeft") setActive(ACTIVE-1);
+    if(e.key==="ArrowRight") setActive(ACTIVE+1);
   });
+
+  /* 編輯題目清單 */
+  $("btnQ").addEventListener("click", ()=>{
+    $("qText").value=QS.join("\n");
+    $("qEditor").style.display="flex";
+    $("qText").focus();
+  });
+  $("qCancel").addEventListener("click", ()=>{ $("qEditor").style.display="none"; });
+  $("qSave").addEventListener("click", async ()=>{
+    const qs=$("qText").value.split("\n").map(s=>s.trim().slice(0,60)).filter(Boolean).slice(0,MAX_Q);
+    if(!qs.length){ toast("至少要有一題"); return; }
+    const act=Math.min(ACTIVE, qs.length-1);
+    if(await saveMeta(qs,act)){ $("qEditor").style.display="none"; toast("題目已更新,共 "+qs.length+" 題"); }
+  });
+
   $("btnClear").addEventListener("click", async ()=>{
-    if(!confirm("確定清空這一輪的所有回覆?")) return;
+    if(!confirm(`確定清空「題目 ${ACTIVE+1}」的所有回覆?`)) return;
     try{
       const snap=await getDocs(wordsQuery);
-      const dels=snap.docs.filter(d=>d.data().kind==="word").map(d=>deleteDoc(doc(db,COLL,d.id)));
+      const dels=snap.docs.filter(d=>d.data().kind==="word" && (d.data().qid||0)===ACTIVE)
+        .map(d=>deleteDoc(doc(db,COLL,d.id)));
       await Promise.all(dels);
       toast("已清空 "+dels.length+" 則");
     }catch(e){ toast("清空失敗:"+(e.message||e)); }
@@ -283,7 +383,7 @@ if(IS_BOARD){
   });
 }
 
-function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 </script>
 </body>
 </html>
